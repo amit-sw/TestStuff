@@ -9,7 +9,9 @@ os.environ['LANGCHAIN_ENDPOINT']="https://api.smith.langchain.com"
 
 import random
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from langsmith import Client
 
 from graph import salesCompAgent
 
@@ -41,6 +43,50 @@ RESEARCH_CRITIQUE_ITEM_PROMPT = ("You are a researcher charged with further inve
                                   "Generate a prompt with a list of additional information that'd help here. "
                                   "Only generate 3 items max.")
 
+
+class LangsmithRunRecorder(BaseCallbackHandler):
+    def __init__(self):
+        self.root_run_id = None
+
+    def on_chain_start(self, serialized, inputs, *, run_id, parent_run_id, **kwargs):
+        if parent_run_id is None and self.root_run_id is None:
+            self.root_run_id = str(run_id)
+
+    def on_llm_start(self, serialized, prompts, *, run_id, parent_run_id, **kwargs):
+        if parent_run_id is None and self.root_run_id is None:
+            self.root_run_id = str(run_id)
+
+
+def record_langsmith_feedback(feedback_label: str) -> None:
+    run_id = st.session_state.get("last_langsmith_run_id")
+    if not run_id:
+        print("No LangSmith run id available for feedback; skipping logging.")
+        return
+
+    try:
+        client = Client()
+    except Exception as exc:
+        print(f"Unable to initialize LangSmith client: {exc}")
+        return
+
+    score = 1 if feedback_label == "positive" else 0
+    source_info = {"source": "streamlit_feedback"}
+    thread_id = st.session_state.get("thread_id")
+    if thread_id:
+        source_info["thread_id"] = thread_id
+
+    try:
+        client.create_feedback(
+            run_id=run_id,
+            key="user_feedback",
+            score=score,
+            value=feedback_label,
+            source_info=source_info,
+        )
+    except Exception as exc:
+        print(f"Failed to log LangSmith feedback: {exc}")
+
+
 def initialize_prompts():
     prompts={"prompt":"Tell a joke"}
     st.session_state.prompts=prompts
@@ -48,10 +94,12 @@ def initialize_prompts():
 def feedback_positive():
     st.success("YEAH!!")
     print("User just gave up a thumbs up")
+    record_langsmith_feedback("positive")
     
 def feedback_negative():
     st.warning("NO!!")
     print("User just gave up a thumbs down")
+    record_langsmith_feedback("negative")
         
 def accept_feedback():
     col1, col2 = st.columns(2)
@@ -155,13 +203,15 @@ def start_chat(container=st):
         
         
         thread={"configurable":{"thread_id":thread_id}}
+        run_recorder = LangsmithRunRecorder()
         config={"configurable":{"thread_id":thread_id},
                 "tags": ["production", "sentiment-analysis", "v1.0"],
                     "metadata": {
-                        "user_id": "user_123",
-                        "session_id": "session_456",
-                        "environment": "production"
-                        }
+                    "user_id": "user_123",
+                    "session_id": "session_456",
+                    "environment": "production"
+                    },
+                "callbacks": [run_recorder]
             }
         parameters = {'initialMessage': prompt.text, 
                       #'sessionState': st.session_state, 
@@ -183,6 +233,8 @@ def start_chat(container=st):
 
 
             for s in app.graph.stream(parameters, config):
+                if run_recorder.root_run_id and st.session_state.get("last_langsmith_run_id") != run_recorder.root_run_id:
+                    st.session_state["last_langsmith_run_id"] = run_recorder.root_run_id
                 if DEBUGGING:
                     print(f"GRAPH RUN: {s}")
                 for k,v in s.items():
@@ -212,7 +264,11 @@ def start_chat(container=st):
                     
                     #save_conv_history_to_db(thread_id)
 
+            if run_recorder.root_run_id:
+                st.session_state["last_langsmith_run_id"] = run_recorder.root_run_id
+
 if __name__ == '__main__':
     st.set_page_config(page_title="Cl3vr - Your AI assistant for Sales Compensation")
     initialize_prompts()
     start_chat()
+
