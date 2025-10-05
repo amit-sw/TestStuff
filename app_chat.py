@@ -44,6 +44,23 @@ RESEARCH_CRITIQUE_ITEM_PROMPT = ("You are a researcher charged with further inve
 def initialize_prompts():
     prompts={"prompt":"Tell a joke"}
     st.session_state.prompts=prompts
+    
+def feedback_positive():
+    st.success("YEAH!!")
+    print("User just gave up a thumbs up")
+    
+def feedback_negative():
+    st.warning("NO!!")
+    print("User just gave up a thumbs down")
+        
+def accept_feedback():
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👍 Helpful", key="thumbs_up", on_click=feedback_positive):
+            print("Thanks for the feedback!")
+    with col2:
+        if st.button("👎 Not Helpful", key="thumbs_down",on_click=feedback_negative):
+            print("Sorry to hear that!")
 
 def start_chat(container=st):
     #st.title("Cl3vr")
@@ -178,6 +195,7 @@ def start_chat(container=st):
                         cleaned_resp = resp.replace('\n', ' ').replace('  ', ' ')
                         st.markdown(cleaned_resp, unsafe_allow_html=True)
                         st.session_state.messages.append({"role": "assistant", "content": cleaned_resp})
+                        accept_feedback()
                         #save_conv_history_to_db(thread_id)
                 
                 if resp := v.get("incrementalResponse"):
@@ -190,6 +208,7 @@ def start_chat(container=st):
                             placeholder.markdown(display_text)
                             #placeholder.markdown(full_response.replace("$", "\\$"))
                     st.session_state.messages.append({"role": "assistant", "content": full_response})
+                    accept_feedback()
                     
                     #save_conv_history_to_db(thread_id)
 
