@@ -1,2 +1,10 @@
 streamlit
 supabase
+tiktoken
+pandas
+
+
+langgraph
+langchain_core
+langchain_openai
+langsmith
