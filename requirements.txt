@@ -8,3 +8,9 @@ langgraph
 langchain_core
 langchain_openai
 langsmith
+
+streamlit 
+apify-client 
+pandas
+
+webvtt-py
