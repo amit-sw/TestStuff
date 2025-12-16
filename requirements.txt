@@ -4,6 +4,7 @@ tiktoken
 pandas
 
 
+nbformat
 langgraph
 langchain_core
 langchain_openai
