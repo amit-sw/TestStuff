@@ -3,6 +3,9 @@ supabase
 tiktoken
 pandas
 
+matplotlib
+scikit-learn
+
 
 nbformat
 langgraph
@@ -18,3 +21,5 @@ webvtt-py
 
 google-genai
 stripe
+
+Authlib
