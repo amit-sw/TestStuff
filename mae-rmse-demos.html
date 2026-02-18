@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAE vs RMSE Demos</title>
+  <style>
+    :root {
+      --bg-1: #f6efe2;
+      --bg-2: #d7e7f3;
+      --panel: rgba(255, 255, 255, 0.82);
+      --ink: #1d2938;
+      --accent: #1777c9;
+      --accent-2: #e45e1f;
+      --good: #0d8a53;
+      --grid: rgba(26, 42, 61, 0.18);
+      --point-a: #1777c9;
+      --point-b: #e45e1f;
+      --line-m: #13243a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(255,255,255,0.8), transparent 70%),
+        linear-gradient(140deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(980px, 100%);
+      background: var(--panel);
+      border: 1px solid rgba(20, 30, 40, 0.12);
+      backdrop-filter: blur(4px);
+      border-radius: 18px;
+      box-shadow: 0 16px 42px rgba(20, 30, 40, 0.16);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(1.7rem, 3.2vw, 2.3rem);
+      letter-spacing: 0.02em;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(15, 26, 38, 0.12);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(15, 26, 38, 0.15);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ffffff;
+      border-color: rgba(15, 26, 38, 0.25);
+    }
+
+    .metric {
+      margin: 6px 0;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 26, 38, 0.12);
+      background: rgba(255, 255, 255, 0.88);
+      font-size: 1.16rem;
+    }
+
+    .mae { border-left: 5px solid var(--accent); }
+    .rmse { border-left: 5px solid var(--accent-2); }
+
+    .bar-wrap {
+      margin-top: 6px;
+      height: 12px;
+      background: rgba(13, 30, 52, 0.11);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      transition: width 60ms linear;
+      border-radius: 999px;
+    }
+
+    .bar.mae { background: linear-gradient(90deg, #5aa8e9, #1777c9); }
+    .bar.rmse { background: linear-gradient(90deg, #f09f76, #e45e1f); }
+
+    .formula {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: rgba(16, 27, 41, 0.06);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.06rem;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>MAE vs RMSE: Demo 1 (Alternating Points)</h1>
+
+    <section class="card">
+      <canvas id="plot" width="920" height="460" aria-label="Plot of points and model line"></canvas>
+      <div class="row">
+        <button id="toggleBtn" type="button">Stop</button>
+        <button id="restartBtn" type="button">Restart</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="metric mae">
+        <div id="maeText"></div>
+        <div class="bar-wrap"><div id="maeBar" class="bar mae"></div></div>
+      </div>
+
+      <div class="metric rmse">
+        <div id="rmseText"></div>
+        <div class="bar-wrap"><div id="rmseBar" class="bar rmse"></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="formula">
+        MAE = (1/n) * Σ |yᵢ - m|<br>
+        RMSE = √((1/n) * Σ (yᵢ - m)²)
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('plot');
+    const ctx = canvas.getContext('2d');
+
+    const maeText = document.getElementById('maeText');
+    const rmseText = document.getElementById('rmseText');
+    const maeBar = document.getElementById('maeBar');
+    const rmseBar = document.getElementById('rmseBar');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const a = 2.0;
+    const b = 4.0;
+    const n = 20;
+    const mMin = 0.0;
+    const mMax = 10.0;
+
+    const points = Array.from({ length: n }, (_, i) => ({
+      x: i + 1,
+      y: i % 2 === 0 ? a : b
+    }));
+
+    const margin = { left: 58, right: 24, top: 24, bottom: 48 };
+    const xMin = 1;
+    const xMax = n;
+    const yMin = -0.5;
+    const yMax = 10.5;
+
+    function xToPx(x) {
+      const w = canvas.width - margin.left - margin.right;
+      return margin.left + ((x - xMin) / (xMax - xMin)) * w;
+    }
+
+    function yToPx(y) {
+      const h = canvas.height - margin.top - margin.bottom;
+      return canvas.height - margin.bottom - ((y - yMin) / (yMax - yMin)) * h;
+    }
+
+    function metrics(m) {
+      const absErr = points.map(p => Math.abs(p.y - m));
+      const sqErr = points.map(p => (p.y - m) ** 2);
+      const mae = absErr.reduce((s, v) => s + v, 0) / points.length;
+      const rmse = Math.sqrt(sqErr.reduce((s, v) => s + v, 0) / points.length);
+      return { mae, rmse };
+    }
+
+    function drawAxes() {
+      ctx.strokeStyle = 'rgba(28, 42, 57, 0.6)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, canvas.height - margin.bottom);
+      ctx.lineTo(canvas.width - margin.right, canvas.height - margin.bottom);
+      ctx.stroke();
+
+      ctx.font = '13px "Avenir Next", sans-serif';
+      ctx.fillStyle = 'rgba(30, 44, 58, 0.75)';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+
+      const yTicks = Array.from({ length: 10 }, (_, i) => i + 1);
+      yTicks.forEach(v => {
+        const y = yToPx(v);
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(canvas.width - margin.right, y);
+        ctx.stroke();
+        ctx.fillText(v.toFixed(1), margin.left - 8, y);
+      });
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      [1, Math.ceil(n / 2), n].forEach(v => {
+        const x = xToPx(v);
+        ctx.fillText(String(v), x, canvas.height - margin.bottom + 8);
+      });
+
+      ctx.save();
+      ctx.translate(18, canvas.height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('y value', 0, 0);
+      ctx.restore();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('point index', (margin.left + canvas.width - margin.right) / 2, canvas.height - 28);
+    }
+
+    function drawPoints() {
+      points.forEach((p, i) => {
+        ctx.beginPath();
+        ctx.arc(xToPx(p.x), yToPx(p.y), 5.2, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? getComputedStyle(document.documentElement).getPropertyValue('--point-a').trim() : getComputedStyle(document.documentElement).getPropertyValue('--point-b').trim();
+        ctx.fill();
+      });
+    }
+
+    function drawModelLine(m) {
+      const y = yToPx(m);
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line-m').trim();
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(canvas.width - margin.right, y);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(19, 36, 58, 0.88)';
+      ctx.font = 'bold 15px "Avenir Next", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`Prediction (y=${m.toFixed(2)})`, margin.left + 8, y - 6);
+    }
+
+    function drawVerticalErrors(m) {
+      ctx.lineWidth = 1.2;
+      ctx.font = '12px "Avenir Next", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      points.forEach((p, i) => {
+        const x = xToPx(p.x);
+        const pointY = yToPx(p.y);
+        const modelY = yToPx(m);
+        const midY = (pointY + modelY) / 2;
+        const err = Math.abs(p.y - m);
+
+        ctx.strokeStyle = i % 2 === 0 ? 'rgba(23, 119, 201, 0.38)' : 'rgba(228, 94, 31, 0.38)';
+        ctx.beginPath();
+        ctx.moveTo(x, pointY);
+        ctx.lineTo(x, modelY);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(19, 36, 58, 0.78)';
+        ctx.fillText(err.toFixed(2), x + 4, midY);
+      });
+    }
+
+    function render(m) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawAxes();
+      drawVerticalErrors(m);
+      drawPoints();
+      drawModelLine(m);
+
+      const { mae, rmse } = metrics(m);
+      const maxMetric = Math.max(...points.map(p => Math.abs(p.y - mMin)), ...points.map(p => Math.abs(p.y - mMax)));
+      maeText.textContent = `MAE = ${mae.toFixed(3)}`;
+      rmseText.textContent = `RMSE = ${rmse.toFixed(3)}`;
+      maeBar.style.width = `${Math.min(100, (mae / maxMetric) * 100)}%`;
+      rmseBar.style.width = `${Math.min(100, (rmse / maxMetric) * 100)}%`;
+    }
+
+    const sweepDurationMs = 5200;
+    let progressMs = 0;
+    let lastTs = null;
+    let animationFrameId = null;
+    let isRunning = true;
+
+    function syncToggleLabel() {
+      toggleBtn.textContent = isRunning ? 'Stop' : 'Continue';
+    }
+
+    function mFromProgress(elapsedMs) {
+      const cycle = (elapsedMs % (2 * sweepDurationMs)) / sweepDurationMs;
+      let t;
+
+      if (cycle <= 1) {
+        t = cycle;
+      } else {
+        t = 2 - cycle;
+      }
+
+      // Ease for smoother motion and clearer metric change near endpoints.
+      const eased = 0.5 - 0.5 * Math.cos(Math.PI * t);
+      return mMin + eased * (mMax - mMin);
+    }
+
+    function animate(ts) {
+      if (!isRunning) return;
+      if (lastTs == null) lastTs = ts;
+      progressMs += ts - lastTs;
+      lastTs = ts;
+
+      render(mFromProgress(progressMs));
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      if (isRunning) {
+        isRunning = false;
+        lastTs = null;
+        if (animationFrameId != null) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      } else {
+        isRunning = true;
+        lastTs = null;
+        animationFrameId = requestAnimationFrame(animate);
+      }
+      syncToggleLabel();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      progressMs = 0;
+      lastTs = null;
+      render(mFromProgress(progressMs));
+      if (!isRunning) {
+        isRunning = true;
+      }
+      if (animationFrameId != null) cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(animate);
+      syncToggleLabel();
+    });
+
+    syncToggleLabel();
+    render(mFromProgress(progressMs));
+    animationFrameId = requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
