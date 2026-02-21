@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Logistic Regression Visualization</title>
+  <style>
+    :root {
+      --bg: #0f1226;
+      --panel: #151a36;
+      --panel-border: #27305f;
+      --text: #e6e9ff;
+      --muted: #a4aed6;
+      --accent: #ffcc4d;
+      --train: #5aa9ff;
+      --test: #7adf7a;
+      --class0: #5aa9ff;
+      --class1: #ff8f70;
+      --correct: #34d399;
+      --incorrect: #f87171;
+      --boundary: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 800px at 10% 0%, #1a2149 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 320px;
+      min-width: 280px;
+      background: linear-gradient(180deg, var(--panel) 0%, #0f132e 100%);
+      border-right: 1px solid var(--panel-border);
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .value {
+      font-size: 13px;
+      color: var(--text);
+    }
+    button {
+      margin-top: 6px;
+      background: var(--accent);
+      color: #1f1f1f;
+      border: none;
+      padding: 12px 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+    button:disabled {
+      filter: grayscale(0.7);
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); }
+    .note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .canvas-wrap {
+      width: min(1100px, 100%);
+      aspect-ratio: 16 / 10;
+      background: rgba(7, 10, 24, 0.7);
+      border: 1px solid #222a59;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .legend {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(10, 12, 28, 0.7);
+      border: 1px solid #1c2450;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: 10px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--panel-border); }
+      .main { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="title">Logistic Regression</div>
+
+    <div class="control">
+      <label for="std">Std Deviation</label>
+      <input id="std" type="range" min="0.3" max="2.8" step="0.1" value="1.0" />
+      <div class="value" id="stdVal">1.0</div>
+    </div>
+
+    <div class="control">
+      <label for="count">Total Number of Points</label>
+      <input id="count" type="range" min="40" max="400" step="10" value="200" />
+      <div class="value" id="countVal">200</div>
+    </div>
+
+    <div class="control">
+      <label for="epochs">Epoch Count</label>
+      <input id="epochs" type="range" min="20" max="800" step="10" value="200" />
+      <div class="value" id="epochsVal">200</div>
+    </div>
+
+    <button id="startBtn">Start Training</button>
+    <div class="note">Adjust sliders, then start training to watch the boundary evolve.</div>
+  </aside>
+
+  <main class="main">
+    <div class="canvas-wrap">
+      <canvas id="chart"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const stdEl = document.getElementById('std');
+  const countEl = document.getElementById('count');
+  const epochsEl = document.getElementById('epochs');
+  const stdVal = document.getElementById('stdVal');
+  const countVal = document.getElementById('countVal');
+  const epochsVal = document.getElementById('epochsVal');
+  const startBtn = document.getElementById('startBtn');
+  const legend = document.getElementById('legend');
+
+  let data = null;
+  let training = false;
+  let epoch = 0;
+  let totalEpochs = 200;
+  let weights = [0, 0];
+  let bias = 0;
+  let lr = 0.35;
+  let mean = [0, 0];
+  let std = [1, 1];
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width * devicePixelRatio);
+    canvas.height = Math.floor(rect.height * devicePixelRatio);
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+
+  function randn() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  function generateData() {
+    const count = parseInt(countEl.value, 10);
+    const s = parseFloat(stdEl.value);
+    const half = Math.floor(count / 2);
+    const centerA = [-2, -2];
+    const centerB = [2, 2];
+    const points = [];
+
+    for (let i = 0; i < half; i++) {
+      points.push({
+        x: centerA[0] + randn() * s,
+        y: centerA[1] + randn() * s,
+        label: 0
+      });
+    }
+    for (let i = 0; i < count - half; i++) {
+      points.push({
+        x: centerB[0] + randn() * s,
+        y: centerB[1] + randn() * s,
+        label: 1
+      });
+    }
+
+    for (let i = points.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [points[i], points[j]] = [points[j], points[i]];
+    }
+
+    const split = Math.floor(points.length * 0.75);
+    return {
+      train: points.slice(0, split),
+      test: points.slice(split)
+    };
+  }
+
+  function computeNormalization(train) {
+    const n = train.length;
+    let mx = 0, my = 0;
+    train.forEach(p => { mx += p.x; my += p.y; });
+    mx /= n; my /= n;
+    let vx = 0, vy = 0;
+    train.forEach(p => {
+      vx += (p.x - mx) ** 2;
+      vy += (p.y - my) ** 2;
+    });
+    vx = Math.sqrt(vx / n) || 1;
+    vy = Math.sqrt(vy / n) || 1;
+    mean = [mx, my];
+    std = [vx, vy];
+  }
+
+  function normalizePoint(p) {
+    return [(p.x - mean[0]) / std[0], (p.y - mean[1]) / std[1]];
+  }
+
+  function sigmoid(z) {
+    return 1 / (1 + Math.exp(-z));
+  }
+
+  function trainEpoch() {
+    const { train } = data;
+    let dw0 = 0, dw1 = 0, db = 0;
+    for (const p of train) {
+      const [x0, x1] = normalizePoint(p);
+      const z = weights[0] * x0 + weights[1] * x1 + bias;
+      const pred = sigmoid(z);
+      const error = pred - p.label;
+      dw0 += error * x0;
+      dw1 += error * x1;
+      db += error;
+    }
+    const n = train.length;
+    weights[0] -= lr * (dw0 / n);
+    weights[1] -= lr * (dw1 / n);
+    bias -= lr * (db / n);
+  }
+
+  function predict(p) {
+    const [x0, x1] = normalizePoint(p);
+    const z = weights[0] * x0 + weights[1] * x1 + bias;
+    return sigmoid(z) >= 0.5 ? 1 : 0;
+  }
+
+  function accuracy() {
+    const { test } = data;
+    let correct = 0;
+    for (const p of test) {
+      if (predict(p) === p.label) correct++;
+    }
+    return (correct / test.length) * 100;
+  }
+
+  function getBounds() {
+    const all = [...data.train, ...data.test];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of all) {
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.y);
+    }
+    const padX = (maxX - minX) * 0.2 + 0.5;
+    const padY = (maxY - minY) * 0.2 + 0.5;
+    return {
+      minX: minX - padX,
+      maxX: maxX + padX,
+      minY: minY - padY,
+      maxY: maxY + padY,
+    };
+  }
+
+  function toCanvas(x, y, bounds) {
+    const { minX, maxX, minY, maxY } = bounds;
+    const w = canvas.width / devicePixelRatio;
+    const h = canvas.height / devicePixelRatio;
+    const px = ((x - minX) / (maxX - minX)) * w;
+    const py = h - ((y - minY) / (maxY - minY)) * h;
+    return [px, py];
+  }
+
+  function drawBackground() {
+    const w = canvas.width / devicePixelRatio;
+    const h = canvas.height / devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, 'rgba(12,16,36,0.9)');
+    grad.addColorStop(1, 'rgba(8,12,28,0.9)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function drawTitle(text) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(230,233,255,0.92)';
+    ctx.font = '16px "Space Grotesk", sans-serif';
+    ctx.fillText(text, 16, 26);
+    ctx.restore();
+  }
+
+  function drawPoints(points, color, alpha, bounds, radius) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    for (const p of points) {
+      const [px, py] = toCanvas(p.x, p.y, bounds);
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawClassPoints(points, bounds, opts) {
+    const {
+      fillAlpha = 0.7,
+      strokeAlpha = 0,
+      radius = 4,
+      strokeWidth = 1.5
+    } = opts;
+
+    for (const p of points) {
+      const color = p.label === 0 ? cssVar('--class0') : cssVar('--class1');
+      const [px, py] = toCanvas(p.x, p.y, bounds);
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      if (fillAlpha > 0) {
+        ctx.globalAlpha = fillAlpha;
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      if (strokeAlpha > 0) {
+        ctx.globalAlpha = strokeAlpha;
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function setLegend(mode) {
+    if (!legend) return;
+    if (mode === 'preview') {
+      legend.innerHTML = `
+        <span><i class="dot" style="background: ${cssVar('--class0')}"></i>Cluster 0</span>
+        <span><i class="dot" style="background: ${cssVar('--class1')}"></i>Cluster 1</span>
+        <span><i class="dot" style="background: transparent; border: 2px solid rgba(230,233,255,0.8);"></i>Test (outlined)</span>
+      `;
+    } else {
+      legend.innerHTML = `
+        <span><i class="dot" style="background: ${cssVar('--train')}"></i>Train</span>
+        <span><i class="dot" style="background: ${cssVar('--correct')}"></i>Correct</span>
+        <span><i class="dot" style="background: ${cssVar('--incorrect')}"></i>Incorrect</span>
+      `;
+    }
+  }
+
+  function drawBoundary(bounds) {
+    const w2 = weights[1];
+    if (Math.abs(w2) < 1e-6) return;
+    const { minX, maxX } = bounds;
+    const x1 = minX;
+    const x2 = maxX;
+
+    const y1Norm = -(bias + weights[0] * ((x1 - mean[0]) / std[0])) / w2;
+    const y2Norm = -(bias + weights[0] * ((x2 - mean[0]) / std[0])) / w2;
+    const y1 = mean[1] + std[1] * y1Norm;
+    const y2 = mean[1] + std[1] * y2Norm;
+
+    const [px1, py1] = toCanvas(x1, y1, bounds);
+    const [px2, py2] = toCanvas(x2, y2, bounds);
+
+    ctx.save();
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--boundary').trim();
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(px1, py1);
+    ctx.lineTo(px2, py2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPreview() {
+    if (!data) return;
+    const bounds = getBounds();
+    drawBackground();
+    setLegend('preview');
+    drawClassPoints(data.train, bounds, { fillAlpha: 0.7, radius: 4 });
+    drawClassPoints(data.test, bounds, { fillAlpha: 0.1, strokeAlpha: 0.95, radius: 4.4, strokeWidth: 1.6 });
+    drawTitle(`Cluster STD = ${parseFloat(stdEl.value).toFixed(1)} (before training)`);
+  }
+
+  function drawTraining() {
+    const bounds = getBounds();
+    drawBackground();
+    setLegend('training');
+
+    drawPoints(data.train, cssVar('--train'), 0.25, bounds, 3.5);
+
+    const correct = [];
+    const incorrect = [];
+    for (const p of data.test) {
+      if (predict(p) === p.label) correct.push(p);
+      else incorrect.push(p);
+    }
+
+    drawPoints(correct, cssVar('--correct'), 0.95, bounds, 4.2);
+    drawPoints(incorrect, cssVar('--incorrect'), 0.95, bounds, 4.2);
+
+    drawBoundary(bounds);
+
+    const acc = accuracy().toFixed(1);
+    drawTitle(`Epoch ${epoch} / ${totalEpochs} | Accuracy: ${acc}%`);
+  }
+
+  function setValues() {
+    stdVal.textContent = parseFloat(stdEl.value).toFixed(1);
+    countVal.textContent = countEl.value;
+    epochsVal.textContent = epochsEl.value;
+  }
+
+  function resetTraining() {
+    training = false;
+    epoch = 0;
+    totalEpochs = parseInt(epochsEl.value, 10);
+    weights = [Math.random() * 0.1 - 0.05, Math.random() * 0.1 - 0.05];
+    bias = 0;
+    startBtn.disabled = false;
+  }
+
+  function regeneratePreview() {
+    data = generateData();
+    computeNormalization(data.train);
+    resetTraining();
+    drawPreview();
+  }
+
+  function animate() {
+    if (!training) return;
+    const epochsPerFrame = Math.max(1, Math.floor(totalEpochs / 200));
+    for (let i = 0; i < epochsPerFrame && epoch < totalEpochs; i++) {
+      trainEpoch();
+      epoch++;
+    }
+    drawTraining();
+
+    if (epoch >= totalEpochs) {
+      training = false;
+      startBtn.disabled = false;
+      return;
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function startTraining() {
+    if (!data || training) return;
+    resetTraining();
+    training = true;
+    startBtn.disabled = true;
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    if (training) drawTraining();
+    else drawPreview();
+  });
+
+  [stdEl, countEl, epochsEl].forEach(el => {
+    el.addEventListener('input', () => {
+      setValues();
+      regeneratePreview();
+    });
+  });
+
+  startBtn.addEventListener('click', startTraining);
+
+  setValues();
+  resizeCanvas();
+  regeneratePreview();
+})();
+</script>
+</body>
+</html>
