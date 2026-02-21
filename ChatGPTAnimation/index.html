@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatGPT Submit Animation</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="controls">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="resetBtn">Reset</button>
+      </header>
+
+      <section class="scene">
+        <div class="monitor-wrap">
+          <div class="monitor">
+            <div class="monitor-header">Chat Interface</div>
+            <div class="chat-thread" id="chatThread"></div>
+            <div class="chat-input-row">
+              <div class="chat-input" id="chatInput"></div>
+              <div class="enter-key">Enter</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-title">Token Candidates</div>
+          <table class="token-table">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="token0"></td>
+                <td><div class="bar-track"><div class="bar" id="bar0"></div></div></td>
+              </tr>
+              <tr>
+                <td id="token1"></td>
+                <td><div class="bar-track"><div class="bar" id="bar1"></div></div></td>
+              </tr>
+              <tr>
+                <td id="token2"></td>
+                <td><div class="bar-track"><div class="bar" id="bar2"></div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
