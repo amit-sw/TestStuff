@@ -292,7 +292,9 @@ function setControls() {
   stepBtn.disabled = runLocked;
   goBtn.disabled = runLocked;
   pauseBtn.disabled = !state.running || state.finished;
-  pauseBtn.textContent = state.paused ? "Resume" : "Pause";
+  pauseBtn.textContent = state.paused ? "▶️" : "⏸️";
+  pauseBtn.title = state.paused ? "Resume" : "Pause";
+  pauseBtn.setAttribute("aria-label", state.paused ? "Resume" : "Pause");
   backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
 }
 
@@ -406,7 +408,16 @@ function tokenToId(token, index) {
   return 1000 + hash + index;
 }
 
-function renderPassSequence(sequence) {
+function setPassRow(targetRow, token, index) {
+  if (!targetRow) return;
+  const wordCell = targetRow.children[0];
+  const idCell = targetRow.children[1];
+  if (!wordCell || !idCell) return;
+  wordCell.textContent = token;
+  idCell.textContent = token ? String(tokenToId(token, index)) : "";
+}
+
+function renderPassSequence(sequence, deferredIndex = -1) {
   const MIN_PASS_ROWS = 10;
   passList.innerHTML = "";
   const padded = [...sequence];
@@ -417,8 +428,9 @@ function renderPassSequence(sequence) {
     row.dataset.seqIndex = String(index);
     const wordCell = document.createElement("td");
     const idCell = document.createElement("td");
-    wordCell.textContent = token;
-    idCell.textContent = token ? String(tokenToId(token, index)) : "";
+    const shouldDefer = index === deferredIndex;
+    wordCell.textContent = shouldDefer ? "" : token;
+    idCell.textContent = shouldDefer || !token ? "" : String(tokenToId(token, index));
     row.appendChild(wordCell);
     row.appendChild(idCell);
     passList.appendChild(row);
@@ -431,7 +443,7 @@ function buildPassSequence() {
   return ["<QUESTION>", ...questionTokens, "<ANSWER>", ...answerTokens];
 }
 
-function flyChatTokenToPass(sourceEl, targetEl, tokenText) {
+function flyChatTokenToPass(sourceEl, targetEl, tokenText, onArrive) {
   if (!sourceEl || !targetEl) return;
 
   const sourceRect = sourceEl.getBoundingClientRect();
@@ -452,12 +464,13 @@ function flyChatTokenToPass(sourceEl, targetEl, tokenText) {
   setTimeout(() => {
     targetEl.classList.add("pass-hit");
     flyer.remove();
+    if (typeof onArrive === "function") onArrive();
     setTimeout(() => targetEl.classList.remove("pass-hit"), 380);
   }, 900);
 }
 
-function animateLatestAnswerTokenIntoPass(sequenceLength) {
-  if (state.replayMode || sequenceLength <= 0) return;
+function animateLatestAnswerTokenIntoPass(sequenceLength, tokenToCommit) {
+  if (state.replayMode || sequenceLength <= 0 || !tokenToCommit) return;
 
   const answerSlot = document.getElementById("answerSlot");
   if (!answerSlot) return;
@@ -469,15 +482,22 @@ function animateLatestAnswerTokenIntoPass(sequenceLength) {
   const targetCell = targetRow ? targetRow.children[0] : null;
   if (!targetCell) return;
 
-  const label = targetCell.textContent || source.textContent || "";
-  flyChatTokenToPass(source, targetCell, label);
+  const label = tokenToCommit || source.textContent || "";
+  flyChatTokenToPass(source, targetCell, label, () => {
+    setPassRow(targetRow, tokenToCommit, sequenceLength - 1);
+  });
 }
 
 function beginPass(roundIndex) {
   const sequence = buildPassSequence();
+  const latestIndex = sequence.length - 1;
+  const latestToken = sequence[latestIndex] || "";
+  const shouldAnimateLatestToken = roundIndex > 0 && !state.replayMode && !!latestToken;
   passTitle.textContent = `Pass ${roundIndex + 1}: Encoded Prompt`;
-  renderPassSequence(sequence);
-  if (roundIndex > 0) animateLatestAnswerTokenIntoPass(sequence.length);
+  renderPassSequence(sequence, shouldAnimateLatestToken ? latestIndex : -1);
+  if (shouldAnimateLatestToken) {
+    animateLatestAnswerTokenIntoPass(sequence.length, latestToken);
+  }
   clearCandidateTable();
   setPipelineStage("encoding");
 }
