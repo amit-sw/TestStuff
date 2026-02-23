@@ -126,6 +126,8 @@ const TOKEN_ROUNDS = [
 const TIMING = {
   typingMs: 55,
   postEnterPauseMs: 400,
+  passSetupMs: 280,
+  machineryMs: 240,
   cycleTickMs: 85,
   cycleTicks: 10,
   settleStaggerMs: 110,
@@ -135,7 +137,8 @@ const TIMING = {
 };
 const DISPLAY_TOP_K = 5;
 
-const startBtn = document.getElementById("startBtn");
+const stepBtn = document.getElementById("stepBtn");
+const goBtn = document.getElementById("goBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const backBtn = document.getElementById("backBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -144,6 +147,10 @@ const chatThread = document.getElementById("chatThread");
 const chatInput = document.getElementById("chatInput");
 const tableWrap = document.querySelector(".table-wrap");
 const tokenBody = document.querySelector(".token-table tbody");
+const passTitle = document.getElementById("passTitle");
+const passList = document.getElementById("passList");
+const pipelineScene = document.getElementById("pipelineScene");
+const machineryStatus = document.getElementById("machineryStatus");
 
 let tokenEls = [];
 let barEls = [];
@@ -153,6 +160,7 @@ const state = {
   running: false,
   paused: false,
   finished: false,
+  runMode: "step",
   timeoutId: null,
   fadeTimeoutId: null,
   stepIndex: 0,
@@ -230,6 +238,9 @@ function buildSteps() {
   TOKEN_ROUNDS.forEach((round, roundIndex) => {
     const visibleContenders = round.contenders.slice(0, DISPLAY_TOP_K);
 
+    builtSteps.push({ duration: TIMING.passSetupMs, action: () => beginPass(roundIndex) });
+    builtSteps.push({ duration: TIMING.machineryMs, action: startMachinery });
+
     builtSteps.push(
       ...Array.from({ length: TIMING.cycleTicks }, (_, tick) => ({
         duration: TIMING.cycleTickMs,
@@ -277,10 +288,37 @@ function clearFadeTimer() {
 }
 
 function setControls() {
-  startBtn.disabled = state.running && !state.finished;
+  const runLocked = state.running && !state.finished && !state.paused;
+  stepBtn.disabled = runLocked;
+  goBtn.disabled = runLocked;
   pauseBtn.disabled = !state.running || state.finished;
   pauseBtn.textContent = state.paused ? "Resume" : "Pause";
   backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
+}
+
+function clearCandidateTable() {
+  tokenEls.forEach((el) => {
+    el.textContent = "";
+    el.dataset.rawToken = "";
+    el.classList.remove("chosen-token");
+  });
+  barEls.forEach((bar) => {
+    bar.style.width = "0%";
+  });
+  scoreEls.forEach((el) => {
+    el.textContent = "0%";
+  });
+}
+
+function setPipelineStage(stage) {
+  if (pipelineScene) pipelineScene.dataset.stage = stage;
+  if (!machineryStatus) return;
+
+  if (stage === "encoding") machineryStatus.textContent = "Encoding Prompt";
+  else if (stage === "computing") machineryStatus.textContent = "Running Forward Pass";
+  else if (stage === "decoded") machineryStatus.textContent = "Decoded Top Candidates";
+  else if (stage === "done") machineryStatus.textContent = "Generation Complete";
+  else machineryStatus.textContent = "Idle";
 }
 
 function setRow(row, token, prob) {
@@ -295,19 +333,10 @@ function resetVisuals() {
   chatInput.textContent = "";
   chatInput.classList.remove("typing");
   tableWrap.classList.remove("fading");
-
-  tokenEls.forEach((el) => {
-    el.textContent = "";
-    el.dataset.rawToken = "";
-    el.classList.remove("chosen-token");
-  });
-
-  barEls.forEach((bar) => {
-    bar.style.width = "0%";
-  });
-  scoreEls.forEach((el) => {
-    el.textContent = "0%";
-  });
+  passTitle.textContent = "Pass Input";
+  renderPassSequence([]);
+  clearCandidateTable();
+  setPipelineStage("idle");
 
   document.querySelectorAll(".star-burst, .flying-token").forEach((el) => {
     el.remove();
@@ -338,6 +367,80 @@ function pressEnter() {
   chatInput.classList.remove("typing");
 }
 
+function tokenizeForPass(text) {
+  const normalized = text.replace(/\r\n/g, "\n");
+  const tokens = [];
+  let i = 0;
+
+  while (i < normalized.length) {
+    const ch = normalized[i];
+    if (ch === " " || ch === "\t") {
+      i += 1;
+      continue;
+    }
+    if (ch === "\n") {
+      tokens.push("\\n");
+      i += 1;
+      continue;
+    }
+
+    const wordMatch = normalized.slice(i).match(/^[A-Za-z0-9]+/);
+    if (wordMatch) {
+      tokens.push(wordMatch[0]);
+      i += wordMatch[0].length;
+      continue;
+    }
+
+    tokens.push(ch);
+    i += 1;
+  }
+
+  return tokens;
+}
+
+function tokenToId(token, index) {
+  let hash = 17;
+  for (const ch of token) {
+    hash = (hash * 31 + ch.charCodeAt(0)) % 50000;
+  }
+  return 1000 + hash + index;
+}
+
+function renderPassSequence(sequence) {
+  const MIN_PASS_ROWS = 10;
+  passList.innerHTML = "";
+  const padded = [...sequence];
+  while (padded.length < MIN_PASS_ROWS) padded.push("");
+
+  padded.forEach((token, index) => {
+    const row = document.createElement("tr");
+    const wordCell = document.createElement("td");
+    const idCell = document.createElement("td");
+    wordCell.textContent = token;
+    idCell.textContent = token ? String(tokenToId(token, index)) : "";
+    row.appendChild(wordCell);
+    row.appendChild(idCell);
+    passList.appendChild(row);
+  });
+}
+
+function buildPassSequence() {
+  const questionTokens = tokenizeForPass(PROMPT);
+  const answerTokens = tokenizeForPass(state.answerText);
+  return ["<QUESTION>", ...questionTokens, "<ANSWER>", ...answerTokens];
+}
+
+function beginPass(roundIndex) {
+  passTitle.textContent = `Pass ${roundIndex + 1}: Encoded Prompt`;
+  renderPassSequence(buildPassSequence());
+  clearCandidateTable();
+  setPipelineStage("encoding");
+}
+
+function startMachinery() {
+  setPipelineStage("computing");
+}
+
 function cycleRound(roundIndex, tick) {
   const contenders = TOKEN_ROUNDS[roundIndex].contenders.slice(0, DISPLAY_TOP_K);
   tokenEls.forEach((_, rowIndex) => {
@@ -349,21 +452,12 @@ function cycleRound(roundIndex, tick) {
 function settleRoundRow(roundIndex, rowIndex) {
   const contender = TOKEN_ROUNDS[roundIndex].contenders[rowIndex];
   setRow(rowIndex, contender.token, contender.prob);
+  if (rowIndex === 0) setPipelineStage("decoded");
 }
 
 function prepNextRound() {
   const clearProbabilityTable = () => {
-    tokenEls.forEach((el) => {
-      el.textContent = "";
-      el.dataset.rawToken = "";
-      el.classList.remove("chosen-token");
-    });
-    barEls.forEach((bar) => {
-      bar.style.width = "0%";
-    });
-    scoreEls.forEach((el) => {
-      el.textContent = "0%";
-    });
+    clearCandidateTable();
     tableWrap.classList.remove("fading");
   };
 
@@ -484,6 +578,7 @@ function showFinalStatus() {
 function finalizeAnswer() {
   hideGenerationCursor();
   showFinalStatus();
+  setPipelineStage("done");
 }
 
 function finish() {
@@ -503,7 +598,7 @@ function scheduleNextStep() {
   state.timeoutId = setTimeout(() => {
     if (!state.running || state.paused) return;
 
-    if (step.pauseAfter) {
+    if (state.runMode === "step" && step.pauseAfter) {
       state.paused = true;
       recordCheckpoint(state.stepIndex);
       clearTimer();
@@ -548,17 +643,33 @@ function jumpToCheckpoint(targetIndex) {
   setControls();
 }
 
-function start() {
-  if (state.running && !state.finished) return;
+function startWithMode(mode) {
+  if (state.running && !state.finished) {
+    if (!state.paused) return;
+    state.runMode = mode;
+    state.paused = false;
+    setControls();
+    scheduleNextStep();
+    return;
+  }
 
   if (state.finished) {
     reset();
   }
 
+  state.runMode = mode;
   state.running = true;
   state.paused = false;
   setControls();
   scheduleNextStep();
+}
+
+function startStep() {
+  startWithMode("step");
+}
+
+function startGo() {
+  startWithMode("go");
 }
 
 function togglePause() {
@@ -585,6 +696,7 @@ function reset() {
   state.running = false;
   state.paused = false;
   state.finished = false;
+  state.runMode = "step";
   state.stepIndex = 0;
   state.answerText = "";
   state.replayMode = false;
@@ -595,7 +707,8 @@ function reset() {
 }
 
 createProbabilityRows();
-startBtn.addEventListener("click", start);
+stepBtn.addEventListener("click", startStep);
+goBtn.addEventListener("click", startGo);
 pauseBtn.addEventListener("click", togglePause);
 backBtn.addEventListener("click", backOneStep);
 resetBtn.addEventListener("click", reset);

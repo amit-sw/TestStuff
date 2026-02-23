@@ -9,48 +9,94 @@
   <body>
     <main class="app">
       <header class="controls">
-        <button id="startBtn">Start</button>
+        <button id="stepBtn">Step</button>
+        <button id="goBtn">Go</button>
         <button id="pauseBtn" disabled>Pause</button>
         <button id="backBtn" disabled>Back</button>
-        <button id="resetBtn">Reset</button>
+        <button id="resetBtn">Restart</button>
       </header>
 
-      <section class="scene">
-        <div class="monitor-wrap">
-          <div class="monitor">
-            <div class="monitor-header">Chat Interface</div>
-            <div class="chat-thread" id="chatThread"></div>
-            <div class="chat-input-row">
-              <div class="chat-input" id="chatInput"></div>
-              <div class="enter-key">Enter</div>
+      <section class="scene" id="pipelineScene" data-stage="idle">
+        <div class="chat-row">
+          <div class="monitor-wrap chat-wrap">
+            <div class="monitor">
+              <div class="monitor-header">Chat Interface</div>
+              <div class="chat-thread" id="chatThread"></div>
+              <div class="chat-input-row">
+                <div class="chat-input" id="chatInput"></div>
+                <div class="enter-key">Enter</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="table-wrap">
-          <div class="table-title">Token Candidates</div>
-          <table class="token-table">
-            <thead>
-              <tr>
-                <th>Token</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td id="token0"></td>
-                <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar0"></div></div><span class="score-value" id="score0">0%</span></div></td>
-              </tr>
-              <tr>
-                <td id="token1"></td>
-                <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar1"></div></div><span class="score-value" id="score1">0%</span></div></td>
-              </tr>
-              <tr>
-                <td id="token2"></td>
-                <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar2"></div></div><span class="score-value" id="score2">0%</span></div></td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="pipeline-row">
+          <div class="pass-wrap">
+            <div class="pass-panel">
+              <div class="pass-title" id="passTitle">Pass Input</div>
+              <table class="pass-table">
+                <thead>
+                  <tr>
+                    <th>Word</th>
+                    <th>Token ID</th>
+                  </tr>
+                </thead>
+                <tbody id="passList"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="pipeline-connector" aria-hidden="true">
+            <span class="connector-line"></span>
+            <span class="connector-head">▶</span>
+          </div>
+
+          <div class="machinery-wrap">
+            <div class="machinery-title">LLM Machinery</div>
+            <div class="flow-label flow-label-in">Encoded Prompt In</div>
+            <div class="flow-arrow flow-arrow-in">====&gt;</div>
+
+            <div class="machinery-core" id="machineryCore">
+              <div class="core-layer">Embedding</div>
+              <div class="core-layer">Transformer Layers</div>
+              <div class="core-layer">Logits</div>
+            </div>
+
+            <div class="flow-arrow flow-arrow-out">====&gt;</div>
+            <div class="flow-label flow-label-out">Token Candidates Out</div>
+            <div class="machinery-status" id="machineryStatus">Idle</div>
+          </div>
+
+          <div class="pipeline-connector" aria-hidden="true">
+            <span class="connector-line"></span>
+            <span class="connector-head">▶</span>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-title">Token Candidates</div>
+            <table class="token-table">
+              <thead>
+                <tr>
+                  <th>Token</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="token0"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar0"></div></div><span class="score-value" id="score0">0%</span></div></td>
+                </tr>
+                <tr>
+                  <td id="token1"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar1"></div></div><span class="score-value" id="score1">0%</span></div></td>
+                </tr>
+                <tr>
+                  <td id="token2"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar2"></div></div><span class="score-value" id="score2">0%</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
