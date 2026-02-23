@@ -233,6 +233,20 @@ button:disabled {
   display: inline;
 }
 
+.score-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-value {
+  min-width: 2.2ch;
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .bar-track {
   width: 100%;
   height: 14px;

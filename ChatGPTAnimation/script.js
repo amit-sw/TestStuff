@@ -77,6 +77,7 @@ const TIMING = {
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
+const backBtn = document.getElementById("backBtn");
 const resetBtn = document.getElementById("resetBtn");
 
 const chatThread = document.getElementById("chatThread");
@@ -95,13 +96,23 @@ const barEls = [
   document.getElementById("bar2"),
 ];
 
+const scoreEls = [
+  document.getElementById("score0"),
+  document.getElementById("score1"),
+  document.getElementById("score2"),
+];
+
 const state = {
   running: false,
   paused: false,
   finished: false,
   timeoutId: null,
+  fadeTimeoutId: null,
   stepIndex: 0,
   answerText: "",
+  replayMode: false,
+  checkpoints: [0],
+  checkpointIndex: 0,
 };
 
 const steps = [
@@ -110,35 +121,35 @@ const steps = [
   { duration: TIMING.postEnterPauseMs, action: pressEnter },
   ...Array.from({ length: TIMING.cycleTicks }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWords(tick) })),
   ...ROUND_ONE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_ONE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_TWO_CYCLE) })),
   ...ROUND_TWO_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_TWO_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_THREE_CYCLE) })),
   ...ROUND_THREE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_THREE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_FOUR_CYCLE) })),
   ...ROUND_FOUR_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_FOUR_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_FIVE_CYCLE) })),
   ...ROUND_FIVE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_FIVE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_SIX_CYCLE) })),
   ...ROUND_SIX_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_SIX_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_SEVEN_CYCLE) })),
   ...ROUND_SEVEN_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_SEVEN_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken },
+  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
   { duration: TIMING.betweenRoundsMs, action: prepNextRound },
   ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_EIGHT_CYCLE) })),
   ...ROUND_EIGHT_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_EIGHT_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectEOS },
+  { duration: TIMING.selectTransferMs, action: selectEOS, pauseAfter: true },
   { duration: 0, action: finish },
 ];
 
@@ -149,10 +160,18 @@ function clearTimer() {
   }
 }
 
+function clearFadeTimer() {
+  if (state.fadeTimeoutId) {
+    clearTimeout(state.fadeTimeoutId);
+    state.fadeTimeoutId = null;
+  }
+}
+
 function setControls() {
   startBtn.disabled = state.running && !state.finished;
   pauseBtn.disabled = !state.running || state.finished;
   pauseBtn.textContent = state.paused ? "Resume" : "Pause";
+  backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
 }
 
 function resetVisuals() {
@@ -168,6 +187,9 @@ function resetVisuals() {
 
   barEls.forEach((bar) => {
     bar.style.width = "0%";
+  });
+  scoreEls.forEach((el) => {
+    el.textContent = "0%";
   });
 
   document.querySelectorAll(".star-burst, .flying-token").forEach((el) => {
@@ -214,17 +236,35 @@ function cycleWordsWithSource(tick, sourceWords) {
 function settleRow(row, token, widthPercent) {
   tokenEls[row].textContent = token;
   barEls[row].style.width = `${widthPercent}%`;
+  scoreEls[row].textContent = `${widthPercent}%`;
 }
 
 function prepNextRound() {
-  tableWrap.classList.remove("fading");
-  tokenEls.forEach((el) => {
-    el.textContent = "";
-    el.classList.remove("chosen-token");
-  });
-  barEls.forEach((bar) => {
-    bar.style.width = "0%";
-  });
+  const clearProbabilityTable = () => {
+    tokenEls.forEach((el) => {
+      el.textContent = "";
+      el.classList.remove("chosen-token");
+    });
+    barEls.forEach((bar) => {
+      bar.style.width = "0%";
+    });
+    scoreEls.forEach((el) => {
+      el.textContent = "0%";
+    });
+    tableWrap.classList.remove("fading");
+  };
+
+  if (state.replayMode) {
+    clearProbabilityTable();
+    return;
+  }
+
+  clearFadeTimer();
+  tableWrap.classList.add("fading");
+  state.fadeTimeoutId = setTimeout(() => {
+    clearProbabilityTable();
+    state.fadeTimeoutId = null;
+  }, 220);
 }
 
 function selectAndTransferTopToken() {
@@ -233,9 +273,10 @@ function selectAndTransferTopToken() {
   if (!source || !target) return;
   if (!source.textContent.trim()) return;
 
-  tokenEls.forEach((el) => el.classList.remove("chosen-token"));
+  tokenEls.forEach((el) => {
+    el.classList.remove("chosen-token");
+  });
   source.classList.add("chosen-token");
-  tableWrap.classList.add("fading");
   spawnStarBurst(source);
   flyTokenToTarget(source, target, source.textContent.trim());
 }
@@ -245,13 +286,14 @@ function selectEOS() {
   if (!source) return;
   tokenEls.forEach((el) => el.classList.remove("chosen-token"));
   source.classList.add("chosen-token");
-  tableWrap.classList.add("fading");
   spawnStarBurst(source);
   hideGenerationCursor();
   showFinalStatus();
 }
 
 function spawnStarBurst(source) {
+  if (state.replayMode) return;
+
   const rect = source.getBoundingClientRect();
   const burst = document.createElement("div");
   burst.className = "star-burst";
@@ -277,9 +319,20 @@ function spawnStarBurst(source) {
 }
 
 function flyTokenToTarget(source, target, tokenText) {
-  const sourceRect = source.getBoundingClientRect();
   const hasExistingText = target.textContent.trim().length > 0;
   const chunk = buildAnswerChunk(tokenText, hasExistingText);
+
+  if (state.replayMode) {
+    const tokenSpan = document.createElement("span");
+    tokenSpan.className = "answer-token";
+    tokenSpan.textContent = chunk;
+    target.appendChild(tokenSpan);
+    state.answerText = `${state.answerText}${chunk}`;
+    target.classList.add("visible");
+    return;
+  }
+
+  const sourceRect = source.getBoundingClientRect();
   const marker = document.createElement("span");
   marker.className = "landing-marker";
   marker.textContent = chunk;
@@ -339,10 +392,55 @@ function scheduleNextStep() {
   if (state.stepIndex >= steps.length) return;
 
   const step = steps[state.stepIndex];
-  step.action();
   state.stepIndex += 1;
+  step.action();
 
-  state.timeoutId = setTimeout(scheduleNextStep, step.duration);
+  state.timeoutId = setTimeout(() => {
+    if (!state.running || state.paused) return;
+
+    if (step.pauseAfter) {
+      state.paused = true;
+      recordCheckpoint(state.stepIndex);
+      clearTimer();
+      setControls();
+      return;
+    }
+
+    scheduleNextStep();
+  }, step.duration);
+}
+
+function recordCheckpoint(stepIndex) {
+  if (state.checkpoints[state.checkpoints.length - 1] !== stepIndex) {
+    state.checkpoints.push(stepIndex);
+  }
+  state.checkpointIndex = state.checkpoints.length - 1;
+}
+
+function jumpToCheckpoint(targetIndex) {
+  const targetStep = state.checkpoints[targetIndex];
+  if (typeof targetStep !== "number") return;
+
+  clearTimer();
+  clearFadeTimer();
+  state.running = true;
+  state.paused = true;
+  state.finished = false;
+  state.stepIndex = 0;
+  state.answerText = "";
+  resetVisuals();
+
+  state.replayMode = true;
+  while (state.stepIndex < targetStep && state.stepIndex < steps.length) {
+    const step = steps[state.stepIndex];
+    state.stepIndex += 1;
+    step.action();
+  }
+  state.replayMode = false;
+
+  state.checkpointIndex = targetIndex;
+  state.checkpoints = state.checkpoints.slice(0, targetIndex + 1);
+  setControls();
 }
 
 function start() {
@@ -370,19 +468,30 @@ function togglePause() {
   setControls();
 }
 
+function backOneStep() {
+  if (!state.paused || state.finished) return;
+  if (state.checkpointIndex <= 0) return;
+  jumpToCheckpoint(state.checkpointIndex - 1);
+}
+
 function reset() {
   clearTimer();
+  clearFadeTimer();
   state.running = false;
   state.paused = false;
   state.finished = false;
   state.stepIndex = 0;
   state.answerText = "";
+  state.replayMode = false;
+  state.checkpoints = [0];
+  state.checkpointIndex = 0;
   resetVisuals();
   setControls();
 }
 
 startBtn.addEventListener("click", start);
 pauseBtn.addEventListener("click", togglePause);
+backBtn.addEventListener("click", backOneStep);
 resetBtn.addEventListener("click", reset);
 
 reset();
