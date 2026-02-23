@@ -126,7 +126,7 @@ const TOKEN_ROUNDS = [
 const TIMING = {
   typingMs: 55,
   postEnterPauseMs: 400,
-  passSetupMs: 280,
+  passSetupMs: 980,
   machineryMs: 240,
   cycleTickMs: 85,
   cycleTicks: 10,
@@ -414,6 +414,7 @@ function renderPassSequence(sequence) {
 
   padded.forEach((token, index) => {
     const row = document.createElement("tr");
+    row.dataset.seqIndex = String(index);
     const wordCell = document.createElement("td");
     const idCell = document.createElement("td");
     wordCell.textContent = token;
@@ -430,9 +431,53 @@ function buildPassSequence() {
   return ["<QUESTION>", ...questionTokens, "<ANSWER>", ...answerTokens];
 }
 
+function flyChatTokenToPass(sourceEl, targetEl, tokenText) {
+  if (!sourceEl || !targetEl) return;
+
+  const sourceRect = sourceEl.getBoundingClientRect();
+  const targetRect = targetEl.getBoundingClientRect();
+  const flyer = document.createElement("div");
+  flyer.className = "flying-token";
+  flyer.textContent = tokenText;
+  flyer.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+  flyer.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.classList.add("run");
+    flyer.style.left = `${targetRect.left + targetRect.width / 2}px`;
+    flyer.style.top = `${targetRect.top + targetRect.height / 2}px`;
+  });
+
+  setTimeout(() => {
+    targetEl.classList.add("pass-hit");
+    flyer.remove();
+    setTimeout(() => targetEl.classList.remove("pass-hit"), 380);
+  }, 900);
+}
+
+function animateLatestAnswerTokenIntoPass(sequenceLength) {
+  if (state.replayMode || sequenceLength <= 0) return;
+
+  const answerSlot = document.getElementById("answerSlot");
+  if (!answerSlot) return;
+  const tokenElsInAnswer = answerSlot.querySelectorAll(".answer-token");
+  const source = tokenElsInAnswer[tokenElsInAnswer.length - 1];
+  if (!source) return;
+
+  const targetRow = passList.querySelector(`tr[data-seq-index="${sequenceLength - 1}"]`);
+  const targetCell = targetRow ? targetRow.children[0] : null;
+  if (!targetCell) return;
+
+  const label = targetCell.textContent || source.textContent || "";
+  flyChatTokenToPass(source, targetCell, label);
+}
+
 function beginPass(roundIndex) {
+  const sequence = buildPassSequence();
   passTitle.textContent = `Pass ${roundIndex + 1}: Encoded Prompt`;
-  renderPassSequence(buildPassSequence());
+  renderPassSequence(sequence);
+  if (roundIndex > 0) animateLatestAnswerTokenIntoPass(sequence.length);
   clearCandidateTable();
   setPipelineStage("encoding");
 }
