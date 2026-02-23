@@ -1,79 +1,139 @@
-const PROMPT = "What is the capital of France";
+const PROMPT = "What is the capital of France?";
 
-const CYCLE_WORDS = [
-  ["Paris", "London", "Berlin", "The", "A", "France"],
-  ["It", "An", "A", "This", "A", "France"],
-  ["city", "country", "Europe", "capital", "The", "France"],
+const TOKEN_ROUNDS = [
+  {
+    chosen: "\n\n",
+    contenders: [
+      { token: "\n\n", prob: 90.5128 },
+      { token: "\n", prob: 7.5592 },
+      { token: "The", prob: 0.7484 },
+      { token: " \n\n", prob: 0.6992 },
+      { token: " The", prob: 0.2022 },
+      { token: "\r\n\r\n", prob: 0.0926 },
+      { token: " \n", prob: 0.0796 },
+      { token: "Paris", prob: 0.0447 },
+      { token: "\n\n\n", prob: 0.0378 },
+      { token: " Paris", prob: 0.0234 },
+    ],
+  },
+  {
+    chosen: "The",
+    contenders: [
+      { token: "The", prob: 95.7863 },
+      { token: "Paris", prob: 4.1502 },
+      { token: "As", prob: 0.0447 },
+      { token: " The", prob: 0.0054 },
+      { token: "the", prob: 0.0047 },
+      { token: "Th", prob: 0.0026 },
+      { token: "\n", prob: 0.0023 },
+      { token: "T", prob: 0.0015 },
+      { token: "There", prob: 0.0013 },
+      { token: "Par", prob: 0.001 },
+    ],
+  },
+  {
+    chosen: " capital",
+    contenders: [
+      { token: " capital", prob: 99.9819 },
+      { token: " current", prob: 0.0048 },
+      { token: " ", prob: 0.0037 },
+      { token: " capita", prob: 0.0022 },
+      { token: " c", prob: 0.0017 },
+      { token: " city", prob: 0.0017 },
+      { token: " Capital", prob: 0.0011 },
+      { token: " ca", prob: 0.0011 },
+      { token: "<|endoftext|>", prob: 0.001 },
+      { token: " cap", prob: 0.0008 },
+    ],
+  },
+  {
+    chosen: " of",
+    contenders: [
+      { token: " of", prob: 99.8151 },
+      { token: " city", prob: 0.1782 },
+      { token: " and", prob: 0.0048 },
+      { token: " ", prob: 0.0012 },
+      { token: " o", prob: 0.0004 },
+      { token: " is", prob: 0.0001 },
+      { token: "<|endoftext|>", prob: 0.0001 },
+      { token: "of", prob: 0.0 },
+      { token: " City", prob: 0.0 },
+      { token: " or", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: " France",
+    contenders: [
+      { token: " France", prob: 99.9833 },
+      { token: " ", prob: 0.004 },
+      { token: " Fr", prob: 0.0032 },
+      { token: " F", prob: 0.0025 },
+      { token: " france", prob: 0.0021 },
+      { token: " Fra", prob: 0.0014 },
+      { token: " Fran", prob: 0.0011 },
+      { token: "<|endoftext|>", prob: 0.0009 },
+      { token: " Paris", prob: 0.0008 },
+      { token: " the", prob: 0.0007 },
+    ],
+  },
+  {
+    chosen: " is",
+    contenders: [
+      { token: " is", prob: 99.9986 },
+      { token: " ", prob: 0.0005 },
+      { token: " in", prob: 0.0003 },
+      { token: "<|endoftext|>", prob: 0.0002 },
+      { token: " i", prob: 0.0001 },
+      { token: ",", prob: 0.0001 },
+      { token: "is", prob: 0.0001 },
+      { token: " (", prob: 0.0 },
+      { token: " Paris", prob: 0.0 },
+      { token: "\n", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: " Paris",
+    contenders: [
+      { token: " Paris", prob: 99.9935 },
+      { token: " P", prob: 0.0042 },
+      { token: " ", prob: 0.001 },
+      { token: " Pa", prob: 0.0009 },
+      { token: "Paris", prob: 0.0003 },
+      { token: "\n", prob: 0.0001 },
+      { token: "<|endoftext|>", prob: 0.0 },
+      { token: " the", prob: 0.0 },
+      { token: " Par", prob: 0.0 },
+      { token: "\n\n", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: ".",
+    contenders: [
+      { token: ".", prob: 99.4334 },
+      { token: ".\n", prob: 0.5406 },
+      { token: "<|endoftext|>", prob: 0.0105 },
+      { token: ".\n\n", prob: 0.0078 },
+      { token: ",", prob: 0.0064 },
+      { token: " ", prob: 0.0006 },
+      { token: " .", prob: 0.0004 },
+      { token: " (", prob: 0.0002 },
+      { token: "\n", prob: 0.0001 },
+      { token: ".\r\n", prob: 0.0 },
+    ],
+  },
 ];
-
-const ROUND_ONE_TOKENS = ["The", "A", "France"];
-const ROUND_ONE_BARS = [92, 62, 40];
-
-const ROUND_TWO_CYCLE = [
-  ["capital", "city", "nation", "capital", "capital"],
-  ["city", "world", "state", "city", "world"],
-  ["world", "country", "place", "world", "world"],
-];
-const ROUND_TWO_TOKENS = ["capital", "city", "world"];
-const ROUND_TWO_BARS = [90, 64, 38];
-
-const ROUND_THREE_CYCLE = [
-  ["of", "city", "Rome", "of", "of"],
-  ["city", "Rome", "nation", "city", "Rome"],
-  ["Rome", "Paris", "Berlin", "Rome", "Rome"],
-];
-const ROUND_THREE_TOKENS = ["of", "city", "Rome"];
-const ROUND_THREE_BARS = [88, 58, 34];
-
-const ROUND_FOUR_CYCLE = [
-  ["France", "England", "computers", "France", "France"],
-  ["England", "France", "world", "England", "England"],
-  ["computers", "code", "machines", "computers", "computers"],
-];
-const ROUND_FOUR_TOKENS = ["France", "England", "computers"];
-const ROUND_FOUR_BARS = [91, 60, 31];
-
-const ROUND_FIVE_CYCLE = [
-  ["is", "was", "can", "is", "is"],
-  ["was", "is", "could", "was", "was"],
-  ["can", "will", "may", "can", "can"],
-];
-const ROUND_FIVE_TOKENS = ["is", "was", "can"];
-const ROUND_FIVE_BARS = [89, 57, 36];
-
-const ROUND_SIX_CYCLE = [
-  ["Paris", "not", "world", "Paris", "Paris"],
-  ["not", "Paris", "never", "not", "not"],
-  ["world", "city", "planet", "world", "world"],
-];
-const ROUND_SIX_TOKENS = ["Paris", "not", "world"];
-const ROUND_SIX_BARS = [93, 41, 30];
-
-const ROUND_SEVEN_CYCLE = [
-  [".", ",", " ", ".", "."],
-  [",", ".", ";", ",", ","],
-  [" ", ".", "!", " ", " "],
-];
-const ROUND_SEVEN_TOKENS = [".", ",", " "];
-const ROUND_SEVEN_BARS = [87, 44, 25];
-
-const ROUND_EIGHT_CYCLE = [
-  ["<EOS>", " but", " and", "<EOS>", "<EOS>"],
-  [" but", " and", "<EOS>", " but", " but"],
-  [" and", " but", ",", " and", " and"],
-];
-const ROUND_EIGHT_TOKENS = ["<EOS>", " but", " and"];
-const ROUND_EIGHT_BARS = [94, 27, 23];
 
 const TIMING = {
   typingMs: 55,
   postEnterPauseMs: 400,
-  cycleTickMs: 110,
-  cycleTicks: 18,
-  settleStaggerMs: 240,
+  cycleTickMs: 85,
+  cycleTicks: 10,
+  settleStaggerMs: 110,
   selectTransferMs: 1200,
   betweenRoundsMs: 520,
+  fadeClearDelayMs: 220,
 };
+const DISPLAY_TOP_K = 5;
 
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
@@ -83,24 +143,11 @@ const resetBtn = document.getElementById("resetBtn");
 const chatThread = document.getElementById("chatThread");
 const chatInput = document.getElementById("chatInput");
 const tableWrap = document.querySelector(".table-wrap");
+const tokenBody = document.querySelector(".token-table tbody");
 
-const tokenEls = [
-  document.getElementById("token0"),
-  document.getElementById("token1"),
-  document.getElementById("token2"),
-];
-
-const barEls = [
-  document.getElementById("bar0"),
-  document.getElementById("bar1"),
-  document.getElementById("bar2"),
-];
-
-const scoreEls = [
-  document.getElementById("score0"),
-  document.getElementById("score1"),
-  document.getElementById("score2"),
-];
+let tokenEls = [];
+let barEls = [];
+let scoreEls = [];
 
 const state = {
   running: false,
@@ -115,43 +162,105 @@ const state = {
   checkpointIndex: 0,
 };
 
-const steps = [
-  { duration: 0, action: initTyping },
-  ...PROMPT.split("").map((char) => ({ duration: TIMING.typingMs, action: () => typeChar(char) })),
-  { duration: TIMING.postEnterPauseMs, action: pressEnter },
-  ...Array.from({ length: TIMING.cycleTicks }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWords(tick) })),
-  ...ROUND_ONE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_ONE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_TWO_CYCLE) })),
-  ...ROUND_TWO_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_TWO_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_THREE_CYCLE) })),
-  ...ROUND_THREE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_THREE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_FOUR_CYCLE) })),
-  ...ROUND_FOUR_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_FOUR_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_FIVE_CYCLE) })),
-  ...ROUND_FIVE_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_FIVE_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_SIX_CYCLE) })),
-  ...ROUND_SIX_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_SIX_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_SEVEN_CYCLE) })),
-  ...ROUND_SEVEN_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_SEVEN_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectAndTransferTopToken, pauseAfter: true },
-  { duration: TIMING.betweenRoundsMs, action: prepNextRound },
-  ...Array.from({ length: 10 }, (_, tick) => ({ duration: TIMING.cycleTickMs, action: () => cycleWordsWithSource(tick, ROUND_EIGHT_CYCLE) })),
-  ...ROUND_EIGHT_TOKENS.map((token, row) => ({ duration: TIMING.settleStaggerMs, action: () => settleRow(row, token, ROUND_EIGHT_BARS[row]) })),
-  { duration: TIMING.selectTransferMs, action: selectEOS, pauseAfter: true },
-  { duration: 0, action: finish },
-];
+function escapeToken(value) {
+  return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+}
+
+function formatToken(value) {
+  return `'${escapeToken(value)}'`;
+}
+
+function formatProbability(prob) {
+  let text = prob.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+  if (!text.includes(".")) text = `${text}.0`;
+  return `${text}%`;
+}
+
+function createProbabilityRows() {
+  const rowCount = Math.min(DISPLAY_TOP_K, TOKEN_ROUNDS[0].contenders.length);
+  tokenBody.innerHTML = "";
+  tokenEls = [];
+  barEls = [];
+  scoreEls = [];
+
+  for (let i = 0; i < rowCount; i += 1) {
+    const row = document.createElement("tr");
+
+    const tokenCell = document.createElement("td");
+    tokenCell.id = `token${i}`;
+
+    const scoreCell = document.createElement("td");
+    const scoreWrap = document.createElement("div");
+    scoreWrap.className = "score-cell";
+
+    const barTrack = document.createElement("div");
+    barTrack.className = "bar-track";
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.id = `bar${i}`;
+
+    const score = document.createElement("span");
+    score.className = "score-value";
+    score.id = `score${i}`;
+    score.textContent = "0%";
+
+    barTrack.appendChild(bar);
+    scoreWrap.appendChild(barTrack);
+    scoreWrap.appendChild(score);
+    scoreCell.appendChild(scoreWrap);
+
+    row.appendChild(tokenCell);
+    row.appendChild(scoreCell);
+    tokenBody.appendChild(row);
+
+    tokenEls.push(tokenCell);
+    barEls.push(bar);
+    scoreEls.push(score);
+  }
+}
+
+function buildSteps() {
+  const builtSteps = [
+    { duration: 0, action: initTyping },
+    ...PROMPT.split("").map((char) => ({ duration: TIMING.typingMs, action: () => typeChar(char) })),
+    { duration: TIMING.postEnterPauseMs, action: pressEnter },
+  ];
+
+  TOKEN_ROUNDS.forEach((round, roundIndex) => {
+    const visibleContenders = round.contenders.slice(0, DISPLAY_TOP_K);
+
+    builtSteps.push(
+      ...Array.from({ length: TIMING.cycleTicks }, (_, tick) => ({
+        duration: TIMING.cycleTickMs,
+        action: () => cycleRound(roundIndex, tick),
+      }))
+    );
+
+    builtSteps.push(
+      ...visibleContenders.map((_, rowIndex) => ({
+        duration: TIMING.settleStaggerMs,
+        action: () => settleRoundRow(roundIndex, rowIndex),
+      }))
+    );
+
+    builtSteps.push({
+      duration: TIMING.selectTransferMs,
+      action: () => selectAndTransferTopToken(roundIndex),
+      pauseAfter: true,
+    });
+
+    if (roundIndex < TOKEN_ROUNDS.length - 1) {
+      builtSteps.push({ duration: TIMING.betweenRoundsMs, action: prepNextRound });
+    }
+  });
+
+  builtSteps.push({ duration: 0, action: finalizeAnswer });
+  builtSteps.push({ duration: 0, action: finish });
+  return builtSteps;
+}
+
+const steps = buildSteps();
 
 function clearTimer() {
   if (state.timeoutId) {
@@ -174,6 +283,13 @@ function setControls() {
   backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
 }
 
+function setRow(row, token, prob) {
+  tokenEls[row].textContent = formatToken(token);
+  tokenEls[row].dataset.rawToken = token;
+  barEls[row].style.width = `${prob}%`;
+  scoreEls[row].textContent = formatProbability(prob);
+}
+
 function resetVisuals() {
   chatThread.innerHTML = "";
   chatInput.textContent = "";
@@ -182,6 +298,7 @@ function resetVisuals() {
 
   tokenEls.forEach((el) => {
     el.textContent = "";
+    el.dataset.rawToken = "";
     el.classList.remove("chosen-token");
   });
 
@@ -221,28 +338,24 @@ function pressEnter() {
   chatInput.classList.remove("typing");
 }
 
-function cycleWords(tick) {
-  cycleWordsWithSource(tick, CYCLE_WORDS);
-}
-
-function cycleWordsWithSource(tick, sourceWords) {
-  tokenEls.forEach((el, row) => {
-    const words = sourceWords[row];
-    const pick = words[tick % words.length];
-    el.textContent = pick;
+function cycleRound(roundIndex, tick) {
+  const contenders = TOKEN_ROUNDS[roundIndex].contenders.slice(0, DISPLAY_TOP_K);
+  tokenEls.forEach((_, rowIndex) => {
+    const contender = contenders[(rowIndex + tick) % contenders.length];
+    setRow(rowIndex, contender.token, contender.prob);
   });
 }
 
-function settleRow(row, token, widthPercent) {
-  tokenEls[row].textContent = token;
-  barEls[row].style.width = `${widthPercent}%`;
-  scoreEls[row].textContent = `${widthPercent}%`;
+function settleRoundRow(roundIndex, rowIndex) {
+  const contender = TOKEN_ROUNDS[roundIndex].contenders[rowIndex];
+  setRow(rowIndex, contender.token, contender.prob);
 }
 
 function prepNextRound() {
   const clearProbabilityTable = () => {
     tokenEls.forEach((el) => {
       el.textContent = "";
+      el.dataset.rawToken = "";
       el.classList.remove("chosen-token");
     });
     barEls.forEach((bar) => {
@@ -264,31 +377,22 @@ function prepNextRound() {
   state.fadeTimeoutId = setTimeout(() => {
     clearProbabilityTable();
     state.fadeTimeoutId = null;
-  }, 220);
+  }, TIMING.fadeClearDelayMs);
 }
 
-function selectAndTransferTopToken() {
+function selectAndTransferTopToken(roundIndex) {
   const source = tokenEls[0];
   const target = document.getElementById("answerSlot");
   if (!source || !target) return;
-  if (!source.textContent.trim()) return;
 
   tokenEls.forEach((el) => {
     el.classList.remove("chosen-token");
   });
   source.classList.add("chosen-token");
-  spawnStarBurst(source);
-  flyTokenToTarget(source, target, source.textContent.trim());
-}
 
-function selectEOS() {
-  const source = tokenEls[0];
-  if (!source) return;
-  tokenEls.forEach((el) => el.classList.remove("chosen-token"));
-  source.classList.add("chosen-token");
+  const chosenToken = TOKEN_ROUNDS[roundIndex].chosen;
   spawnStarBurst(source);
-  hideGenerationCursor();
-  showFinalStatus();
+  flyTokenToTarget(source, target, chosenToken);
 }
 
 function spawnStarBurst(source) {
@@ -319,8 +423,7 @@ function spawnStarBurst(source) {
 }
 
 function flyTokenToTarget(source, target, tokenText) {
-  const hasExistingText = target.textContent.trim().length > 0;
-  const chunk = buildAnswerChunk(tokenText, hasExistingText);
+  const chunk = buildAnswerChunk(tokenText);
 
   if (state.replayMode) {
     const tokenSpan = document.createElement("span");
@@ -341,7 +444,7 @@ function flyTokenToTarget(source, target, tokenText) {
 
   const flyer = document.createElement("div");
   flyer.className = "flying-token";
-  flyer.textContent = tokenText;
+  flyer.textContent = formatToken(tokenText);
   flyer.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
   flyer.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
   document.body.appendChild(flyer);
@@ -364,11 +467,8 @@ function flyTokenToTarget(source, target, tokenText) {
   }, 920);
 }
 
-function buildAnswerChunk(tokenText, hasExistingText) {
-  if (!hasExistingText) return tokenText;
-  if (tokenText === ".") return ".";
-  if (tokenText === ",") return ",";
-  return ` ${tokenText}`;
+function buildAnswerChunk(tokenText) {
+  return tokenText;
 }
 
 function hideGenerationCursor() {
@@ -379,6 +479,11 @@ function hideGenerationCursor() {
 function showFinalStatus() {
   const finalStatus = document.getElementById("finalStatus");
   if (finalStatus) finalStatus.classList.add("visible");
+}
+
+function finalizeAnswer() {
+  hideGenerationCursor();
+  showFinalStatus();
 }
 
 function finish() {
@@ -489,6 +594,7 @@ function reset() {
   setControls();
 }
 
+createProbabilityRows();
 startBtn.addEventListener("click", start);
 pauseBtn.addEventListener("click", togglePause);
 backBtn.addEventListener("click", backOneStep);
