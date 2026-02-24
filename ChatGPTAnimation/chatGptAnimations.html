@@ -15,7 +15,7 @@
   --accent: #5dd4ff;
   --bar: #73a7ff;
   --bar-2: #4d7ce2;
-  --top-panel-height: 390px;
+  --top-panel-height: 320px;
 }
 
 * {
@@ -26,7 +26,6 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 20px;
   color: var(--text);
   background: radial-gradient(circle at 20% 20%, #1a2448, var(--bg) 42%),
     linear-gradient(145deg, #0a0f1f, #0f1530);
@@ -42,46 +41,6 @@ body {
   display: flex;
   gap: 10px;
   margin-bottom: 18px;
-}
-
-.controls button {
-  min-width: 54px;
-  min-height: 54px;
-  padding: 8px;
-  font-size: 1.45rem;
-  line-height: 1;
-  border-radius: 12px;
-  background: linear-gradient(160deg, #1f2f60, #17244a);
-}
-
-#stepBtn {
-  border-color: #7bc6ff;
-  background: linear-gradient(160deg, #1e4f7a, #143a5a);
-  box-shadow: 0 0 16px rgba(112, 196, 255, 0.25);
-}
-
-#goBtn {
-  border-color: #7be0ad;
-  background: linear-gradient(160deg, #1e6a48, #164d35);
-  box-shadow: 0 0 16px rgba(123, 224, 173, 0.25);
-}
-
-#pauseBtn {
-  border-color: #ffcc7a;
-  background: linear-gradient(160deg, #735420, #5a3f15);
-  box-shadow: 0 0 16px rgba(255, 201, 112, 0.25);
-}
-
-#backBtn {
-  border-color: #b799ff;
-  background: linear-gradient(160deg, #4b3b7e, #382b61);
-  box-shadow: 0 0 16px rgba(183, 153, 255, 0.25);
-}
-
-#resetBtn {
-  border-color: #ff9fa5;
-  background: linear-gradient(160deg, #7a2d3f, #611f2f);
-  box-shadow: 0 0 16px rgba(255, 159, 165, 0.25);
 }
 
 button {
@@ -160,7 +119,7 @@ button:disabled {
 }
 
 .connector-head {
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   line-height: 1;
   text-shadow: 0 0 10px rgba(124, 176, 255, 0.45);
 }
@@ -175,7 +134,7 @@ button:disabled {
 
 .machinery-title {
   color: var(--muted);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   text-align: center;
 }
 
@@ -194,7 +153,7 @@ button:disabled {
   border-radius: 8px;
   padding: 7px 8px;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   color: #d7e8ff;
   background: linear-gradient(180deg, #13204a, #101a3d);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
@@ -202,7 +161,7 @@ button:disabled {
 
 .flow-label {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -221,7 +180,7 @@ button:disabled {
   padding-top: 8px;
   text-align: center;
   color: #90a4d8;
-  font-size: 0.96rem;
+  font-size: 0.82rem;
   letter-spacing: 0.01em;
 }
 
@@ -273,7 +232,7 @@ button:disabled {
   border-bottom: 1px solid var(--line);
   padding: 10px 12px;
   color: var(--muted);
-  font-size: 1.02rem;
+  font-size: 0.9rem;
 }
 
 .chat-thread {
@@ -294,7 +253,7 @@ button:disabled {
 
 .pass-title {
   color: var(--muted);
-  font-size: 0.98rem;
+  font-size: 0.82rem;
   margin-bottom: 8px;
 }
 
@@ -309,7 +268,7 @@ button:disabled {
   border: 1px solid #23335f;
   padding: 6px 8px;
   height: 30px;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 
 .pass-table th {
@@ -374,13 +333,13 @@ button:disabled {
   border: 1px solid var(--line);
   padding: 6px 10px;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
 }
 
 .table-title {
   margin-bottom: 10px;
   color: var(--muted);
-  font-size: 1.08rem;
+  font-size: 0.95rem;
   transition: opacity 700ms ease, filter 700ms ease;
 }
 
@@ -397,7 +356,7 @@ button:disabled {
   top: 12px;
   right: 12px;
   padding: 6px 12px;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   border-radius: 8px;
   min-width: 84px;
   text-align: center;
@@ -519,7 +478,7 @@ button:disabled {
   min-width: 2.2ch;
   text-align: right;
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -557,10 +516,10 @@ button:disabled {
   inset: 0;
   background: rgba(8, 14, 30, 0.72);
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
   z-index: 100;
-  padding: 0;
+  padding: 18px;
 }
 
 .sampling-modal.hidden {
@@ -568,15 +527,13 @@ button:disabled {
 }
 
 .sampling-modal-card {
-  width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
+  width: min(1280px, 98vw);
+  max-height: 88vh;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: 14px;
   background: linear-gradient(160deg, var(--panel), var(--panel-2));
-  padding: 22px;
-  font-size: 18px;
+  padding: 14px;
 }
 
 .sampling-modal-header {
@@ -588,7 +545,7 @@ button:disabled {
 
 .sampling-modal-header h2 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1rem;
   color: var(--text);
 }
 
@@ -598,23 +555,13 @@ button:disabled {
 }
 
 .sampling-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  column-gap: 30px;
-  row-gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .sampling-section {
   margin: 0;
-}
-
-.sampling-section-narrow {
-  width: 280px;
-}
-
-.sampling-section-wide {
-  width: 430px;
 }
 
 .sampling-section-head {
@@ -628,7 +575,7 @@ button:disabled {
 .sampling-section h3 {
   margin: 0;
   color: var(--muted);
-  font-size: 1.05rem;
+  font-size: 0.85rem;
 }
 
 .sampling-controls {
@@ -639,9 +586,8 @@ button:disabled {
 
 .sampling-controls button {
   min-width: 26px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
-  font-size: 1rem;
 }
 
 .sampling-controls input {
@@ -650,9 +596,8 @@ button:disabled {
   color: var(--text);
   border: 1px solid #2b3d72;
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   text-align: center;
-  font-size: 1rem;
 }
 
 .sampling-input-row {
@@ -676,17 +621,13 @@ button:disabled {
 .sampling-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
 .sampling-table th,
 .sampling-table td {
   border: 1px solid #2b3d72;
-  padding: 7px 8px;
-  font-size: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 5px 6px;
+  font-size: 0.78rem;
 }
 
 .sampling-table th {
@@ -779,14 +720,7 @@ button:disabled {
   }
 
   .sampling-grid {
-    justify-content: stretch;
-    row-gap: 14px;
-    column-gap: 14px;
-  }
-
-  .sampling-section-narrow,
-  .sampling-section-wide {
-    width: 100%;
+    grid-template-columns: 1fr;
   }
 }
     </style>
@@ -794,11 +728,11 @@ button:disabled {
   <body>
     <main class="app">
       <header class="controls">
-        <button id="stepBtn" title="Step" aria-label="Step">⏭</button>
-        <button id="goBtn" title="Go" aria-label="Go">▶</button>
-        <button id="pauseBtn" title="Pause" aria-label="Pause" disabled>⏸</button>
-        <button id="backBtn" title="Back" aria-label="Back">⏮</button>
-        <button id="resetBtn" title="Restart" aria-label="Restart">↻</button>
+        <button id="stepBtn" title="Step" aria-label="Step">👣</button>
+        <button id="goBtn" title="Go" aria-label="Go">⏩</button>
+        <button id="pauseBtn" title="Pause" aria-label="Pause" disabled>⏸️</button>
+        <button id="backBtn" title="Back" aria-label="Back">⏪</button>
+        <button id="resetBtn" title="Restart" aria-label="Restart">🔄</button>
       </header>
 
       <section class="scene" id="pipelineScene" data-stage="idle">
@@ -897,9 +831,9 @@ button:disabled {
         </div>
 
         <div class="sampling-grid">
-          <div class="sampling-section sampling-section-narrow">
+          <div class="sampling-section">
             <div class="sampling-section-head">
-              <h3>1. Base sampling</h3>
+              <h3>1. Base Table</h3>
             </div>
             <table class="sampling-table">
               <thead><tr><th>Token</th><th>Probability</th></tr></thead>
@@ -907,9 +841,9 @@ button:disabled {
             </table>
           </div>
 
-          <div class="sampling-section sampling-section-narrow">
+          <div class="sampling-section">
             <div class="sampling-section-head">
-              <h3>2. Greedy sampling</h3>
+              <h3>2. Greedy Table</h3>
             </div>
             <table class="sampling-table">
               <thead><tr><th>Token</th><th>Probability</th></tr></thead>
@@ -917,9 +851,9 @@ button:disabled {
             </table>
           </div>
 
-          <div class="sampling-section sampling-section-wide">
+          <div class="sampling-section">
             <div class="sampling-section-head">
-              <h3>3. Temperature sampling</h3>
+              <h3>3. Temperature Table</h3>
             </div>
             <table class="sampling-table">
               <thead><tr><th>Token</th><th>T=0.5</th><th>T=1</th><th>T=2</th></tr></thead>
@@ -927,12 +861,12 @@ button:disabled {
             </table>
           </div>
 
-          <div class="sampling-section sampling-section-narrow">
+          <div class="sampling-section">
             <div class="sampling-section-head">
-              <h3>4. Top-k sampling</h3>
+              <h3>4. Top-k Table</h3>
               <div class="sampling-controls">
                 <button id="samplingKDecBtn" type="button" aria-label="Decrease k">−</button>
-                <input id="samplingKInput" type="number" min="1" max="5" value="3" />
+                <input id="samplingKInput" type="number" min="1" max="4" value="3" />
                 <button id="samplingKIncBtn" type="button" aria-label="Increase k">+</button>
               </div>
             </div>
@@ -942,9 +876,9 @@ button:disabled {
             </table>
           </div>
 
-          <div class="sampling-section sampling-section-narrow">
+          <div class="sampling-section">
             <div class="sampling-section-head">
-              <h3>5. Top-p sampling</h3>
+              <h3>5. Top-p Table</h3>
               <div class="sampling-controls">
                 <button id="samplingPDecBtn" type="button" aria-label="Decrease p">−</button>
                 <input id="samplingPInput" type="number" min="0" max="100" value="90" />
@@ -1225,7 +1159,7 @@ function renderTemperatureTable(candidates) {
 
 function renderTopKTable(candidates) {
   const parsed = Number.parseInt(samplingKInput.value, 10);
-  const k = Math.max(1, Math.min(5, Number.isFinite(parsed) ? parsed : 3));
+  const k = Math.max(1, Math.min(4, Number.isFinite(parsed) ? parsed : 3));
   samplingKInput.value = String(k);
   fillTwoColTable(samplingTopKBody, candidates.slice(0, k));
 }
@@ -1247,7 +1181,7 @@ function renderTopPTable(candidates) {
 
 function adjustTopK(delta) {
   const parsed = Number.parseInt(samplingKInput.value, 10);
-  const next = Math.max(1, Math.min(5, (Number.isFinite(parsed) ? parsed : 3) + delta));
+  const next = Math.max(1, Math.min(4, (Number.isFinite(parsed) ? parsed : 3) + delta));
   samplingKInput.value = String(next);
   renderTopKTable(getCurrentCandidates());
 }
@@ -1392,7 +1326,7 @@ function setControls() {
   stepBtn.disabled = runLocked;
   goBtn.disabled = runLocked;
   pauseBtn.disabled = !state.running || state.finished;
-  pauseBtn.textContent = state.paused ? "▶" : "⏸";
+  pauseBtn.textContent = state.paused ? "▶️" : "⏸️";
   pauseBtn.title = state.paused ? "Resume" : "Pause";
   pauseBtn.setAttribute("aria-label", state.paused ? "Resume" : "Pause");
   backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
