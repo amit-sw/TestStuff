@@ -557,10 +557,10 @@ button:disabled {
   inset: 0;
   background: rgba(8, 14, 30, 0.72);
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
   z-index: 100;
-  padding: 0;
+  padding: 10vh 10vw;
 }
 
 .sampling-modal.hidden {
@@ -568,12 +568,12 @@ button:disabled {
 }
 
 .sampling-modal-card {
-  width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: 14px;
   background: linear-gradient(160deg, var(--panel), var(--panel-2));
   padding: 22px;
   font-size: 18px;
@@ -932,7 +932,7 @@ button:disabled {
               <h3>4. Top-k sampling</h3>
               <div class="sampling-controls">
                 <button id="samplingKDecBtn" type="button" aria-label="Decrease k">−</button>
-                <input id="samplingKInput" type="number" min="1" max="5" value="3" />
+                <input id="samplingKInput" type="number" min="1" max="10" value="3" />
                 <button id="samplingKIncBtn" type="button" aria-label="Increase k">+</button>
               </div>
             </div>
@@ -1099,6 +1099,7 @@ const TIMING = {
   fadeClearDelayMs: 220,
 };
 const DISPLAY_TOP_K = 5;
+const SAMPLING_TOP_N = 10;
 
 const stepBtn = document.getElementById("stepBtn");
 const goBtn = document.getElementById("goBtn");
@@ -1146,6 +1147,7 @@ const state = {
   checkpoints: [0],
   checkpointIndex: 0,
   currentCandidates: [],
+  activeRoundIndex: -1,
 };
 
 function parsePercent(value) {
@@ -1171,6 +1173,13 @@ function getCurrentCandidates() {
   return state.currentCandidates.filter((x) => x && x.token);
 }
 
+function getSamplingCandidates() {
+  if (state.activeRoundIndex >= 0 && state.activeRoundIndex < TOKEN_ROUNDS.length) {
+    return TOKEN_ROUNDS[state.activeRoundIndex].contenders.slice(0, SAMPLING_TOP_N);
+  }
+  return getCurrentCandidates().slice(0, SAMPLING_TOP_N);
+}
+
 function setSamplingEnabled() {
   const hasData = getCurrentCandidates().length > 0;
   samplingBtn.disabled = !hasData;
@@ -1188,6 +1197,12 @@ function fillTwoColTable(bodyEl, rows) {
     tr.appendChild(probTd);
     bodyEl.appendChild(tr);
   });
+}
+
+function renormalizeRows(rows) {
+  const total = rows.reduce((sum, row) => sum + row.prob, 0);
+  if (total <= 0) return rows.map((row) => ({ ...row, prob: 0 }));
+  return rows.map((row) => ({ ...row, prob: (row.prob / total) * 100 }));
 }
 
 function softmaxAtTemp(candidates, temp) {
@@ -1225,9 +1240,10 @@ function renderTemperatureTable(candidates) {
 
 function renderTopKTable(candidates) {
   const parsed = Number.parseInt(samplingKInput.value, 10);
-  const k = Math.max(1, Math.min(5, Number.isFinite(parsed) ? parsed : 3));
+  const k = Math.max(1, Math.min(10, Number.isFinite(parsed) ? parsed : 3));
   samplingKInput.value = String(k);
-  fillTwoColTable(samplingTopKBody, candidates.slice(0, k));
+  const selected = candidates.slice(0, k);
+  fillTwoColTable(samplingTopKBody, renormalizeRows(selected));
 }
 
 function renderTopPTable(candidates) {
@@ -1242,25 +1258,25 @@ function renderTopPTable(candidates) {
     cum += row.prob;
     if (cum >= p) break;
   }
-  fillTwoColTable(samplingTopPBody, selected);
+  fillTwoColTable(samplingTopPBody, renormalizeRows(selected));
 }
 
 function adjustTopK(delta) {
   const parsed = Number.parseInt(samplingKInput.value, 10);
-  const next = Math.max(1, Math.min(5, (Number.isFinite(parsed) ? parsed : 3) + delta));
+  const next = Math.max(1, Math.min(10, (Number.isFinite(parsed) ? parsed : 3) + delta));
   samplingKInput.value = String(next);
-  renderTopKTable(getCurrentCandidates());
+  renderTopKTable(getSamplingCandidates());
 }
 
 function adjustTopP(delta) {
   const parsed = Number.parseFloat(samplingPInput.value);
   const next = Math.max(0, Math.min(100, (Number.isFinite(parsed) ? parsed : 90) + delta));
   samplingPInput.value = String(next);
-  renderTopPTable(getCurrentCandidates());
+  renderTopPTable(getSamplingCandidates());
 }
 
 function renderSamplingTables() {
-  const candidates = getCurrentCandidates();
+  const candidates = getSamplingCandidates();
   if (candidates.length === 0) return;
 
   fillTwoColTable(samplingBaseBody, candidates);
@@ -1442,6 +1458,7 @@ function resetVisuals() {
   passTitle.textContent = "Pass Input";
   renderPassSequence([]);
   clearCandidateTable();
+  state.activeRoundIndex = -1;
   closeSamplingModal();
   setPipelineStage("idle");
 
@@ -1594,6 +1611,7 @@ function animateLatestAnswerTokenIntoPass(sequenceLength, tokenToCommit) {
 }
 
 function beginPass(roundIndex) {
+  state.activeRoundIndex = roundIndex;
   const sequence = buildPassSequence();
   const latestIndex = sequence.length - 1;
   const latestToken = sequence[latestIndex] || "";
@@ -1888,10 +1906,10 @@ samplingModal.addEventListener("click", (event) => {
   if (event.target === samplingModal) closeSamplingModal();
 });
 samplingKInput.addEventListener("input", () => {
-  renderTopKTable(getCurrentCandidates());
+  renderTopKTable(getSamplingCandidates());
 });
 samplingPInput.addEventListener("input", () => {
-  renderTopPTable(getCurrentCandidates());
+  renderTopPTable(getSamplingCandidates());
 });
 samplingKDecBtn.addEventListener("click", () => adjustTopK(-1));
 samplingKIncBtn.addEventListener("click", () => adjustTopK(1));
