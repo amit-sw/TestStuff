@@ -1,247 +1,384 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schovia | Style Transfer Gym</title>
-    <style>
-      :root { --bg:#08101d; --panel:#101a2e; --panel2:#15233d; --line:#2a3f68; --text:#e8f0ff; --muted:#9db2d8; }
-      * { box-sizing: border-box; }
-      body { margin:0; background:radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d; color:var(--text); font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; }
-      .app { width:min(1120px,95vw); margin:28px auto; display:grid; gap:14px; }
-      .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-      .brand-lockup { margin-right:auto; }
-      .brand-logo { height:52px; }
-      .badge { font-size:.86rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 10px; }
-      .section { background:linear-gradient(165deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:14px; }
-      .section h2 { margin:0 0 10px; color:var(--muted); font-size:1rem; }
-      .controls { display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; align-items:end; }
-      label { display:block; color:var(--muted); font-size:.86rem; margin-bottom:6px; }
-      input, button, select { width:100%; border-radius:10px; border:1px solid #2d4d82; background:#132746; color:var(--text); padding:8px 10px; }
-      button { cursor:pointer; background:#1f5fbf; border-color:#184a95; }
-      button:disabled { opacity:.6; cursor:not-allowed; }
-      .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-      .stage { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b1529; position:relative; }
-      .stage.drop-active { border-color:#74c7ff; box-shadow:0 0 0 3px rgba(116,199,255,0.22) inset; }
-      .stage img, .stage canvas { width:100%; display:block; max-height:58vh; object-fit:contain; }
-      .drop-hint {
-        position:absolute;
-        left:10px;
-        right:10px;
-        bottom:10px;
-        border:1px dashed #4a6392;
-        border-radius:8px;
-        text-align:center;
-        padding:8px;
-        color:var(--muted);
-        background:rgba(11,21,41,.75);
-        font-size:.84rem;
-        pointer-events:none;
-      }
-      .row { display:flex; gap:10px; flex-wrap:wrap; }
-      .pill { border-radius:999px; border:1px solid var(--line); padding:3px 8px; font-size:.8rem; color:var(--muted); }
-      .hint { color:var(--muted); font-size:.88rem; }
-      video { width:100%; max-height:240px; border-radius:12px; border:1px solid var(--line); background:#0b1529; }
-      @media (max-width: 900px) { .controls, .grid { grid-template-columns:1fr; } }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-  </head>
-  <body>
-    <main class="app">
-      <div class="topbar">
-        <div class="brand-lockup"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /></div>
-        <h1>Style Transfer</h1>
-        <span class="badge">TF.js model-based combine</span>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schovia | Style Transfer Gym</title>
+  <style>
+    :root {
+      --bg:#08101d;
+      --panel:#101a2e;
+      --panel2:#15233d;
+      --line:#2a3f68;
+      --text:#e8f0ff;
+      --muted:#9db2d8;
+      --accent:#1f5fbf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .app { width:min(1160px,95vw); margin:24px auto; display:grid; gap:14px; }
+    .topbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .brand-lockup { margin-right:auto; }
+    .brand-logo { height:52px; }
+    .badge { font-size:.86rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 10px; }
+    .section { background:linear-gradient(165deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:14px; }
+    .section h2 { margin:0 0 10px; color:var(--muted); font-size:1rem; }
 
-      <section class="section">
-        <h2>Inputs</h2>
-        <div class="controls">
-          <div>
-            <label>Content Image</label>
+    .tabs { display:flex; gap:8px; margin-bottom:8px; }
+    .tab { border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--muted); font-size:.85rem; }
+    .tab.active { background:#16335f; color:#cfe2ff; border-color:#315487; }
+
+    .layout { display:grid; grid-template-columns:1fr 280px 1fr; gap:12px; align-items:center; }
+    .pane { border:1px solid var(--line); border-radius:12px; padding:10px; background:#0b1529; }
+    .pane h3 { margin:0 0 8px; font-size:.95rem; color:var(--muted); }
+
+    .preview {
+      height:280px;
+      border:1px solid #244169;
+      border-radius:10px;
+      background:#071125;
+      position:relative;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+    }
+    .preview.drop-active { border-color:#74c7ff; box-shadow:0 0 0 3px rgba(116,199,255,.22) inset; }
+    .preview img { width:100%; height:100%; object-fit:contain; display:none; }
+    .preview .placeholder {
+      color:var(--muted);
+      font-size:.92rem;
+      border:1px dashed #48689a;
+      border-radius:8px;
+      padding:8px 12px;
+      text-align:center;
+      margin:10px;
+    }
+
+    .controls { display:grid; gap:8px; margin-top:8px; }
+    .controls input[type=file] { width:100%; }
+
+    button, input[type=file] {
+      border-radius:10px;
+      border:1px solid #2d4d82;
+      background:#132746;
+      color:var(--text);
+      padding:8px 10px;
+      width:100%;
+    }
+    button { cursor:pointer; background:var(--accent); border-color:#184a95; }
+    button.secondary { background:#1b3359; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+
+    .center-actions { display:grid; gap:10px; align-content:center; }
+    .status { border:1px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--muted); text-align:center; font-size:.84rem; }
+    .bot { width:120px; margin:0 auto; display:block; }
+
+    .result-wrap { border:1px solid var(--line); border-radius:12px; background:#0b1529; padding:10px; }
+    .canvas-stage { border:1px solid #244169; border-radius:10px; background:#071125; min-height:320px; display:grid; place-items:center; position:relative; overflow:hidden; }
+    canvas { max-width:100%; max-height:60vh; display:block; }
+    .result-placeholder { color:var(--muted); }
+
+    .webcam { display:none; margin-top:10px; }
+    .webcam video { width:100%; max-height:250px; border:1px solid #244169; border-radius:10px; background:#071125; }
+    .row { display:flex; gap:8px; margin-top:8px; }
+    .hint { color:var(--muted); font-size:.88rem; margin:0; }
+
+    @media (max-width:980px) {
+      .layout { grid-template-columns:1fr; }
+      .center-actions { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="brand-lockup"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /></div>
+      <h1>Style Transfer</h1>
+      <span class="badge">Stylize</span>
+    </div>
+
+    <section class="section">
+      <div class="tabs"><span class="tab active">Stylize</span><span class="tab">Saved</span></div>
+      <h2>Can AI make Art?</h2>
+      <p class="hint">Pick a picture from the left, then a style from the right. AI applies the style to your picture.</p>
+
+      <div class="layout" style="margin-top:10px;">
+        <div class="pane">
+          <h3>My Image</h3>
+          <div class="preview" id="contentStage">
+            <img id="contentImg" alt="content" />
+            <div id="contentPlaceholder" class="placeholder">Drop content image here</div>
+          </div>
+          <div class="controls">
             <input id="contentFile" type="file" accept="image/*" />
+            <button id="cameraBtn" class="secondary" type="button">Use Webcam</button>
           </div>
-          <div>
-            <label>Style Image</label>
+          <div id="webcamBox" class="webcam">
+            <video id="video" autoplay muted playsinline></video>
+            <div class="row">
+              <button id="snapBtn" type="button">Capture</button>
+              <button id="closeCamBtn" class="secondary" type="button">Close Camera</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="center-actions">
+          <button id="combineBtn" disabled>Loading stylization model. Please wait..</button>
+          <button id="sampleBtn" class="secondary" type="button">Load Sample Pair</button>
+          <button id="downloadBtn" class="secondary" type="button" disabled>Download</button>
+          <div id="status" class="status">Initializing...</div>
+          <img class="bot" src="./assets/bot-1.png" alt="bot" />
+        </div>
+
+        <div class="pane">
+          <h3>Style</h3>
+          <div class="preview" id="styleStage">
+            <img id="styleImg" alt="style" />
+            <div id="stylePlaceholder" class="placeholder">Drop style image here</div>
+          </div>
+          <div class="controls">
             <input id="styleFile" type="file" accept="image/*" />
-          </div>
-          <div>
-            <label>Actions</label>
-            <button id="combineBtn" disabled>Loading models...</button>
+            <button id="randomStyleBtn" class="secondary" type="button">Random Style</button>
           </div>
         </div>
-        <div class="row" style="margin-top:10px;">
-          <button id="sampleBtn" type="button">Load Sample Pair</button>
-          <button id="cameraBtn" type="button">Use Webcam as Content</button>
-          <span id="status" class="pill">Initializing...</span>
-        </div>
-        <p class="hint">Uses AIClub model URLs: style + transformer graph models from pyxedapackages S3.</p>
-      </section>
+      </div>
+    </section>
 
-      <section class="section" id="cameraSection" style="display:none;">
-        <h2>Webcam</h2>
-        <video id="video" autoplay muted playsinline></video>
-        <div class="row" style="margin-top:10px;"><button id="snapBtn">Capture Content Image</button><button id="closeCamBtn">Close Camera</button></div>
-      </section>
+    <section class="section result-wrap">
+      <h2>Result</h2>
+      <div class="canvas-stage">
+        <canvas id="output"></canvas>
+        <div id="resultPlaceholder" class="result-placeholder">Combined output will appear here</div>
+      </div>
+    </section>
+  </main>
 
-      <section class="section">
-        <h2>Result</h2>
-        <div class="grid">
-          <div class="stage" id="contentStage"><img id="contentImg" alt="content" /><div id="contentHint" class="drop-hint">Drop content image here</div></div>
-          <div class="stage" id="styleStage"><img id="styleImg" alt="style" /><div id="styleHint" class="drop-hint">Drop style image here</div></div>
-          <div class="stage"><canvas id="output"></canvas></div>
-        </div>
-      </section>
-    </main>
+  <script>
+    tf.ENV.set('WEBGL_PACK', false);
 
-    <script>
-      const MODELS = {
-        style: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_style_js/model.json',
-        transform: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_transformer_js/model.json',
-      };
-      const SAMPLE_CONTENT = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=900&q=80';
-      const SAMPLE_STYLE = 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=900&q=80';
+    const MODELS = {
+      style: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_style_js/model.json',
+      transform: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_transformer_js/model.json'
+    };
 
-      const contentFile = document.getElementById('contentFile');
-      const styleFile = document.getElementById('styleFile');
-      const contentImg = document.getElementById('contentImg');
-      const styleImg = document.getElementById('styleImg');
-      const contentStage = document.getElementById('contentStage');
-      const styleStage = document.getElementById('styleStage');
-      const contentHint = document.getElementById('contentHint');
-      const styleHint = document.getElementById('styleHint');
-      const output = document.getElementById('output');
-      const combineBtn = document.getElementById('combineBtn');
-      const statusEl = document.getElementById('status');
-      const sampleBtn = document.getElementById('sampleBtn');
-      const cameraBtn = document.getElementById('cameraBtn');
-      const cameraSection = document.getElementById('cameraSection');
-      const video = document.getElementById('video');
-      const snapBtn = document.getElementById('snapBtn');
-      const closeCamBtn = document.getElementById('closeCamBtn');
+    const SAMPLE_CONTENT = [
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=80'
+    ];
+    const SAMPLE_STYLE = [
+      'https://images.unsplash.com/photo-1578301978018-3005759f48f7?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=900&q=80'
+    ];
 
-      let styleNet = null;
-      let transformNet = null;
-      let stream = null;
+    const contentFile = document.getElementById('contentFile');
+    const styleFile = document.getElementById('styleFile');
+    const contentImg = document.getElementById('contentImg');
+    const styleImg = document.getElementById('styleImg');
+    const contentStage = document.getElementById('contentStage');
+    const styleStage = document.getElementById('styleStage');
+    const contentPlaceholder = document.getElementById('contentPlaceholder');
+    const stylePlaceholder = document.getElementById('stylePlaceholder');
+    const combineBtn = document.getElementById('combineBtn');
+    const sampleBtn = document.getElementById('sampleBtn');
+    const randomStyleBtn = document.getElementById('randomStyleBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusEl = document.getElementById('status');
+    const output = document.getElementById('output');
+    const resultPlaceholder = document.getElementById('resultPlaceholder');
 
-      function setStatus(text) { statusEl.textContent = text; }
+    const webcamBox = document.getElementById('webcamBox');
+    const video = document.getElementById('video');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const snapBtn = document.getElementById('snapBtn');
+    const closeCamBtn = document.getElementById('closeCamBtn');
 
-      function updateHints() {
-        contentHint.style.display = contentImg.src ? 'none' : 'block';
-        styleHint.style.display = styleImg.src ? 'none' : 'block';
-      }
+    let styleNet = null;
+    let transformNet = null;
+    let stream = null;
+    let isBusy = false;
 
-      function readFileToImg(file, target) {
-        target.src = URL.createObjectURL(file);
-        updateHints();
-      }
+    function setStatus(text) { statusEl.textContent = text; }
 
-      async function loadModels() {
-        setStatus('Loading style model...');
-        styleNet = await tf.loadGraphModel(MODELS.style);
-        setStatus('Loading transformer model...');
-        transformNet = await tf.loadGraphModel(MODELS.transform);
-        combineBtn.disabled = false;
+    function updatePreviewState() {
+      contentImg.style.display = contentImg.src ? 'block' : 'none';
+      styleImg.style.display = styleImg.src ? 'block' : 'none';
+      contentPlaceholder.style.display = contentImg.src ? 'none' : 'block';
+      stylePlaceholder.style.display = styleImg.src ? 'none' : 'block';
+
+      const canCombine = !!styleNet && !!transformNet && !!contentImg.src && !!styleImg.src && !isBusy;
+      combineBtn.disabled = !canCombine;
+      downloadBtn.disabled = !output.width;
+    }
+
+    function showResultPlaceholder(show, text = 'Combined output will appear here') {
+      resultPlaceholder.textContent = text;
+      resultPlaceholder.style.display = show ? 'block' : 'none';
+    }
+
+    function readFileToImg(file, target) {
+      target.src = URL.createObjectURL(file);
+      target.onload = updatePreviewState;
+      updatePreviewState();
+    }
+
+    function bindDrop(stage, targetImg) {
+      ['dragenter', 'dragover'].forEach(evt => {
+        stage.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          stage.classList.add('drop-active');
+        });
+      });
+      ['dragleave', 'drop'].forEach(evt => {
+        stage.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          stage.classList.remove('drop-active');
+        });
+      });
+      stage.addEventListener('drop', (e) => {
+        const file = e.dataTransfer?.files?.[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        readFileToImg(file, targetImg);
+      });
+    }
+
+    function asTensor(imgEl) {
+      return tf.tidy(() => tf.browser.fromPixels(imgEl).toFloat().div(tf.scalar(255)).expandDims());
+    }
+
+    async function loadModels() {
+      setStatus('Loading style model...');
+      styleNet = await tf.loadGraphModel(MODELS.style);
+      setStatus('Loading transformer model...');
+      transformNet = await tf.loadGraphModel(MODELS.transform);
+      setStatus('Ready');
+      combineBtn.textContent = 'Combine';
+      updatePreviewState();
+    }
+
+    async function combine() {
+      if (!contentImg.src || !styleImg.src || !styleNet || !transformNet || isBusy) return;
+      isBusy = true;
+      combineBtn.textContent = 'Generating 100D style representation';
+      updatePreviewState();
+
+      let stylized;
+      try {
+        const styleTensor = asTensor(styleImg);
+        const contentTensor = asTensor(contentImg);
+        const bottleneck = styleNet.predict(styleTensor);
+
+        combineBtn.textContent = 'Stylizing image';
+        stylized = transformNet.predict([contentTensor, bottleneck]).squeeze();
+
+        output.width = contentImg.naturalWidth || 512;
+        output.height = contentImg.naturalHeight || 512;
+        await tf.browser.toPixels(stylized, output);
+        showResultPlaceholder(false);
+
+        tf.dispose([styleTensor, contentTensor, bottleneck]);
+        setStatus('Combined');
+      } catch (err) {
+        console.error(err);
+        setStatus('Combine failed');
+        showResultPlaceholder(true, 'Style transfer failed');
+      } finally {
+        if (stylized) stylized.dispose();
+        isBusy = false;
         combineBtn.textContent = 'Combine';
-        setStatus('Ready');
+        updatePreviewState();
       }
+    }
 
-      function asTensor(imgEl) {
-        return tf.tidy(() => tf.browser.fromPixels(imgEl).toFloat().div(255).expandDims());
-      }
-
-      async function combine() {
-        if (!contentImg.src || !styleImg.src) {
-          alert('Select both content and style images first.');
-          return;
-        }
-        if (!styleNet || !transformNet) return;
-
-        combineBtn.disabled = true;
-        combineBtn.textContent = 'Generating style bottleneck...';
-
-        let stylized;
-        try {
-          const styleTensor = asTensor(styleImg);
-          const contentTensor = asTensor(contentImg);
-          const bottleneck = styleNet.predict(styleTensor);
-
-          combineBtn.textContent = 'Stylizing image...';
-          stylized = transformNet.predict([contentTensor, bottleneck]).squeeze();
-
-          output.width = contentImg.naturalWidth || 640;
-          output.height = contentImg.naturalHeight || 480;
-          await tf.browser.toPixels(stylized, output);
-
-          tf.dispose([styleTensor, contentTensor, bottleneck]);
-          setStatus('Combined');
-        } catch (err) {
-          console.error(err);
-          setStatus('Combine failed');
-          alert('Style transfer failed.');
-        } finally {
-          if (stylized) stylized.dispose();
-          combineBtn.disabled = false;
-          combineBtn.textContent = 'Combine';
-        }
-      }
-
-      async function openCamera() {
-        cameraSection.style.display = 'block';
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    function openCamera() {
+      webcamBox.style.display = 'block';
+      return navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then((s) => {
+        stream = s;
         video.srcObject = stream;
-      }
+      });
+    }
 
-      function closeCamera() {
-        if (stream) stream.getTracks().forEach((t) => t.stop());
-        stream = null;
-        cameraSection.style.display = 'none';
-      }
+    function closeCamera() {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      stream = null;
+      webcamBox.style.display = 'none';
+    }
 
-      function snapCamera() {
-        if (!video.videoWidth) return;
-        const c = document.createElement('canvas');
-        c.width = video.videoWidth;
-        c.height = video.videoHeight;
-        c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-        contentImg.src = c.toDataURL('image/png');
-        updateHints();
-      }
+    function snapCamera() {
+      if (!video.videoWidth || !video.videoHeight) return;
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth;
+      c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+      contentImg.src = c.toDataURL('image/png');
+      contentImg.onload = updatePreviewState;
+      updatePreviewState();
+    }
 
-      function bindDrop(stage, targetImg) {
-        ['dragenter', 'dragover'].forEach((evt) => {
-          stage.addEventListener(evt, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            stage.classList.add('drop-active');
-          });
-        });
-        ['dragleave', 'drop'].forEach((evt) => {
-          stage.addEventListener(evt, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            stage.classList.remove('drop-active');
-          });
-        });
-        stage.addEventListener('drop', (e) => {
-          const file = e.dataTransfer?.files?.[0];
-          if (!file || !file.type.startsWith('image/')) return;
-          readFileToImg(file, targetImg);
-        });
-      }
+    function loadSamplePair() {
+      contentImg.crossOrigin = 'anonymous';
+      styleImg.crossOrigin = 'anonymous';
+      contentImg.src = SAMPLE_CONTENT[Math.floor(Math.random() * SAMPLE_CONTENT.length)];
+      styleImg.src = SAMPLE_STYLE[Math.floor(Math.random() * SAMPLE_STYLE.length)];
+      contentImg.onload = updatePreviewState;
+      styleImg.onload = updatePreviewState;
+      updatePreviewState();
+    }
 
-      contentFile.addEventListener('change', () => { const f = contentFile.files?.[0]; if (f) readFileToImg(f, contentImg); });
-      styleFile.addEventListener('change', () => { const f = styleFile.files?.[0]; if (f) readFileToImg(f, styleImg); });
-      combineBtn.addEventListener('click', combine);
-      sampleBtn.addEventListener('click', () => { contentImg.crossOrigin = 'anonymous'; styleImg.crossOrigin = 'anonymous'; contentImg.src = SAMPLE_CONTENT; styleImg.src = SAMPLE_STYLE; updateHints(); });
-      cameraBtn.addEventListener('click', () => openCamera().catch((e) => alert(e.message)));
-      closeCamBtn.addEventListener('click', closeCamera);
-      snapBtn.addEventListener('click', snapCamera);
-      bindDrop(contentStage, contentImg);
-      bindDrop(styleStage, styleImg);
-      updateHints();
+    function randomStyle() {
+      styleImg.crossOrigin = 'anonymous';
+      styleImg.src = SAMPLE_STYLE[Math.floor(Math.random() * SAMPLE_STYLE.length)];
+      styleImg.onload = updatePreviewState;
+      updatePreviewState();
+    }
 
-      loadModels().catch((e) => { console.error(e); setStatus('Model load failed'); combineBtn.textContent = 'Model load failed'; combineBtn.disabled = true; });
-    </script>
-  </body>
+    function downloadResult() {
+      if (!output.width) return;
+      const link = document.createElement('a');
+      link.download = 'styled-image.jpg';
+      link.href = output.toDataURL('image/jpeg', 0.95);
+      link.click();
+    }
+
+    contentFile.addEventListener('change', () => {
+      const f = contentFile.files?.[0];
+      if (f) readFileToImg(f, contentImg);
+    });
+
+    styleFile.addEventListener('change', () => {
+      const f = styleFile.files?.[0];
+      if (f) readFileToImg(f, styleImg);
+    });
+
+    bindDrop(contentStage, contentImg);
+    bindDrop(styleStage, styleImg);
+
+    cameraBtn.addEventListener('click', () => openCamera().catch((e) => alert('Could not access webcam: ' + e.message)));
+    closeCamBtn.addEventListener('click', closeCamera);
+    snapBtn.addEventListener('click', snapCamera);
+
+    combineBtn.addEventListener('click', combine);
+    sampleBtn.addEventListener('click', loadSamplePair);
+    randomStyleBtn.addEventListener('click', randomStyle);
+    downloadBtn.addEventListener('click', downloadResult);
+
+    updatePreviewState();
+    showResultPlaceholder(true);
+
+    loadModels().catch((e) => {
+      console.error(e);
+      setStatus('Model load failed');
+      combineBtn.textContent = 'Model load failed';
+      combineBtn.disabled = true;
+    });
+  </script>
+</body>
 </html>
