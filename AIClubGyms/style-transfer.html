@@ -366,7 +366,7 @@
     <section class="workspace">
       <article class="img-card">
         <div class="main-image-wrap">
-          <img id="contentImg" crossorigin="anonymous" alt="content" />
+          <img id="contentImg" alt="content" />
           <div id="contentPlaceholder" class="img-placeholder">Select or drop your image</div>
         </div>
         <div class="label-row">
@@ -378,12 +378,12 @@
       <article class="center-col">
         <div class="big-plus">+</div>
         <button id="combineBtn" class="combine-btn" disabled>Loading stylization model. Please wait..</button>
-        <img id="botImg" class="bot" src="https://my.aiclub.world/16d88db0c2e150b09c1c274488a8bc00.png" alt="bot" />
+        <img id="botImg" class="bot" src="./assets/style-transfer/bot-static.png" alt="bot" />
       </article>
 
       <article class="img-card">
         <div class="main-image-wrap">
-          <img id="styleImg" crossorigin="anonymous" alt="style" />
+          <img id="styleImg" alt="style" />
           <div id="stylePlaceholder" class="img-placeholder">Select or drop a style image</div>
         </div>
         <div class="label-row">
@@ -448,43 +448,32 @@
     };
 
     const BOT = {
-      static: 'https://my.aiclub.world/16d88db0c2e150b09c1c274488a8bc00.png',
-      anim: 'https://my.aiclub.world/8527f0716b9d55b25965c2c2c01a32a4.gif'
+      static: './assets/style-transfer/bot-static.png',
+      anim: './assets/style-transfer/bot-anim.gif'
     };
 
     const CONTENT_IMAGES = [
-      'https://my.aiclub.world/81a86fa5e8adca9a8ad1f4d6d449f1d2.jpg',
-      'https://my.aiclub.world/916912125855b83acdc3ccbf04ab9d14.jpg',
-      'https://my.aiclub.world/531565534b6f3d690f2be43ce51d83c2.jpg',
-      'https://my.aiclub.world/8262bbf4546363eee19ee4f9c5cbcf14.jpg',
-      'https://my.aiclub.world/b13b6dee513b7fb49ff620bd2e86f211.jpg',
-      'https://my.aiclub.world/8f8436b11fb248bca8c25a1ccdcbc304.jpg',
-      'https://my.aiclub.world/cf9c212a9530b65593ecbdd572b9d047.jpg',
-      'https://my.aiclub.world/74aab665bac88a09f8144dfcbc9ec75f.jpg',
-      'https://my.aiclub.world/cb83b1b397b76173e1bce696d78e1060.jpg',
-      'https://my.aiclub.world/07ba62a830d91eaefebc2052a28ffe6c.jpg',
-      'https://my.aiclub.world/f3e64788fc7a5226b79f1949413e581c.jpg'
+      './assets/style-transfer/content/img-1.jpg',
+      './assets/style-transfer/content/img-2.jpg',
+      './assets/style-transfer/content/img-3.jpg',
+      './assets/style-transfer/content/img-4.jpg',
+      './assets/style-transfer/content/img-5.jpg',
+      './assets/style-transfer/content/img-6.jpg'
     ];
 
     const STYLE_IMAGES = [
-      'https://my.aiclub.world/a35587cfdc24e867e3c1dd270d96ac17.jpg',
-      'https://my.aiclub.world/f6c02290f4dce29b8d29a50132fb3c28.jpg',
-      'https://my.aiclub.world/a13dacc5ef30092ce9872c3471cc26c7.jpg',
-      'https://my.aiclub.world/6539997a656a4f224b77f0d812b71b82.jpg',
-      'https://my.aiclub.world/2443f87f95564e401f3eab938da84a49.jpg',
-      'https://my.aiclub.world/81b933382da5318724c2b330a3f119cc.jpg',
-      'https://my.aiclub.world/99850e33f60db644dd1fbaeae44d407f.jpg',
-      'https://my.aiclub.world/60cd4da86a7ff1fd76e8e6f7cf968d97.jpg',
-      'https://my.aiclub.world/63af32f948f09d7c70ef6d9305534c05.jpg'
+      './assets/style-transfer/style/sty-1.jpg',
+      './assets/style-transfer/style/sty-2.jpg',
+      './assets/style-transfer/style/sty-3.jpg',
+      './assets/style-transfer/style/sty-4.jpg',
+      './assets/style-transfer/style/sty-5.jpg',
+      './assets/style-transfer/style/sty-6.jpg',
+      './assets/style-transfer/style/sty-7.jpg',
+      './assets/style-transfer/style/sty-8.jpg',
+      './assets/style-transfer/style/sty-9.jpg'
     ];
 
-    const RANDOM_STYLE_LINKS = [
-      'https://uploads0.wikiart.org/00108/images/alexandru-phoebus/muncitor-agricultura-1931.jpg',
-      'https://uploads0.wikiart.org/00114/images/julia-margaret-cameron/annie-1864.jpg',
-      'https://uploads0.wikiart.org/00124/images/joseph-vernet/89510-rm150891-img.jpg',
-      'https://uploads0.wikiart.org/00142/images/leonardo-da-vinci/portrait-of-an-unknown-woman-la-belle-ferroniere.jpg',
-      'https://uploads8.wikiart.org/images/wassily-kandinsky/composition-vii-1913.jpg'
-    ];
+    const RANDOM_STYLE_LINKS = STYLE_IMAGES;
 
     const contentImg = document.getElementById('contentImg');
     const styleImg = document.getElementById('styleImg');
@@ -631,7 +620,6 @@
     function setMainImage(target, src) {
       const token = String(Date.now() + Math.random());
       target.dataset.loadToken = token;
-      target.crossOrigin = 'anonymous';
       setImageStatus(target, 'loading', 'Loading image...');
       target.onerror = () => {
         if (!target.dataset.loadToken || !target.dataset.loadToken.startsWith(token)) return;
@@ -647,7 +635,6 @@
           setImageStatus(target, 'error', 'Image failed to load');
         }
       };
-      target.crossOrigin = 'anonymous';
       target.src = src;
     }
 
