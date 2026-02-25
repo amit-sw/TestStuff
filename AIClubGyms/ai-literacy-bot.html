@@ -14,6 +14,9 @@
     .brand-logo { height:44px; }
     .menu { display:flex; flex-wrap:wrap; gap:14px; color:#1a5fb6; font-weight:600; font-size:.95rem; }
     .page { width:min(1240px,96vw); margin:24px auto 34px; display:grid; grid-template-columns:170px minmax(650px,1fr) 170px; gap:14px; align-items:center; }
+    .side-left { display:grid; gap:10px; justify-items:center; align-content:center; }
+    .side-sage { width:150px; display:block; }
+    .side-demo { width:150px; display:block; }
     .side-image { width:150px; display:block; margin:auto; }
     .center { display:grid; gap:14px; }
     .hero { text-align:center; }
@@ -39,13 +42,16 @@
     .icon-btn .material-icons { font-size:21px; }
     .icon-btn.primary { background:#f1f6ff; color:#276ecd; border-color:#afd0fa; }
     .hint { color:var(--muted); font-size:.83rem; text-align:right; }
-    @media (max-width:980px) { .page { grid-template-columns:1fr; } .side-image { display:none; } }
+    @media (max-width:980px) { .page { grid-template-columns:1fr; } .side-image, .side-left { display:none; } }
   </style>
 </head>
 <body>
   <header class="topbar"><div class="topbar-inner"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /><nav class="menu" aria-label="Demo menu"><span>Home</span><span>Students</span><span>Educators</span><span>Courses</span><span>Projects</span><span>Resources</span></nav></div></header>
   <main class="page">
-    <img class="side-image" src="./assets/chatbotbob.png" alt="Bot" />
+    <div class="side-left">
+      <img class="side-sage" src="./assets/sage-bot.png" alt="Sage bot" />
+      <img class="side-demo" src="./assets/sage-watch-demo.png" alt="Watch demo" />
+    </div>
     <section class="center">
       <div class="hero"><h1>Ask Sage - AI Literacy Bot</h1><p>Ask questions from the AI Club book</p></div>
       <div class="shell">
@@ -65,7 +71,7 @@
 
   <script>
     const API = 'https://apigateway.navigator.pyxeda.ai/aiclub/gym/ask-ai-aiclub-book';
-    const BOT_IMAGE = './assets/chatbotbob.png';
+    const BOT_IMAGE = './assets/sage-bot.png';
     const USER_IMAGE = './assets/user-n3.png';
 
     const chatEl = document.getElementById('chat');
