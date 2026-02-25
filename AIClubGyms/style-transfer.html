@@ -2,382 +2,714 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Schovia | Style Transfer Gym</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:#08101d;
-      --panel:#101a2e;
-      --panel2:#15233d;
-      --line:#2a3f68;
-      --text:#e8f0ff;
-      --muted:#9db2d8;
-      --accent:#1f5fbf;
+      --bg: #f2f2f2;
+      --text: #2d2d2d;
+      --muted: #4b4b4b;
+      --brand: #2f95e8;
+      --panel: #ffffff;
+      --line: #d9d9d9;
+      --footer: #374955;
+      --schovia-red: #f3320b;
+      --schovia-blue: #2f95e8;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      background: var(--bg);
       color: var(--text);
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .app { width:min(1160px,95vw); margin:24px auto; display:grid; gap:14px; }
-    .topbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .brand-lockup { margin-right:auto; }
-    .brand-logo { height:52px; }
-    .badge { font-size:.86rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 10px; }
-    .section { background:linear-gradient(165deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:14px; }
-    .section h2 { margin:0 0 10px; color:var(--muted); font-size:1rem; }
-
-    .tabs { display:flex; gap:8px; margin-bottom:8px; }
-    .tab { border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--muted); font-size:.85rem; }
-    .tab.active { background:#16335f; color:#cfe2ff; border-color:#315487; }
-
-    .layout { display:grid; grid-template-columns:1fr 280px 1fr; gap:12px; align-items:center; }
-    .pane { border:1px solid var(--line); border-radius:12px; padding:10px; background:#0b1529; }
-    .pane h3 { margin:0 0 8px; font-size:.95rem; color:var(--muted); }
-
-    .preview {
-      height:280px;
-      border:1px solid #244169;
-      border-radius:10px;
-      background:#071125;
-      position:relative;
-      overflow:hidden;
-      display:grid;
-      place-items:center;
-    }
-    .preview.drop-active { border-color:#74c7ff; box-shadow:0 0 0 3px rgba(116,199,255,.22) inset; }
-    .preview img { width:100%; height:100%; object-fit:contain; display:none; }
-    .preview .placeholder {
-      color:var(--muted);
-      font-size:.92rem;
-      border:1px dashed #48689a;
-      border-radius:8px;
-      padding:8px 12px;
-      text-align:center;
-      margin:10px;
+      font-family: 'Montserrat', sans-serif;
     }
 
-    .controls { display:grid; gap:8px; margin-top:8px; }
-    .controls input[type=file] { width:100%; }
-
-    button, input[type=file] {
-      border-radius:10px;
-      border:1px solid #2d4d82;
-      background:#132746;
-      color:var(--text);
-      padding:8px 10px;
-      width:100%;
+    .topbar {
+      height: 96px;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
-    button { cursor:pointer; background:var(--accent); border-color:#184a95; }
-    button.secondary { background:#1b3359; }
-    button:disabled { opacity:.55; cursor:not-allowed; }
+    .topbar-inner {
+      width: min(1120px, 96vw);
+      margin: 0 auto;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .brand-logo { height: 54px; width: auto; }
+    .menu {
+      margin-left: 16px;
+      display: flex;
+      gap: 20px;
+      color: #1364b3;
+      font-size: 0.98rem;
+      font-weight: 600;
+      align-items: center;
+    }
+    .menu span { white-space: nowrap; }
 
-    .center-actions { display:grid; gap:10px; align-content:center; }
-    .status { border:1px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--muted); text-align:center; font-size:.84rem; }
-    .bot { width:120px; margin:0 auto; display:block; }
+    .page {
+      width: min(1120px, 96vw);
+      margin: 26px auto 0;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-weight: 500;
+      color: #3aa1ed;
+      font-size: 3rem;
+      letter-spacing: 0.02em;
+    }
+    .intro {
+      max-width: 960px;
+      margin: 22px auto 8px;
+      color: #3a3a3a;
+      line-height: 1.35;
+      font-size: 1.04rem;
+    }
 
-    .result-wrap { border:1px solid var(--line); border-radius:12px; background:#0b1529; padding:10px; }
-    .canvas-stage { border:1px solid #244169; border-radius:10px; background:#071125; min-height:320px; display:grid; place-items:center; position:relative; overflow:hidden; }
-    canvas { max-width:100%; max-height:60vh; display:block; }
-    .result-placeholder { color:var(--muted); }
+    .workspace {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 220px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
 
-    .webcam { display:none; margin-top:10px; }
-    .webcam video { width:100%; max-height:250px; border:1px solid #244169; border-radius:10px; background:#071125; }
-    .row { display:flex; gap:8px; margin-top:8px; }
-    .hint { color:var(--muted); font-size:.88rem; margin:0; }
+    .img-card {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+    }
+    .main-image-wrap {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 3 / 2;
+      border: 1px solid #ddd;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .main-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .label-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .label-row .label {
+      font-size: 2rem;
+      color: #444;
+      font-weight: 400;
+    }
+    .plus-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #111;
+      font-size: 2rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .plus-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    @media (max-width:980px) {
-      .layout { grid-template-columns:1fr; }
-      .center-actions { grid-template-columns:1fr 1fr; }
+    .center-col {
+      display: grid;
+      justify-items: center;
+      gap: 16px;
+      padding-top: 16px;
+    }
+    .big-plus {
+      font-size: 5rem;
+      line-height: 1;
+      color: #1f1f1f;
+      font-weight: 400;
+    }
+    .combine-btn {
+      min-width: 170px;
+      border: 0;
+      border-radius: 3px;
+      color: #fff;
+      background: #2d9bf0;
+      font-size: 1.35rem;
+      padding: 12px 16px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .combine-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 16px rgba(34, 95, 185, 0.32);
+    }
+    .combine-btn:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .bot {
+      width: 150px;
+      height: 150px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .result-area {
+      width: min(980px, 94vw);
+      margin: 18px auto 0;
+      display: none;
+      gap: 12px;
+      justify-items: center;
+    }
+    .result-canvas-wrap {
+      width: 100%;
+      background: #fff;
+      border: 1px solid #ddd;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+    }
+    #output {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    .download-btn {
+      border: 0;
+      border-radius: 3px;
+      color: #fff;
+      background: #2d9bf0;
+      font-size: 1rem;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .dialog {
+      width: min(980px, 96vw);
+      max-height: 90vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+      padding: 16px;
+      text-align: left;
+    }
+    .dialog h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .dialog-actions.dialog-actions-3 {
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+    }
+    .dlg-btn {
+      border: 0;
+      border-radius: 4px;
+      background: #2d9bf0;
+      color: #fff;
+      padding: 11px 10px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 600;
+      text-align: center;
+    }
+    .thumb-grid {
+      border: 1px solid #ddd;
+      max-height: 50vh;
+      overflow: auto;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .thumb-btn {
+      border: 2px solid transparent;
+      padding: 0;
+      border-radius: 4px;
+      background: #f7f7f7;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .thumb-btn img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb-btn:hover { border-color: #7ac2f3; }
+    .cancel-row { margin-top: 10px; text-align: right; }
+    .cancel-btn {
+      border: 1px solid #bdbdbd;
+      border-radius: 4px;
+      background: #fff;
+      color: #333;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .webcam-box {
+      display: grid;
+      gap: 10px;
+    }
+    .webcam-box video {
+      width: 100%;
+      max-height: 56vh;
+      border: 1px solid #ddd;
+      background: #111;
+      border-radius: 6px;
+    }
+    .webcam-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .footer {
+      margin-top: 26px;
+      background: var(--footer);
+      color: #e8eef2;
+      padding: 24px 0 16px;
+    }
+    .footer-inner {
+      width: min(880px, 92vw);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+    .footer h4 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+      padding-bottom: 6px;
+    }
+    .footer p { margin: 4px 0; }
+    .copyright {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.95rem;
+      color: #dce8ee;
+    }
+
+    @media (max-width: 960px) {
+      h1 { font-size: 2.2rem; }
+      .workspace { grid-template-columns: 1fr; gap: 22px; }
+      .center-col { padding-top: 0; }
+      .big-plus { font-size: 4rem; }
+      .label-row .label { font-size: 1.6rem; }
+      .footer-inner { grid-template-columns: 1fr; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 </head>
 <body>
-  <main class="app">
-    <div class="topbar">
-      <div class="brand-lockup"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /></div>
-      <h1>Style Transfer</h1>
-      <span class="badge">Stylize</span>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+      <nav class="menu" aria-label="Main menu">
+        <span>Home</span><span>About Us</span><span>Students</span><span>Educators</span><span>Courses</span><span>Projects</span><span>Resources</span>
+      </nav>
     </div>
+  </header>
 
-    <section class="section">
-      <div class="tabs"><span class="tab active">Stylize</span><span class="tab">Saved</span></div>
-      <h2>Can AI make Art?</h2>
-      <p class="hint">Pick a picture from the left, then a style from the right. AI applies the style to your picture.</p>
+  <main class="page">
+    <h1>Can AI make Art?</h1>
+    <p class="intro">Pick a picture from the left. You can choose one of the stored pictures or turn on your camera. Then choose a picture from the right for the style. The AI will add the style to your first picture!</p>
 
-      <div class="layout" style="margin-top:10px;">
-        <div class="pane">
-          <h3>My Image</h3>
-          <div class="preview" id="contentStage">
-            <img id="contentImg" alt="content" />
-            <div id="contentPlaceholder" class="placeholder">Drop content image here</div>
-          </div>
-          <div class="controls">
-            <input id="contentFile" type="file" accept="image/*" />
-            <button id="cameraBtn" class="secondary" type="button">Use Webcam</button>
-          </div>
-          <div id="webcamBox" class="webcam">
-            <video id="video" autoplay muted playsinline></video>
-            <div class="row">
-              <button id="snapBtn" type="button">Capture</button>
-              <button id="closeCamBtn" class="secondary" type="button">Close Camera</button>
-            </div>
-          </div>
+    <section class="workspace">
+      <article class="img-card">
+        <div class="main-image-wrap"><img id="contentImg" crossorigin="anonymous" alt="content" /></div>
+        <div class="label-row">
+          <span class="label">My Image</span>
+          <button id="pickContentBtn" class="plus-btn" aria-label="Pick content image">+</button>
         </div>
+      </article>
 
-        <div class="center-actions">
-          <button id="combineBtn" disabled>Loading stylization model. Please wait..</button>
-          <button id="sampleBtn" class="secondary" type="button">Load Sample Pair</button>
-          <button id="downloadBtn" class="secondary" type="button" disabled>Download</button>
-          <div id="status" class="status">Initializing...</div>
-          <img class="bot" src="./assets/bot-1.png" alt="bot" />
-        </div>
+      <article class="center-col">
+        <div class="big-plus">+</div>
+        <button id="combineBtn" class="combine-btn" disabled>Loading stylization model. Please wait..</button>
+        <img id="botImg" class="bot" src="https://my.aiclub.world/16d88db0c2e150b09c1c274488a8bc00.png" alt="bot" />
+      </article>
 
-        <div class="pane">
-          <h3>Style</h3>
-          <div class="preview" id="styleStage">
-            <img id="styleImg" alt="style" />
-            <div id="stylePlaceholder" class="placeholder">Drop style image here</div>
-          </div>
-          <div class="controls">
-            <input id="styleFile" type="file" accept="image/*" />
-            <button id="randomStyleBtn" class="secondary" type="button">Random Style</button>
-          </div>
+      <article class="img-card">
+        <div class="main-image-wrap"><img id="styleImg" crossorigin="anonymous" alt="style" /></div>
+        <div class="label-row">
+          <span class="label">Style</span>
+          <button id="pickStyleBtn" class="plus-btn" aria-label="Pick style image">+</button>
         </div>
-      </div>
+      </article>
     </section>
 
-    <section class="section result-wrap">
-      <h2>Result</h2>
-      <div class="canvas-stage">
-        <canvas id="output"></canvas>
-        <div id="resultPlaceholder" class="result-placeholder">Combined output will appear here</div>
-      </div>
+    <section id="resultArea" class="result-area">
+      <div class="result-canvas-wrap"><canvas id="output"></canvas></div>
+      <button id="downloadBtn" class="download-btn">Download</button>
     </section>
   </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <section>
+        <h4>AIClub</h4>
+        <p>Courses</p><p>Projects</p><p>How to videos</p><p>Student Project Videos</p>
+      </section>
+      <section>
+        <h4>Resources</h4>
+        <p>Webinars</p><p>K12 Resources</p><p>White Paper</p>
+      </section>
+      <section>
+        <h4>Help</h4>
+        <p>Sign up</p><p>Login</p><p>About us</p><p>Terms of service</p><p>Privacy policy</p>
+      </section>
+    </div>
+    <div class="copyright">Copyright © 2021 Pyxeda, Inc.</div>
+  </footer>
+
+  <input id="fileInput" type="file" accept="image/x-png,image/gif,image/jpeg" hidden />
+
+  <div id="galleryDialog" class="dialog-backdrop" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h3 id="galleryTitle">Select an Image</h3>
+      <div id="galleryActions" class="dialog-actions"></div>
+      <div id="thumbGrid" class="thumb-grid"></div>
+      <div class="cancel-row"><button id="galleryCancel" class="cancel-btn" type="button">CANCEL</button></div>
+    </div>
+  </div>
+
+  <div id="webcamDialog" class="dialog-backdrop" role="dialog" aria-modal="true">
+    <div class="dialog webcam-box">
+      <h3>Take a Picture</h3>
+      <video id="cameraVideo" autoplay muted playsinline></video>
+      <div class="webcam-actions">
+        <button id="webcamCancel" class="cancel-btn" type="button">CANCEL</button>
+        <button id="webcamCapture" class="dlg-btn" type="button">CAPTURE</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     tf.ENV.set('WEBGL_PACK', false);
 
     const MODELS = {
-      style: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_style_js/model.json',
-      transform: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_transformer_js/model.json'
+      model1: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_style_js/model.json',
+      model2: 'https://pyxedapackages.s3.amazonaws.com/models/saved_model_transformer_js/model.json'
     };
 
-    const SAMPLE_CONTENT = [
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=80'
-    ];
-    const SAMPLE_STYLE = [
-      'https://images.unsplash.com/photo-1578301978018-3005759f48f7?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=900&q=80'
+    const BOT = {
+      static: 'https://my.aiclub.world/16d88db0c2e150b09c1c274488a8bc00.png',
+      anim: 'https://my.aiclub.world/8527f0716b9d55b25965c2c2c01a32a4.gif'
+    };
+
+    const CONTENT_IMAGES = [
+      'https://my.aiclub.world/81a86fa5e8adca9a8ad1f4d6d449f1d2.jpg',
+      'https://my.aiclub.world/916912125855b83acdc3ccbf04ab9d14.jpg',
+      'https://my.aiclub.world/531565534b6f3d690f2be43ce51d83c2.jpg',
+      'https://my.aiclub.world/8262bbf4546363eee19ee4f9c5cbcf14.jpg',
+      'https://my.aiclub.world/b13b6dee513b7fb49ff620bd2e86f211.jpg',
+      'https://my.aiclub.world/8f8436b11fb248bca8c25a1ccdcbc304.jpg',
+      'https://my.aiclub.world/cf9c212a9530b65593ecbdd572b9d047.jpg',
+      'https://my.aiclub.world/74aab665bac88a09f8144dfcbc9ec75f.jpg',
+      'https://my.aiclub.world/cb83b1b397b76173e1bce696d78e1060.jpg',
+      'https://my.aiclub.world/07ba62a830d91eaefebc2052a28ffe6c.jpg',
+      'https://my.aiclub.world/f3e64788fc7a5226b79f1949413e581c.jpg'
     ];
 
-    const contentFile = document.getElementById('contentFile');
-    const styleFile = document.getElementById('styleFile');
+    const STYLE_IMAGES = [
+      'https://my.aiclub.world/a35587cfdc24e867e3c1dd270d96ac17.jpg',
+      'https://my.aiclub.world/f6c02290f4dce29b8d29a50132fb3c28.jpg',
+      'https://my.aiclub.world/a13dacc5ef30092ce9872c3471cc26c7.jpg',
+      'https://my.aiclub.world/6539997a656a4f224b77f0d812b71b82.jpg',
+      'https://my.aiclub.world/2443f87f95564e401f3eab938da84a49.jpg',
+      'https://my.aiclub.world/81b933382da5318724c2b330a3f119cc.jpg',
+      'https://my.aiclub.world/99850e33f60db644dd1fbaeae44d407f.jpg',
+      'https://my.aiclub.world/60cd4da86a7ff1fd76e8e6f7cf968d97.jpg',
+      'https://my.aiclub.world/63af32f948f09d7c70ef6d9305534c05.jpg'
+    ];
+
+    const RANDOM_STYLE_LINKS = [
+      'https://uploads0.wikiart.org/00108/images/alexandru-phoebus/muncitor-agricultura-1931.jpg',
+      'https://uploads0.wikiart.org/00114/images/julia-margaret-cameron/annie-1864.jpg',
+      'https://uploads0.wikiart.org/00124/images/joseph-vernet/89510-rm150891-img.jpg',
+      'https://uploads0.wikiart.org/00142/images/leonardo-da-vinci/portrait-of-an-unknown-woman-la-belle-ferroniere.jpg',
+      'https://uploads8.wikiart.org/images/wassily-kandinsky/composition-vii-1913.jpg'
+    ];
+
     const contentImg = document.getElementById('contentImg');
     const styleImg = document.getElementById('styleImg');
-    const contentStage = document.getElementById('contentStage');
-    const styleStage = document.getElementById('styleStage');
-    const contentPlaceholder = document.getElementById('contentPlaceholder');
-    const stylePlaceholder = document.getElementById('stylePlaceholder');
+    const pickContentBtn = document.getElementById('pickContentBtn');
+    const pickStyleBtn = document.getElementById('pickStyleBtn');
     const combineBtn = document.getElementById('combineBtn');
-    const sampleBtn = document.getElementById('sampleBtn');
-    const randomStyleBtn = document.getElementById('randomStyleBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const statusEl = document.getElementById('status');
-    const output = document.getElementById('output');
-    const resultPlaceholder = document.getElementById('resultPlaceholder');
+    const botImg = document.getElementById('botImg');
 
-    const webcamBox = document.getElementById('webcamBox');
-    const video = document.getElementById('video');
-    const cameraBtn = document.getElementById('cameraBtn');
-    const snapBtn = document.getElementById('snapBtn');
-    const closeCamBtn = document.getElementById('closeCamBtn');
+    const resultArea = document.getElementById('resultArea');
+    const output = document.getElementById('output');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    const fileInput = document.getElementById('fileInput');
+    const galleryDialog = document.getElementById('galleryDialog');
+    const galleryTitle = document.getElementById('galleryTitle');
+    const galleryActions = document.getElementById('galleryActions');
+    const thumbGrid = document.getElementById('thumbGrid');
+    const galleryCancel = document.getElementById('galleryCancel');
+
+    const webcamDialog = document.getElementById('webcamDialog');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const webcamCapture = document.getElementById('webcamCapture');
+    const webcamCancel = document.getElementById('webcamCancel');
 
     let styleNet = null;
     let transformNet = null;
-    let stream = null;
     let isBusy = false;
+    let currentPicker = 'content';
+    let pendingFileTarget = 'content';
+    let stream = null;
 
-    function setStatus(text) { statusEl.textContent = text; }
-
-    function updatePreviewState() {
-      contentImg.style.display = contentImg.src ? 'block' : 'none';
-      styleImg.style.display = styleImg.src ? 'block' : 'none';
-      contentPlaceholder.style.display = contentImg.src ? 'none' : 'block';
-      stylePlaceholder.style.display = styleImg.src ? 'none' : 'block';
-
-      const canCombine = !!styleNet && !!transformNet && !!contentImg.src && !!styleImg.src && !isBusy;
-      combineBtn.disabled = !canCombine;
-      downloadBtn.disabled = !output.width;
+    function setBusy(busy) {
+      isBusy = busy;
+      const idle = !busy && styleNet && transformNet;
+      pickContentBtn.disabled = !idle;
+      pickStyleBtn.disabled = !idle;
+      combineBtn.disabled = !idle;
     }
 
-    function showResultPlaceholder(show, text = 'Combined output will appear here') {
-      resultPlaceholder.textContent = text;
-      resultPlaceholder.style.display = show ? 'block' : 'none';
+    function setButtonText(text) {
+      combineBtn.textContent = text;
     }
 
-    function readFileToImg(file, target) {
-      target.src = URL.createObjectURL(file);
-      target.onload = updatePreviewState;
-      updatePreviewState();
+    function getRandomStyle() {
+      return RANDOM_STYLE_LINKS[Math.floor(Math.random() * RANDOM_STYLE_LINKS.length)];
     }
 
-    function bindDrop(stage, targetImg) {
-      ['dragenter', 'dragover'].forEach(evt => {
-        stage.addEventListener(evt, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          stage.classList.add('drop-active');
+    function openGallery(kind) {
+      if (!styleNet || !transformNet || isBusy) return;
+      currentPicker = kind;
+      galleryTitle.textContent = kind === 'style' ? 'Select an style Image' : 'Select an Image';
+
+      galleryActions.innerHTML = '';
+      if (kind === 'style') {
+        galleryActions.className = 'dialog-actions dialog-actions-3';
+        addDialogAction('RANDOM IMAGE', () => {
+          setMainImage(styleImg, getRandomStyle());
+          closeGallery();
         });
-      });
-      ['dragleave', 'drop'].forEach(evt => {
-        stage.addEventListener(evt, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          stage.classList.remove('drop-active');
+        addDialogAction('SELECT FROM FILE', () => {
+          pendingFileTarget = 'style';
+          fileInput.click();
         });
+      } else {
+        galleryActions.className = 'dialog-actions';
+        addDialogAction('TAKE A PICTURE', async () => {
+          closeGallery();
+          await openWebcam();
+        });
+        addDialogAction('SELECT FROM FILE', () => {
+          pendingFileTarget = 'content';
+          fileInput.click();
+        });
+      }
+
+      const images = kind === 'style' ? STYLE_IMAGES : CONTENT_IMAGES;
+      thumbGrid.innerHTML = '';
+      images.forEach((src) => {
+        const btn = document.createElement('button');
+        btn.className = 'thumb-btn';
+        btn.type = 'button';
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        btn.appendChild(img);
+        btn.addEventListener('click', () => {
+          setMainImage(kind === 'style' ? styleImg : contentImg, src);
+          closeGallery();
+        });
+        thumbGrid.appendChild(btn);
       });
-      stage.addEventListener('drop', (e) => {
-        const file = e.dataTransfer?.files?.[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        readFileToImg(file, targetImg);
-      });
+
+      galleryDialog.style.display = 'flex';
     }
 
-    function asTensor(imgEl) {
-      return tf.tidy(() => tf.browser.fromPixels(imgEl).toFloat().div(tf.scalar(255)).expandDims());
+    function addDialogAction(label, onClick) {
+      const btn = document.createElement('button');
+      btn.className = 'dlg-btn';
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.addEventListener('click', onClick);
+      galleryActions.appendChild(btn);
     }
 
-    async function loadModels() {
-      setStatus('Loading style model...');
-      styleNet = await tf.loadGraphModel(MODELS.style);
-      setStatus('Loading transformer model...');
-      transformNet = await tf.loadGraphModel(MODELS.transform);
-      setStatus('Ready');
-      combineBtn.textContent = 'Combine';
-      updatePreviewState();
+    function closeGallery() {
+      galleryDialog.style.display = 'none';
     }
 
-    async function combine() {
-      if (!contentImg.src || !styleImg.src || !styleNet || !transformNet || isBusy) return;
-      isBusy = true;
-      combineBtn.textContent = 'Generating 100D style representation';
-      updatePreviewState();
+    function setMainImage(target, src) {
+      target.crossOrigin = 'anonymous';
+      target.src = src;
+    }
 
-      let stylized;
+    async function openWebcam() {
       try {
-        const styleTensor = asTensor(styleImg);
-        const contentTensor = asTensor(contentImg);
-        const bottleneck = styleNet.predict(styleTensor);
-
-        combineBtn.textContent = 'Stylizing image';
-        stylized = transformNet.predict([contentTensor, bottleneck]).squeeze();
-
-        output.width = contentImg.naturalWidth || 512;
-        output.height = contentImg.naturalHeight || 512;
-        await tf.browser.toPixels(stylized, output);
-        showResultPlaceholder(false);
-
-        tf.dispose([styleTensor, contentTensor, bottleneck]);
-        setStatus('Combined');
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        cameraVideo.srcObject = stream;
+        webcamDialog.style.display = 'flex';
       } catch (err) {
-        console.error(err);
-        setStatus('Combine failed');
-        showResultPlaceholder(true, 'Style transfer failed');
-      } finally {
-        if (stylized) stylized.dispose();
-        isBusy = false;
-        combineBtn.textContent = 'Combine';
-        updatePreviewState();
+        alert('Could not access camera: ' + err.message);
       }
     }
 
-    function openCamera() {
-      webcamBox.style.display = 'block';
-      return navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then((s) => {
-        stream = s;
-        video.srcObject = stream;
-      });
+    function closeWebcam() {
+      webcamDialog.style.display = 'none';
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      cameraVideo.srcObject = null;
     }
 
-    function closeCamera() {
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      webcamBox.style.display = 'none';
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function snapCamera() {
-      if (!video.videoWidth || !video.videoHeight) return;
-      const c = document.createElement('canvas');
-      c.width = video.videoWidth;
-      c.height = video.videoHeight;
-      c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-      contentImg.src = c.toDataURL('image/png');
-      contentImg.onload = updatePreviewState;
-      updatePreviewState();
+    async function loadModels() {
+      styleNet = await tf.loadGraphModel(MODELS.model1);
+      transformNet = await tf.loadGraphModel(MODELS.model2);
+      setButtonText('Combine');
+      setBusy(false);
     }
 
-    function loadSamplePair() {
-      contentImg.crossOrigin = 'anonymous';
-      styleImg.crossOrigin = 'anonymous';
-      contentImg.src = SAMPLE_CONTENT[Math.floor(Math.random() * SAMPLE_CONTENT.length)];
-      styleImg.src = SAMPLE_STYLE[Math.floor(Math.random() * SAMPLE_STYLE.length)];
-      contentImg.onload = updatePreviewState;
-      styleImg.onload = updatePreviewState;
-      updatePreviewState();
+    async function combine() {
+      if (!styleNet || !transformNet || isBusy) return;
+      if (!contentImg.complete || !styleImg.complete) return;
+
+      setBusy(true);
+      botImg.src = BOT.anim;
+
+      let bottleneck;
+      let stylized;
+      try {
+        setButtonText('Generating 100D style representation');
+        await sleep(5);
+        await tf.nextFrame();
+        bottleneck = tf.tidy(() => {
+          return styleNet.predict(
+            tf.browser.fromPixels(styleImg).toFloat().div(tf.scalar(255)).expandDims()
+          );
+        });
+
+        setButtonText('Stylizing image...');
+        await tf.nextFrame();
+        stylized = tf.tidy(() => {
+          return transformNet.predict([
+            tf.browser.fromPixels(contentImg).toFloat().div(tf.scalar(255)).expandDims(),
+            bottleneck
+          ]).squeeze();
+        });
+
+        const [h, w] = stylized.shape;
+        output.width = w;
+        output.height = h;
+        await tf.browser.toPixels(stylized, output);
+        resultArea.style.display = 'grid';
+      } catch (err) {
+        alert('Stylization failed: ' + err.message);
+      } finally {
+        if (bottleneck) bottleneck.dispose();
+        if (stylized) stylized.dispose();
+        botImg.src = BOT.static;
+        setButtonText('Combine');
+        setBusy(false);
+      }
     }
 
-    function randomStyle() {
-      styleImg.crossOrigin = 'anonymous';
-      styleImg.src = SAMPLE_STYLE[Math.floor(Math.random() * SAMPLE_STYLE.length)];
-      styleImg.onload = updatePreviewState;
-      updatePreviewState();
-    }
-
-    function downloadResult() {
-      if (!output.width) return;
-      const link = document.createElement('a');
-      link.download = 'styled-image.jpg';
-      link.href = output.toDataURL('image/jpeg', 0.95);
-      link.click();
-    }
-
-    contentFile.addEventListener('change', () => {
-      const f = contentFile.files?.[0];
-      if (f) readFileToImg(f, contentImg);
-    });
-
-    styleFile.addEventListener('change', () => {
-      const f = styleFile.files?.[0];
-      if (f) readFileToImg(f, styleImg);
-    });
-
-    bindDrop(contentStage, contentImg);
-    bindDrop(styleStage, styleImg);
-
-    cameraBtn.addEventListener('click', () => openCamera().catch((e) => alert('Could not access webcam: ' + e.message)));
-    closeCamBtn.addEventListener('click', closeCamera);
-    snapBtn.addEventListener('click', snapCamera);
-
+    pickContentBtn.addEventListener('click', () => openGallery('content'));
+    pickStyleBtn.addEventListener('click', () => openGallery('style'));
     combineBtn.addEventListener('click', combine);
-    sampleBtn.addEventListener('click', loadSamplePair);
-    randomStyleBtn.addEventListener('click', randomStyle);
-    downloadBtn.addEventListener('click', downloadResult);
 
-    updatePreviewState();
-    showResultPlaceholder(true);
+    galleryCancel.addEventListener('click', closeGallery);
+    galleryDialog.addEventListener('click', (e) => {
+      if (e.target === galleryDialog) closeGallery();
+    });
 
-    loadModels().catch((e) => {
-      console.error(e);
-      setStatus('Model load failed');
-      combineBtn.textContent = 'Model load failed';
-      combineBtn.disabled = true;
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (pendingFileTarget === 'style') {
+          setMainImage(styleImg, String(reader.result));
+        } else {
+          setMainImage(contentImg, String(reader.result));
+        }
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+      closeGallery();
+    });
+
+    webcamCancel.addEventListener('click', closeWebcam);
+    webcamDialog.addEventListener('click', (e) => {
+      if (e.target === webcamDialog) closeWebcam();
+    });
+
+    webcamCapture.addEventListener('click', () => {
+      if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+      const c = document.createElement('canvas');
+      c.width = cameraVideo.videoWidth;
+      c.height = cameraVideo.videoHeight;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(cameraVideo, 0, 0, c.width, c.height);
+      setMainImage(contentImg, c.toDataURL('image/jpeg'));
+      closeWebcam();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!output.width || !output.height) return;
+      const a = document.createElement('a');
+      a.download = 'styled-image.jpg';
+      a.href = output.toDataURL('image/jpeg', 0.92);
+      a.click();
+    });
+
+    setMainImage(contentImg, 'https://my.aiclub.world/8262bbf4546363eee19ee4f9c5cbcf14.jpg');
+    setMainImage(styleImg, 'https://my.aiclub.world/99850e33f60db644dd1fbaeae44d407f.jpg');
+    setBusy(true);
+    loadModels().catch((err) => {
+      setButtonText('Model load failed');
+      alert('Could not load style transfer models: ' + err.message);
     });
   </script>
 </body>

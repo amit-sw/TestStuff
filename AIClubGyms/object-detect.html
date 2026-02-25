@@ -1,1 +1,263 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Schovia | Object Detect Gym</title><style>:root{--bg:#08101d;--panel:#101a2e;--panel2:#15233d;--line:#2a3f68;--text:#e8f0ff;--muted:#9db2d8}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 10%,#172a4b,var(--bg) 45%),#08101d;color:var(--text);font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif}.app{width:min(1050px,95vw);margin:28px auto;display:grid;gap:14px}.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.brand-lockup{margin-right:auto}.brand-logo{height:52px}.badge{font-size:.86rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px}.section{background:linear-gradient(165deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:14px}.controls{display:flex;gap:10px;flex-wrap:wrap}input,button{border-radius:10px;border:1px solid #2d4d82;background:#132746;color:var(--text);padding:8px 10px}button{cursor:pointer;background:#1f5fbf;border-color:#184a95}.stage{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1529}.preview,.overlay{width:100%;display:block;max-height:62vh;object-fit:contain}.overlay{position:absolute;inset:0;pointer-events:none}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border-radius:10px;border:1px solid #2d4d82;background:#132746;padding:6px 8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86rem}</style><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script></head><body><main class="app"><div class="topbar"><div class="brand-lockup"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo"/></div><h1>Can an AI recognize objects?</h1><span class="badge">Client-side COCO-SSD</span></div><section class="section"><div class="controls"><input id="file" type="file" accept="image/*"/><button id="sample">Use sample</button><button id="detect">Detect</button></div></section><section class="section"><div class="stage"><img id="img" class="preview" alt="input"/><canvas id="cv" class="overlay"></canvas></div></section><section class="section"><div id="res" class="chips"></div></section></main><script>const file=document.getElementById('file'),img=document.getElementById('img'),cv=document.getElementById('cv'),res=document.getElementById('res');let model=null;file.onchange=()=>{const f=file.files?.[0];if(f)img.src=URL.createObjectURL(f)};document.getElementById('sample').onclick=()=>{img.crossOrigin='anonymous';img.src='https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80'};async function ensure(){if(!model)model=await cocoSsd.load()}function draw(preds){cv.width=img.naturalWidth;cv.height=img.naturalHeight;const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);c.lineWidth=3;c.font='16px Segoe UI';preds.forEach(p=>{const [x,y,w,h]=p.bbox;const t=`${p.class} ${(p.score*100).toFixed(1)}%`;c.strokeStyle='#74c7ff';c.fillStyle='#74c7ff';c.strokeRect(x,y,w,h);c.fillRect(x,Math.max(0,y-24),c.measureText(t).width+10,22);c.fillStyle='#08101d';c.fillText(t,x+5,Math.max(14,y-8));});}document.getElementById('detect').onclick=async()=>{if(!img.src)return;res.innerHTML='<span class="chip">Detecting...</span>';await ensure();const preds=await model.detect(img);res.innerHTML='';if(!preds.length)res.innerHTML='<span class="chip">No objects detected</span>';preds.forEach(p=>{const s=document.createElement('span');s.className='chip';s.textContent=`${p.class} (${(p.score*100).toFixed(1)}%)`;res.appendChild(s)});draw(preds)};</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schovia | Object Detect Gym</title>
+  <style>
+    :root {
+      --bg: #08101d;
+      --panel: #101a2e;
+      --panel2: #15233d;
+      --line: #2a3f68;
+      --text: #e8f0ff;
+      --muted: #9db2d8;
+      --accent: #1f5fbf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .app { width: min(1050px, 95vw); margin: 28px auto; display: grid; gap: 14px; }
+    .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .brand-lockup { margin-right: auto; }
+    .brand-logo { height: 52px; }
+    .badge {
+      font-size: 0.86rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+    .section {
+      background: linear-gradient(165deg, var(--panel), var(--panel2));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, button {
+      border-radius: 10px;
+      border: 1px solid #2d4d82;
+      background: #132746;
+      color: var(--text);
+      padding: 8px 10px;
+    }
+    input { flex: 1 1 260px; }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      border-color: #184a95;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .stage {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0b1529;
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+    }
+    .stage.drop-active { border-color: #74c7ff; box-shadow: 0 0 0 3px rgba(116, 199, 255, 0.22) inset; }
+    .preview, .overlay {
+      width: 100%;
+      display: block;
+      max-height: 62vh;
+      object-fit: contain;
+    }
+    .preview { display: none; }
+    .overlay { position: absolute; inset: 0; pointer-events: none; }
+    .status-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 16px;
+      background: rgba(11, 21, 41, 0.35);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border-radius: 10px;
+      border: 1px solid #2d4d82;
+      background: #132746;
+      padding: 6px 8px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+      </div>
+      <h1>Can an AI recognize objects?</h1>
+      <span class="badge">Client-side COCO-SSD</span>
+    </div>
+
+    <section class="section">
+      <div class="controls">
+        <input id="file" type="file" accept="image/*" />
+        <button id="sample" type="button">Use sample</button>
+        <button id="detect" type="button" disabled>Detect</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="stage" id="stage">
+        <img id="img" class="preview" alt="input" />
+        <canvas id="cv" class="overlay"></canvas>
+        <div id="status" class="status-overlay">Upload, drop, or sample an image to start</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div id="res" class="chips"></div>
+    </section>
+  </main>
+
+  <script>
+    const file = document.getElementById('file');
+    const img = document.getElementById('img');
+    const cv = document.getElementById('cv');
+    const res = document.getElementById('res');
+    const stage = document.getElementById('stage');
+    const status = document.getElementById('status');
+    const detectBtn = document.getElementById('detect');
+
+    let model = null;
+
+    function setStatus(message) {
+      status.textContent = message;
+      status.style.display = 'grid';
+    }
+
+    function hideStatus() {
+      status.style.display = 'none';
+    }
+
+    function clearOverlay() {
+      const c = cv.getContext('2d');
+      cv.width = 1;
+      cv.height = 1;
+      c.clearRect(0, 0, 1, 1);
+    }
+
+    function setImageSource(url, crossOrigin = '') {
+      clearOverlay();
+      res.innerHTML = '';
+      detectBtn.disabled = true;
+
+      img.style.display = 'none';
+      if (crossOrigin) {
+        img.crossOrigin = crossOrigin;
+      } else {
+        img.removeAttribute('crossorigin');
+      }
+
+      setStatus('Loading image...');
+      img.onload = () => {
+        img.style.display = 'block';
+        hideStatus();
+        detectBtn.disabled = false;
+      };
+      img.onerror = () => {
+        img.style.display = 'none';
+        detectBtn.disabled = true;
+        setStatus('Could not load image');
+      };
+      img.src = url;
+    }
+
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      setImageSource(URL.createObjectURL(f));
+    });
+
+    document.getElementById('sample').addEventListener('click', () => {
+      setImageSource('https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80', 'anonymous');
+    });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      stage.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stage.classList.add('drop-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+      stage.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stage.classList.remove('drop-active');
+      });
+    });
+
+    stage.addEventListener('drop', (e) => {
+      const f = e.dataTransfer?.files?.[0];
+      if (!f || !f.type.startsWith('image/')) return;
+      setImageSource(URL.createObjectURL(f));
+    });
+
+    async function ensureModel() {
+      if (!model) model = await cocoSsd.load();
+    }
+
+    function draw(preds) {
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      const c = cv.getContext('2d');
+      c.clearRect(0, 0, cv.width, cv.height);
+      c.lineWidth = 3;
+      c.font = '16px Segoe UI';
+      preds.forEach(p => {
+        const [x, y, w, h] = p.bbox;
+        const t = `${p.class} ${(p.score * 100).toFixed(1)}%`;
+        c.strokeStyle = '#74c7ff';
+        c.fillStyle = '#74c7ff';
+        c.strokeRect(x, y, w, h);
+        c.fillRect(x, Math.max(0, y - 24), c.measureText(t).width + 10, 22);
+        c.fillStyle = '#08101d';
+        c.fillText(t, x + 5, Math.max(14, y - 8));
+      });
+    }
+
+    detectBtn.addEventListener('click', async () => {
+      if (!img.src || !img.complete || img.naturalWidth === 0) return;
+
+      res.innerHTML = '<span class="chip">Detecting...</span>';
+      setStatus('Detecting objects...');
+      try {
+        await ensureModel();
+        const preds = await model.detect(img);
+        res.innerHTML = '';
+        if (!preds.length) res.innerHTML = '<span class="chip">No objects detected</span>';
+        preds.forEach(p => {
+          const s = document.createElement('span');
+          s.className = 'chip';
+          s.textContent = `${p.class} (${(p.score * 100).toFixed(1)}%)`;
+          res.appendChild(s);
+        });
+        draw(preds);
+      } catch (err) {
+        res.innerHTML = `<span class="chip">Error: ${err.message}</span>`;
+      }
+      hideStatus();
+    });
+  </script>
+</body>
+</html>
