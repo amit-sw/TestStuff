@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TestStuff | Directory Index</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #52607a;
+      --line: #d9e0ee;
+      --link: #1f6feb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(900px, 94vw);
+      margin: 36px auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+    .lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+    }
+    .card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    a {
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover { text-decoration: underline; }
+    .links { display: grid; gap: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TestStuff</h1>
+    <p class="lead">This root index links to the two available subdirectories and their primary entry points.</p>
+
+    <section class="grid">
+      <article class="card">
+        <h2>AIClubGyms</h2>
+        <p>Collection of AI demo/gym apps (bots, clustering, fit-lines, object detection, style transfer, toonify, and related interactive pages).</p>
+        <div class="links">
+          <a href="./AIClubGyms/">Open folder</a>
+          <a href="./AIClubGyms/index.html">Open AIClubGyms index</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>ChatGPTAnimation</h2>
+        <p>Animation and tokenizer demo pages, including ChatGPT animation examples and the tokenizer demo used as a reference style.</p>
+        <div class="links">
+          <a href="./ChatGPTAnimation/">Open folder</a>
+          <a href="./ChatGPTAnimation/index.html">Open ChatGPTAnimation index</a>
+          <a href="./ChatGPTAnimation/tokenizerDemo.html">Open tokenizer demo</a>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

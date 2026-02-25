@@ -96,11 +96,22 @@
       place-items: center;
       overflow: hidden;
     }
+    .main-image-wrap.drop-active {
+      border-color: #67b3f5;
+      box-shadow: 0 0 0 3px rgba(47, 149, 232, 0.18) inset;
+      background: #f7fbff;
+    }
     .main-image-wrap img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
+      display: none;
+    }
+    .img-placeholder {
+      color: #6a6a6a;
+      font-size: 0.98rem;
+      padding: 10px;
+      text-align: center;
     }
     .label-row {
       display: inline-flex;
@@ -354,7 +365,10 @@
 
     <section class="workspace">
       <article class="img-card">
-        <div class="main-image-wrap"><img id="contentImg" crossorigin="anonymous" alt="content" /></div>
+        <div class="main-image-wrap">
+          <img id="contentImg" crossorigin="anonymous" alt="content" />
+          <div id="contentPlaceholder" class="img-placeholder">Select or drop your image</div>
+        </div>
         <div class="label-row">
           <span class="label">My Image</span>
           <button id="pickContentBtn" class="plus-btn" aria-label="Pick content image">+</button>
@@ -368,7 +382,10 @@
       </article>
 
       <article class="img-card">
-        <div class="main-image-wrap"><img id="styleImg" crossorigin="anonymous" alt="style" /></div>
+        <div class="main-image-wrap">
+          <img id="styleImg" crossorigin="anonymous" alt="style" />
+          <div id="stylePlaceholder" class="img-placeholder">Select or drop a style image</div>
+        </div>
         <div class="label-row">
           <span class="label">Style</span>
           <button id="pickStyleBtn" class="plus-btn" aria-label="Pick style image">+</button>
@@ -471,6 +488,10 @@
 
     const contentImg = document.getElementById('contentImg');
     const styleImg = document.getElementById('styleImg');
+    const contentWrap = contentImg.closest('.main-image-wrap');
+    const styleWrap = styleImg.closest('.main-image-wrap');
+    const contentPlaceholder = document.getElementById('contentPlaceholder');
+    const stylePlaceholder = document.getElementById('stylePlaceholder');
     const pickContentBtn = document.getElementById('pickContentBtn');
     const pickStyleBtn = document.getElementById('pickStyleBtn');
     const combineBtn = document.getElementById('combineBtn');
@@ -495,16 +516,23 @@
     let styleNet = null;
     let transformNet = null;
     let isBusy = false;
+    let modelsReady = false;
+    let contentReady = false;
+    let styleReady = false;
     let currentPicker = 'content';
     let pendingFileTarget = 'content';
     let stream = null;
 
+    function updateActionState() {
+      const canPick = modelsReady && !isBusy;
+      pickContentBtn.disabled = !canPick;
+      pickStyleBtn.disabled = !canPick;
+      combineBtn.disabled = !(canPick && contentReady && styleReady);
+    }
+
     function setBusy(busy) {
       isBusy = busy;
-      const idle = !busy && styleNet && transformNet;
-      pickContentBtn.disabled = !idle;
-      pickStyleBtn.disabled = !idle;
-      combineBtn.disabled = !idle;
+      updateActionState();
     }
 
     function setButtonText(text) {
@@ -576,9 +604,57 @@
       galleryDialog.style.display = 'none';
     }
 
+    function setImageStatus(target, state, message) {
+      const isContent = target === contentImg;
+      const placeholder = isContent ? contentPlaceholder : stylePlaceholder;
+      if (state === 'loading') {
+        placeholder.textContent = message || 'Loading image...';
+        placeholder.style.display = 'block';
+        target.style.display = 'none';
+        if (isContent) contentReady = false;
+        else styleReady = false;
+      } else if (state === 'ready') {
+        placeholder.style.display = 'none';
+        target.style.display = 'block';
+        if (isContent) contentReady = true;
+        else styleReady = true;
+      } else {
+        placeholder.textContent = message || 'Could not load image';
+        placeholder.style.display = 'block';
+        target.style.display = 'none';
+        if (isContent) contentReady = false;
+        else styleReady = false;
+      }
+      updateActionState();
+    }
+
     function setMainImage(target, src) {
+      const token = String(Date.now() + Math.random());
+      target.dataset.loadToken = token;
+      target.crossOrigin = 'anonymous';
+      setImageStatus(target, 'loading', 'Loading image...');
+      target.onerror = () => {
+        if (!target.dataset.loadToken || !target.dataset.loadToken.startsWith(token)) return;
+        const msg = target === contentImg ? 'Select or drop your image' : 'Select or drop a style image';
+        target.removeAttribute('src');
+        setImageStatus(target, 'error', msg);
+      };
+      target.onload = () => {
+        if (!target.dataset.loadToken || !target.dataset.loadToken.startsWith(token)) return;
+        if (target.naturalWidth > 0 && target.naturalHeight > 0) {
+          setImageStatus(target, 'ready');
+        } else {
+          setImageStatus(target, 'error', 'Image failed to load');
+        }
+      };
       target.crossOrigin = 'anonymous';
       target.src = src;
+    }
+
+    function handleDroppedFile(target, file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const objectUrl = URL.createObjectURL(file);
+      setMainImage(target, objectUrl);
     }
 
     async function openWebcam() {
@@ -607,13 +683,17 @@
     async function loadModels() {
       styleNet = await tf.loadGraphModel(MODELS.model1);
       transformNet = await tf.loadGraphModel(MODELS.model2);
+      modelsReady = true;
       setButtonText('Combine');
       setBusy(false);
     }
 
     async function combine() {
       if (!styleNet || !transformNet || isBusy) return;
-      if (!contentImg.complete || !styleImg.complete) return;
+      if (!contentReady || !styleReady || !contentImg.complete || !styleImg.complete || !contentImg.naturalWidth || !styleImg.naturalWidth) {
+        alert('Please load both images before combining.');
+        return;
+      }
 
       setBusy(true);
       botImg.src = BOT.anim;
@@ -696,6 +776,30 @@
       closeWebcam();
     });
 
+    function wireDropZone(wrap, target) {
+      ['dragenter', 'dragover'].forEach((evt) => {
+        wrap.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          wrap.classList.add('drop-active');
+        });
+      });
+      ['dragleave', 'drop'].forEach((evt) => {
+        wrap.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          wrap.classList.remove('drop-active');
+        });
+      });
+      wrap.addEventListener('drop', (e) => {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        handleDroppedFile(target, file);
+      });
+    }
+
+    wireDropZone(contentWrap, contentImg);
+    wireDropZone(styleWrap, styleImg);
+
     downloadBtn.addEventListener('click', () => {
       if (!output.width || !output.height) return;
       const a = document.createElement('a');
@@ -704,8 +808,8 @@
       a.click();
     });
 
-    setMainImage(contentImg, 'https://my.aiclub.world/8262bbf4546363eee19ee4f9c5cbcf14.jpg');
-    setMainImage(styleImg, 'https://my.aiclub.world/99850e33f60db644dd1fbaeae44d407f.jpg');
+    setImageStatus(contentImg, 'error', 'Select or drop your image');
+    setImageStatus(styleImg, 'error', 'Select or drop a style image');
     setBusy(true);
     loadModels().catch((err) => {
       setButtonText('Model load failed');
