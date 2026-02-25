@@ -105,6 +105,17 @@
         color: #2e3f59;
         border-color: #cdd8e7;
       }
+
+      .beta-pill {
+        display: inline-block;
+        font-size: 0.78rem;
+        color: #8a5b00;
+        border: 1px solid #e5c67a;
+        border-radius: 999px;
+        padding: 2px 8px;
+        background: #fff5df;
+        vertical-align: middle;
+      }
     </style>
   </head>
   <body>
@@ -136,6 +147,18 @@
           <p class="meta"><strong>File:</strong> <code>tokenizerDemo.html</code></p>
           <div class="actions">
             <a class="btn" href="./tokenizerDemo.html">Open Demo</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>3. Token Generation Pipeline (Dynamic) <span class="beta-pill">BETA</span></h2>
+          <p>
+            Dynamic version of the token generation pipeline. You enter a prompt, then the page fetches token-level
+            logprob data from the Lambda API and animates the same generation flow using that live response.
+          </p>
+          <p class="meta"><strong>File:</strong> <code>chatGptDynamic.html</code></p>
+          <div class="actions">
+            <a class="btn" href="./chatGptDynamic.html">Open Demo</a>
           </div>
         </article>
       </section>

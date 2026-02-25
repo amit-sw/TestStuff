@@ -66,10 +66,83 @@ body {
   color: #9db1db;
 }
 
+.beta-pill {
+  border: 1px solid #ffd27e;
+  background: rgba(146, 108, 21, 0.22);
+  color: #ffe3ad;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+}
+
 .controls {
   display: flex;
   gap: 10px;
   margin-bottom: 18px;
+}
+
+.setup-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 12, 24, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 130;
+  padding: 20px;
+}
+
+.setup-modal.hidden {
+  display: none;
+}
+
+.setup-card {
+  width: min(760px, 94vw);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  padding: 18px;
+}
+
+.setup-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.setup-help {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.setup-input {
+  width: 100%;
+  border: 1px solid #32467a;
+  border-radius: 10px;
+  min-height: 44px;
+  background: #0f1734;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 1rem;
+}
+
+.setup-actions {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.setup-status {
+  color: #9bdcff;
+  font-size: 0.93rem;
+}
+
+.setup-status.error {
+  color: #ffc2c2;
 }
 
 .controls button {
@@ -826,6 +899,7 @@ button:disabled {
           <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
         </div>
         <p class="brand-subtitle">Token Generation Pipeline Demo</p>
+        <span class="beta-pill">BETA</span>
       </div>
       <header class="controls">
         <button id="stepBtn" title="Step" aria-label="Step">⏭</button>
@@ -834,6 +908,24 @@ button:disabled {
         <button id="backBtn" title="Back" aria-label="Back">⏮</button>
         <button id="resetBtn" title="Restart" aria-label="Restart">↻</button>
       </header>
+
+      <div class="setup-modal" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+        <div class="setup-card">
+          <h2 class="setup-title" id="setupTitle">Start Dynamic Demo</h2>
+          <p class="setup-help">Enter a prompt, then fetch token logprobs from OpenAI via your Lambda API.</p>
+          <input
+            id="setupPromptInput"
+            class="setup-input"
+            type="text"
+            value="What is the capital of France?"
+            aria-label="Prompt text"
+          />
+          <div class="setup-actions">
+            <button id="setupStartBtn" type="button">Fetch and Start</button>
+            <span id="setupStatus" class="setup-status" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
 
       <section class="scene" id="pipelineScene" data-stage="idle">
         <div class="chat-row">
@@ -995,9 +1087,10 @@ button:disabled {
     </div>
 
     <script>
-const PROMPT = "What is the capital of France?";
+const REQUEST_URL = "https://qlnh7kj3xdq6kfubfxfeoznsp40spbpe.lambda-url.us-east-1.on.aws/";
+const DEFAULT_PROMPT = "What is the capital of France?";
 
-const TOKEN_ROUNDS = [
+const FALLBACK_TOKEN_ROUNDS = [
   {
     chosen: "\n\n",
     contenders: [
@@ -1120,6 +1213,12 @@ const TOKEN_ROUNDS = [
   },
 ];
 
+let promptText = DEFAULT_PROMPT;
+let tokenRounds = FALLBACK_TOKEN_ROUNDS.map((round) => ({
+  chosen: round.chosen,
+  contenders: round.contenders.map((item) => ({ token: item.token, prob: item.prob })),
+}));
+
 const TIMING = {
   typingMs: 55,
   postEnterPauseMs: 400,
@@ -1140,6 +1239,10 @@ const goBtn = document.getElementById("goBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const backBtn = document.getElementById("backBtn");
 const resetBtn = document.getElementById("resetBtn");
+const setupModal = document.getElementById("setupModal");
+const setupPromptInput = document.getElementById("setupPromptInput");
+const setupStartBtn = document.getElementById("setupStartBtn");
+const setupStatus = document.getElementById("setupStatus");
 
 const chatThread = document.getElementById("chatThread");
 const chatInput = document.getElementById("chatInput");
@@ -1169,6 +1272,7 @@ let barEls = [];
 let scoreEls = [];
 
 const state = {
+  setupLocked: true,
   running: false,
   paused: false,
   finished: false,
@@ -1183,6 +1287,226 @@ const state = {
   currentCandidates: [],
   activeRoundIndex: -1,
 };
+
+function setSetupStatus(text, isError = false) {
+  setupStatus.textContent = text;
+  setupStatus.classList.toggle("error", Boolean(isError));
+}
+
+function clampPercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, numeric));
+}
+
+function toPercentFromLogprob(logprob) {
+  const numeric = Number(logprob);
+  if (!Number.isFinite(numeric)) return 0;
+  return clampPercent(Math.exp(numeric) * 100);
+}
+
+function normalizeContenders(items, chosenToken) {
+  const normalized = [];
+  const seen = new Set();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const token = typeof item?.token === "string" ? item.token : "";
+    if (!token || seen.has(token)) return;
+    let prob = Number(item?.prob);
+    if (!Number.isFinite(prob)) prob = toPercentFromLogprob(item?.logprob);
+    normalized.push({ token, prob: clampPercent(prob) });
+    seen.add(token);
+  });
+
+  const chosen = typeof chosenToken === "string" ? chosenToken : "";
+  if (chosen && !seen.has(chosen)) normalized.unshift({ token: chosen, prob: 100 });
+  return normalized.sort((a, b) => b.prob - a.prob);
+}
+
+function normalizeTopLogprobs(topLogprobs) {
+  if (Array.isArray(topLogprobs)) {
+    return topLogprobs.map((top) => ({ token: top?.token, prob: top?.prob, logprob: top?.logprob }));
+  }
+
+  if (topLogprobs && typeof topLogprobs === "object") {
+    return Object.entries(topLogprobs).map(([token, value]) => ({
+      token,
+      logprob: Number(value),
+    }));
+  }
+
+  return [];
+}
+
+function normalizeRound(round) {
+  const chosen =
+    (typeof round?.chosen === "string" && round.chosen) ||
+    (typeof round?.chosen_token === "string" && round.chosen_token) ||
+    (typeof round?.selected === "string" && round.selected) ||
+    (typeof round?.selected_token === "string" && round.selected_token) ||
+    (typeof round?.token === "string" && round.token) ||
+    "";
+
+  const contendersSource =
+    round?.contenders ||
+    round?.candidates ||
+    round?.alternatives ||
+    normalizeTopLogprobs(round?.top_logprobs);
+
+  const contenders = normalizeContenders(contendersSource, chosen);
+  return { chosen: chosen || (contenders[0] ? contenders[0].token : ""), contenders };
+}
+
+function normalizeRounds(rawRounds) {
+  if (!Array.isArray(rawRounds)) return [];
+  return rawRounds.map(normalizeRound).filter((round) => round.chosen && round.contenders.length > 0);
+}
+
+function extractOpenAILogprobs(data) {
+  const content = data?.choices?.[0]?.logprobs?.content;
+  if (!Array.isArray(content)) return [];
+
+  return content
+    .map((item) => {
+      const chosen = typeof item?.token === "string" ? item.token : "";
+      const contenders = (Array.isArray(item?.top_logprobs) ? item.top_logprobs : []).map((top) => ({
+        token: top?.token,
+        logprob: top?.logprob,
+      }));
+      return normalizeRound({ chosen, contenders });
+    })
+    .filter((round) => round.chosen && round.contenders.length > 0);
+}
+
+function extractResponsesApiLogprobs(data) {
+  const blocks = data?.output?.[0]?.content;
+  if (!Array.isArray(blocks)) return [];
+
+  const rows = blocks.flatMap((block) => {
+    const logprobs = block?.logprobs || block?.token_logprobs || block?.content?.logprobs;
+    if (!Array.isArray(logprobs)) return [];
+    return logprobs;
+  });
+
+  return rows
+    .map((item) => {
+      const chosen = typeof item?.token === "string" ? item.token : "";
+      const contenders = normalizeTopLogprobs(item?.top_logprobs);
+      if (contenders.length === 0 && chosen) contenders.push({ token: chosen, logprob: item?.logprob });
+      return normalizeRound({ chosen, contenders });
+    })
+    .filter((round) => round.chosen && round.contenders.length > 0);
+}
+
+function extractLegacyArrayLogprobs(data) {
+  const tokens = Array.isArray(data?.tokens) ? data.tokens : null;
+  const topLogprobs = Array.isArray(data?.top_logprobs) ? data.top_logprobs : null;
+  const tokenLogprobs = Array.isArray(data?.token_logprobs) ? data.token_logprobs : [];
+  if (!tokens || !topLogprobs || tokens.length === 0) return [];
+
+  const rounds = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const chosen = typeof tokens[i] === "string" ? tokens[i] : "";
+    if (!chosen) continue;
+
+    const contenders = normalizeTopLogprobs(topLogprobs[i]);
+    if (contenders.length === 0) {
+      contenders.push({
+        token: chosen,
+        logprob: tokenLogprobs[i],
+      });
+    }
+
+    const normalized = normalizeRound({ chosen, contenders });
+    if (normalized.chosen && normalized.contenders.length > 0) rounds.push(normalized);
+  }
+  return rounds;
+}
+
+function collectPayloadVariants(data) {
+  const candidates = [data];
+  if (data && typeof data === "object") {
+    candidates.push(data.data, data.result, data.response, data.openai, data.openai_response, data.payload);
+    if (Array.isArray(data.responses)) candidates.push(...data.responses);
+  }
+  return candidates.filter(Boolean);
+}
+
+function payloadPreview(value) {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  return text.length > 320 ? `${text.slice(0, 320)}...` : text;
+}
+
+function parseMaybeJson(value) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch (_) {
+    return value;
+  }
+}
+
+function normalizeApiPayload(payload, fallbackPrompt) {
+  let data = parseMaybeJson(payload);
+  if (data && typeof data === "object") {
+    if (data.body !== undefined) data = parseMaybeJson(data.body);
+    if (data.Payload !== undefined) data = parseMaybeJson(data.Payload);
+  }
+
+  const prompt =
+    typeof data?.prompt === "string" && data.prompt.trim()
+      ? data.prompt.trim()
+      : typeof data?.message === "string" && data.message.trim()
+      ? data.message.trim()
+      : fallbackPrompt;
+
+  const roundsCandidates = [data?.token_rounds, data?.rounds, data?.data?.rounds];
+  let rounds = [];
+  for (const candidate of roundsCandidates) {
+    const next = normalizeRounds(candidate);
+    if (next.length > 0) {
+      rounds = next;
+      break;
+    }
+  }
+
+  if (rounds.length > 0) return { prompt, rounds };
+
+  for (const candidate of collectPayloadVariants(data)) {
+    const openAiRounds = extractOpenAILogprobs(candidate);
+    if (openAiRounds.length > 0) return { prompt, rounds: openAiRounds };
+    const responsesRounds = extractResponsesApiLogprobs(candidate);
+    if (responsesRounds.length > 0) return { prompt, rounds: responsesRounds };
+    const legacyRounds = extractLegacyArrayLogprobs(candidate);
+    if (legacyRounds.length > 0) return { prompt, rounds: legacyRounds };
+  }
+
+  throw new Error(`API response did not include token rounds. Payload preview: ${payloadPreview(data)}`);
+}
+
+async function fetchDynamicRounds(message) {
+  const response = await fetch(REQUEST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+
+  const rawText = await response.text();
+  const parsed = parseMaybeJson(rawText);
+
+  if (!response.ok) {
+    const detail = typeof parsed === "object" && parsed !== null ? JSON.stringify(parsed) : rawText;
+    throw new Error(`Request failed (${response.status}): ${detail}`);
+  }
+
+  return normalizeApiPayload(parsed, message);
+}
+
+function rebuildSteps() {
+  steps = buildSteps();
+}
 
 function parsePercent(value) {
   const numeric = Number.parseFloat(String(value).replace("%", "").trim());
@@ -1208,8 +1532,8 @@ function getCurrentCandidates() {
 }
 
 function getSamplingCandidates() {
-  if (state.activeRoundIndex >= 0 && state.activeRoundIndex < TOKEN_ROUNDS.length) {
-    return TOKEN_ROUNDS[state.activeRoundIndex].contenders.slice(0, SAMPLING_TOP_N);
+  if (state.activeRoundIndex >= 0 && state.activeRoundIndex < tokenRounds.length) {
+    return tokenRounds[state.activeRoundIndex].contenders.slice(0, SAMPLING_TOP_N);
   }
   return getCurrentCandidates().slice(0, SAMPLING_TOP_N);
 }
@@ -1334,7 +1658,8 @@ function closeSamplingModal() {
 }
 
 function createProbabilityRows() {
-  const rowCount = Math.min(DISPLAY_TOP_K, TOKEN_ROUNDS[0].contenders.length);
+  const firstRound = tokenRounds[0];
+  const rowCount = Math.min(DISPLAY_TOP_K, firstRound && firstRound.contenders ? firstRound.contenders.length : 0);
   tokenBody.innerHTML = "";
   tokenEls = [];
   barEls = [];
@@ -1381,11 +1706,11 @@ function createProbabilityRows() {
 function buildSteps() {
   const builtSteps = [
     { duration: 0, action: initTyping },
-    ...PROMPT.split("").map((char) => ({ duration: TIMING.typingMs, action: () => typeChar(char) })),
+    ...promptText.split("").map((char) => ({ duration: TIMING.typingMs, action: () => typeChar(char) })),
     { duration: TIMING.postEnterPauseMs, action: pressEnter },
   ];
 
-  TOKEN_ROUNDS.forEach((round, roundIndex) => {
+  tokenRounds.forEach((round, roundIndex) => {
     const visibleContenders = round.contenders.slice(0, DISPLAY_TOP_K);
 
     builtSteps.push({ duration: TIMING.passSetupMs, action: () => beginPass(roundIndex) });
@@ -1411,7 +1736,7 @@ function buildSteps() {
       pauseAfter: true,
     });
 
-    if (roundIndex < TOKEN_ROUNDS.length - 1) {
+    if (roundIndex < tokenRounds.length - 1) {
       builtSteps.push({ duration: TIMING.betweenRoundsMs, action: prepNextRound });
     }
   });
@@ -1421,7 +1746,7 @@ function buildSteps() {
   return builtSteps;
 }
 
-const steps = buildSteps();
+let steps = [];
 
 function clearTimer() {
   if (state.timeoutId) {
@@ -1438,6 +1763,15 @@ function clearFadeTimer() {
 }
 
 function setControls() {
+  if (state.setupLocked) {
+    stepBtn.disabled = true;
+    goBtn.disabled = true;
+    pauseBtn.disabled = true;
+    backBtn.disabled = true;
+    resetBtn.disabled = true;
+    samplingBtn.disabled = true;
+    return;
+  }
   const runLocked = state.running && !state.finished && !state.paused;
   stepBtn.disabled = runLocked;
   goBtn.disabled = runLocked;
@@ -1476,6 +1810,7 @@ function setPipelineStage(stage) {
 }
 
 function setRow(row, token, prob) {
+  if (!tokenEls[row] || !barEls[row] || !scoreEls[row]) return;
   tokenEls[row].textContent = formatToken(token);
   tokenEls[row].dataset.rawToken = token;
   barEls[row].style.width = `${prob}%`;
@@ -1512,7 +1847,7 @@ function typeChar(char) {
 function pressEnter() {
   const msg = document.createElement("div");
   msg.className = "message";
-  msg.textContent = PROMPT;
+  msg.textContent = promptText;
   chatThread.prepend(msg);
 
   const assistantMsg = document.createElement("div");
@@ -1594,7 +1929,7 @@ function renderPassSequence(sequence, deferredIndex = -1) {
 }
 
 function buildPassSequence() {
-  const questionTokens = tokenizeForPass(PROMPT);
+  const questionTokens = tokenizeForPass(promptText);
   const answerTokens = tokenizeForPass(state.answerText);
   return ["<QUESTION>", ...questionTokens, "<ANSWER>", ...answerTokens];
 }
@@ -1664,7 +1999,7 @@ function startMachinery() {
 }
 
 function cycleRound(roundIndex, tick) {
-  const contenders = TOKEN_ROUNDS[roundIndex].contenders.slice(0, DISPLAY_TOP_K);
+  const contenders = tokenRounds[roundIndex].contenders.slice(0, DISPLAY_TOP_K);
   tokenEls.forEach((_, rowIndex) => {
     const contender = contenders[(rowIndex + tick) % contenders.length];
     setRow(rowIndex, contender.token, contender.prob);
@@ -1672,7 +2007,7 @@ function cycleRound(roundIndex, tick) {
 }
 
 function settleRoundRow(roundIndex, rowIndex) {
-  const contender = TOKEN_ROUNDS[roundIndex].contenders[rowIndex];
+  const contender = tokenRounds[roundIndex].contenders[rowIndex];
   setRow(rowIndex, contender.token, contender.prob);
   if (rowIndex === 0) setPipelineStage("decoded");
 }
@@ -1706,7 +2041,7 @@ function selectAndTransferTopToken(roundIndex) {
   });
   source.classList.add("chosen-token");
 
-  const chosenToken = TOKEN_ROUNDS[roundIndex].chosen;
+  const chosenToken = tokenRounds[roundIndex].chosen;
   spawnStarBurst(source);
   flyTokenToTarget(source, target, chosenToken);
 }
@@ -1866,6 +2201,7 @@ function jumpToCheckpoint(targetIndex) {
 }
 
 function startWithMode(mode) {
+  if (state.setupLocked || steps.length === 0) return;
   if (state.running && !state.finished) {
     if (!state.paused) return;
     state.runMode = mode;
@@ -1924,11 +2260,51 @@ function reset() {
   state.replayMode = false;
   state.checkpoints = [0];
   state.checkpointIndex = 0;
+  rebuildSteps();
   resetVisuals();
   setControls();
 }
 
-createProbabilityRows();
+function applyDemoData(nextPrompt, nextRounds) {
+  promptText = nextPrompt && nextPrompt.trim() ? nextPrompt.trim() : DEFAULT_PROMPT;
+  tokenRounds = (Array.isArray(nextRounds) && nextRounds.length > 0 ? nextRounds : FALLBACK_TOKEN_ROUNDS).map((round) => ({
+    chosen: round.chosen,
+    contenders: (Array.isArray(round.contenders) ? round.contenders : [])
+      .map((item) => ({ token: item.token, prob: clampPercent(item.prob) }))
+      .filter((item) => typeof item.token === "string" && item.token.length > 0),
+  }));
+  tokenRounds = tokenRounds.filter((round) => round.chosen && round.contenders.length > 0);
+  if (tokenRounds.length === 0) {
+    tokenRounds = FALLBACK_TOKEN_ROUNDS.map((round) => ({
+      chosen: round.chosen,
+      contenders: round.contenders.map((item) => ({ token: item.token, prob: item.prob })),
+    }));
+  }
+
+  createProbabilityRows();
+  reset();
+}
+
+async function startDynamicDemo() {
+  const message = (setupPromptInput.value || DEFAULT_PROMPT).trim() || DEFAULT_PROMPT;
+  setupStartBtn.disabled = true;
+  setupPromptInput.disabled = true;
+  setSetupStatus("Fetching information from OpenAI...");
+
+  try {
+    const payload = await fetchDynamicRounds(message);
+    applyDemoData(payload.prompt || message, payload.rounds);
+    state.setupLocked = false;
+    setupModal.classList.add("hidden");
+    setSetupStatus("");
+    setControls();
+  } catch (error) {
+    setSetupStatus(`Fetch failed: ${error.message}`, true);
+    setupStartBtn.disabled = false;
+    setupPromptInput.disabled = false;
+  }
+}
+
 stepBtn.addEventListener("click", startStep);
 goBtn.addEventListener("click", startGo);
 pauseBtn.addEventListener("click", togglePause);
@@ -1952,8 +2328,16 @@ samplingPIncBtn.addEventListener("click", () => adjustTopP(1));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !samplingModal.classList.contains("hidden")) closeSamplingModal();
 });
+setupStartBtn.addEventListener("click", startDynamicDemo);
+setupPromptInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    if (!setupStartBtn.disabled) startDynamicDemo();
+  }
+});
 
-reset();
+setControls();
+setupPromptInput.focus();
     </script>
   </body>
 </html>
