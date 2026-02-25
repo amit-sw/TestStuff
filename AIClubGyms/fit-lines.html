@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Fit Lines Gym</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+        --accent: #74c7ff;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app {
+        width: min(1040px, 94vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup { margin-right: auto; }
+      .brand-logo { height: 52px; }
+      .topbar h1 { margin: 0; font-size: 1.35rem; }
+
+      .badge {
+        font-size: 0.86rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
+      }
+
+      .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+
+      button {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 8px 12px;
+        font-size: 0.94rem;
+        cursor: pointer;
+      }
+
+      .stage {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0b1529;
+      }
+
+      canvas {
+        width: 100%;
+        height: min(62vh, 520px);
+        display: block;
+        cursor: crosshair;
+      }
+
+      .meta {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      code {
+        color: #d6eaff;
+        background: #0b1529;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <h1>Fit Lines Gym</h1>
+        <span class="badge">Client-side linear regression</span>
+      </div>
+
+      <section class="section">
+        <h2>1. Add Points</h2>
+        <div class="controls">
+          <button id="sampleBtn" type="button">Generate Sample Data</button>
+          <button id="resetBtn" type="button">Reset</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2. Plot</h2>
+        <div class="stage">
+          <canvas id="plot" width="980" height="560"></canvas>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. Model</h2>
+        <div class="meta">
+          <span id="eqn">Line: <code>y = ?x + ?</code></span>
+          <span id="r2">R²: <code>?</code></span>
+          <span>Tip: Click plot to add custom points.</span>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const canvas = document.getElementById("plot");
+      const ctx = canvas.getContext("2d");
+      const eqn = document.getElementById("eqn");
+      const r2El = document.getElementById("r2");
+      const sampleBtn = document.getElementById("sampleBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      const PAD = 40;
+      let points = [];
+      let line = null;
+
+      function toData(xPx, yPx) {
+        const x = (xPx - PAD) / (canvas.width - PAD * 2) * 100;
+        const y = (canvas.height - PAD - yPx) / (canvas.height - PAD * 2) * 100;
+        return { x, y };
+      }
+
+      function toPx(pt) {
+        return {
+          x: PAD + (pt.x / 100) * (canvas.width - PAD * 2),
+          y: canvas.height - PAD - (pt.y / 100) * (canvas.height - PAD * 2),
+        };
+      }
+
+      function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0b1529";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#233a63";
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i <= 10; i += 1) {
+          const x = PAD + (i / 10) * (canvas.width - PAD * 2);
+          const y = PAD + (i / 10) * (canvas.height - PAD * 2);
+          ctx.beginPath();
+          ctx.moveTo(x, PAD);
+          ctx.lineTo(x, canvas.height - PAD);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(PAD, y);
+          ctx.lineTo(canvas.width - PAD, y);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "#74c7ff";
+        ctx.lineWidth = 1.7;
+        ctx.strokeRect(PAD, PAD, canvas.width - PAD * 2, canvas.height - PAD * 2);
+      }
+
+      function drawPoints() {
+        ctx.fillStyle = "#d8ecff";
+        points.forEach((pt) => {
+          const p = toPx(pt);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawLine() {
+        if (!line) return;
+        const p1 = toPx({ x: 0, y: line.m * 0 + line.b });
+        const p2 = toPx({ x: 100, y: line.m * 100 + line.b });
+        ctx.strokeStyle = "#ffd28f";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      function render() {
+        drawGrid();
+        drawPoints();
+        drawLine();
+      }
+
+      function fitLine() {
+        if (points.length < 2) {
+          line = null;
+          eqn.innerHTML = "Line: <code>y = ?x + ?</code>";
+          r2El.innerHTML = "R²: <code>?</code>";
+          render();
+          return;
+        }
+
+        const n = points.length;
+        const sx = points.reduce((s, p) => s + p.x, 0);
+        const sy = points.reduce((s, p) => s + p.y, 0);
+        const sxy = points.reduce((s, p) => s + p.x * p.y, 0);
+        const sx2 = points.reduce((s, p) => s + p.x * p.x, 0);
+
+        const m = (n * sxy - sx * sy) / (n * sx2 - sx * sx || 1e-9);
+        const b = (sy - m * sx) / n;
+        line = { m, b };
+
+        const yMean = sy / n;
+        const ssRes = points.reduce((s, p) => s + (p.y - (m * p.x + b)) ** 2, 0);
+        const ssTot = points.reduce((s, p) => s + (p.y - yMean) ** 2, 0);
+        const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+
+        eqn.innerHTML = `Line: <code>y = ${m.toFixed(3)}x + ${b.toFixed(3)}</code>`;
+        r2El.innerHTML = `R²: <code>${r2.toFixed(4)}</code>`;
+        render();
+      }
+
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+        if (x < PAD || x > canvas.width - PAD || y < PAD || y > canvas.height - PAD) return;
+        points.push(toData(x, y));
+        fitLine();
+      });
+
+      sampleBtn.addEventListener("click", () => {
+        points = [];
+        const m = 0.8;
+        const b = 12;
+        for (let x = 8; x <= 95; x += 8) {
+          const noise = (Math.random() - 0.5) * 12;
+          points.push({ x, y: Math.max(0, Math.min(100, m * x + b + noise)) });
+        }
+        fitLine();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        points = [];
+        line = null;
+        eqn.innerHTML = "Line: <code>y = ?x + ?</code>";
+        r2El.innerHTML = "R²: <code>?</code>";
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

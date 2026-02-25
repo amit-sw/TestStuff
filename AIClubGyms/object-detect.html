@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Object Detection Gym</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+        --accent: #74c7ff;
+        --chip: #132746;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app {
+        width: min(1040px, 94vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-right: auto;
+      }
+
+      .brand-logo {
+        height: 52px;
+        width: auto;
+        display: block;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
+      .badge {
+        font-size: 0.86rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button,
+      input[type="file"] {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 8px 10px;
+        font-size: 0.94rem;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .stage {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #0b1529;
+      }
+
+      #preview,
+      #overlay {
+        display: block;
+        width: 100%;
+        max-height: 60vh;
+      }
+
+      #overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: var(--chip);
+        padding: 6px 9px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.87rem;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <h1>Object Detection Gym</h1>
+        <span class="badge">Client-side only (COCO-SSD)</span>
+      </div>
+
+      <section class="section">
+        <h2>1. Input</h2>
+        <div class="controls">
+          <input id="imageInput" type="file" accept="image/*" />
+          <button id="sampleBtn" type="button">Use Sample</button>
+          <button id="detectBtn" type="button">Detect Objects</button>
+        </div>
+        <p class="hint">No back-end calls. Model runs directly in your browser.</p>
+      </section>
+
+      <section class="section">
+        <h2>2. Preview</h2>
+        <div class="stage">
+          <img id="preview" alt="preview" />
+          <canvas id="overlay"></canvas>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. Detections</h2>
+        <div id="results" class="chips"></div>
+      </section>
+    </main>
+
+    <script>
+      const imageInput = document.getElementById("imageInput");
+      const sampleBtn = document.getElementById("sampleBtn");
+      const detectBtn = document.getElementById("detectBtn");
+      const preview = document.getElementById("preview");
+      const overlay = document.getElementById("overlay");
+      const results = document.getElementById("results");
+
+      let model = null;
+
+      function setStatus(text) {
+        results.innerHTML = "";
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = text;
+        results.appendChild(chip);
+      }
+
+      function drawPredictions(predictions) {
+        const ctx = overlay.getContext("2d");
+        overlay.width = preview.naturalWidth;
+        overlay.height = preview.naturalHeight;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        ctx.lineWidth = 3;
+        ctx.font = "16px Segoe UI";
+        ctx.strokeStyle = "#74c7ff";
+        ctx.fillStyle = "#74c7ff";
+
+        predictions.forEach((pred) => {
+          const [x, y, w, h] = pred.bbox;
+          const label = `${pred.class} ${(pred.score * 100).toFixed(1)}%`;
+          ctx.strokeRect(x, y, w, h);
+          ctx.fillRect(x, y - 22, ctx.measureText(label).width + 10, 22);
+          ctx.fillStyle = "#08101d";
+          ctx.fillText(label, x + 5, y - 6);
+          ctx.fillStyle = "#74c7ff";
+        });
+      }
+
+      async function ensureModel() {
+        if (!model) {
+          setStatus("Loading COCO-SSD model...");
+          model = await cocoSsd.load();
+        }
+      }
+
+      async function detect() {
+        if (!preview.src) {
+          setStatus("Upload or load a sample image first.");
+          return;
+        }
+        await ensureModel();
+        setStatus("Detecting...");
+        const predictions = await model.detect(preview);
+        results.innerHTML = "";
+
+        if (!predictions.length) {
+          setStatus("No objects detected.");
+          drawPredictions([]);
+          return;
+        }
+
+        predictions.forEach((pred) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = `${pred.class} (${(pred.score * 100).toFixed(1)}%)`;
+          results.appendChild(chip);
+        });
+
+        drawPredictions(predictions);
+      }
+
+      imageInput.addEventListener("change", () => {
+        const file = imageInput.files?.[0];
+        if (!file) return;
+        preview.src = URL.createObjectURL(file);
+      });
+
+      sampleBtn.addEventListener("click", () => {
+        preview.crossOrigin = "anonymous";
+        preview.src = "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?auto=format&fit=crop&w=1200&q=80";
+      });
+
+      detectBtn.addEventListener("click", detect);
+      preview.addEventListener("load", () => {
+        overlay.width = preview.naturalWidth;
+        overlay.height = preview.naturalHeight;
+      });
+
+      setStatus("Ready. Load an image and run detection.");
+    </script>
+  </body>
+</html>

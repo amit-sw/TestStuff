@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Handpose Detection Gym</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app { width: min(1040px, 94vw); margin: 28px auto; display: grid; gap: 14px; }
+      .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .brand-lockup { margin-right: auto; }
+      .brand-logo { height: 52px; }
+      .topbar h1 { margin: 0; font-size: 1.35rem; }
+
+      .badge {
+        font-size: 0.86rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 { margin: 0 0 10px; font-size: 1rem; color: var(--muted); }
+
+      button {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 8px 12px;
+        font-size: 0.94rem;
+        cursor: pointer;
+      }
+
+      .stage {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0b1529;
+      }
+
+      video,
+      canvas {
+        width: 100%;
+        max-height: 64vh;
+        display: block;
+      }
+
+      canvas {
+        position: absolute;
+        inset: 0;
+      }
+
+      .hint { color: var(--muted); font-size: 0.9rem; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.20.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.20.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.20.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7"></script>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <h1>Handpose Detection Gym</h1>
+        <span class="badge">Client-side webcam inference</span>
+      </div>
+
+      <section class="section">
+        <h2>1. Start Webcam</h2>
+        <button id="startBtn" type="button">Start Detection</button>
+        <p id="status" class="hint">Press start to load model and begin hand tracking.</p>
+      </section>
+
+      <section class="section">
+        <h2>2. Live View</h2>
+        <div class="stage">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const startBtn = document.getElementById("startBtn");
+      const statusEl = document.getElementById("status");
+      const video = document.getElementById("video");
+      const overlay = document.getElementById("overlay");
+      const ctx = overlay.getContext("2d");
+
+      let model = null;
+      let running = false;
+
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      async function setupCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+        await new Promise((resolve) => {
+          video.onloadedmetadata = resolve;
+        });
+        await video.play();
+        overlay.width = video.videoWidth;
+        overlay.height = video.videoHeight;
+      }
+
+      function drawHands(predictions) {
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        ctx.lineWidth = 2;
+
+        predictions.forEach((pred) => {
+          pred.landmarks.forEach((point) => {
+            const [x, y] = point;
+            ctx.fillStyle = "#74c7ff";
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          const fingers = Object.values(pred.annotations);
+          fingers.forEach((chain) => {
+            ctx.strokeStyle = "#ffd68a";
+            ctx.beginPath();
+            chain.forEach(([x, y], index) => {
+              if (index === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+          });
+        });
+      }
+
+      async function runLoop() {
+        if (!running) return;
+        const predictions = await model.estimateHands(video, true);
+        drawHands(predictions);
+        requestAnimationFrame(runLoop);
+      }
+
+      startBtn.addEventListener("click", async () => {
+        try {
+          setStatus("Loading camera...");
+          await setupCamera();
+          setStatus("Loading handpose model...");
+          await tf.setBackend("webgl");
+          model = await handpose.load();
+          running = true;
+          setStatus("Tracking hand landmarks locally in your browser.");
+          runLoop();
+        } catch (err) {
+          setStatus(`Could not start detection: ${err.message}`);
+        }
+      });
+    </script>
+  </body>
+</html>

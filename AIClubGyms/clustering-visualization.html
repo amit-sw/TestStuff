@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Clustering Visualization Gym</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app {
+        width: min(1100px, 95vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup { margin-right: auto; }
+      .brand-logo { height: 52px; width: auto; display: block; }
+      .topbar h1 { margin: 0; font-size: 1.35rem; }
+
+      .badge {
+        font-size: 0.86rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
+      }
+
+      .layout {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1.3fr 1fr;
+      }
+
+      .controls {
+        display: grid;
+        gap: 10px;
+      }
+
+      .row {
+        display: grid;
+        gap: 8px;
+      }
+
+      .row.inline {
+        grid-template-columns: 120px 1fr;
+        align-items: center;
+      }
+
+      label, .small {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      input[type="range"],
+      input[type="number"] {
+        width: 100%;
+      }
+
+      input[type="number"] {
+        border-radius: 8px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 7px 8px;
+        font-size: 0.95rem;
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 8px 12px;
+        font-size: 0.94rem;
+        cursor: pointer;
+      }
+
+      #newPointsBtn {
+        background: #b71c1c;
+        border-color: #7f1010;
+      }
+
+      #findClustersBtn {
+        background: #1f5fbf;
+        border-color: #184a95;
+      }
+
+      .stage {
+        border: 1px solid #000;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      #chart {
+        width: 100%;
+        height: 420px;
+        display: block;
+      }
+
+      .metric {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .scale {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        #chart {
+          height: 360px;
+        }
+      }
+    </style>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <h1>Clustering Visualization Gym</h1>
+        <span class="badge">K-means interactive demo</span>
+      </div>
+
+      <section class="section">
+        <div class="layout">
+          <div>
+            <div class="stage">
+              <svg id="chart" viewBox="0 0 700 420" preserveAspectRatio="none"></svg>
+            </div>
+            <p id="mspcd" class="metric">Mean square point-centroid distance: not yet calculated</p>
+          </div>
+
+          <div class="controls">
+            <h2>Data</h2>
+
+            <div class="row">
+              <label for="pointCount">Number of data points: <span id="pointCountVal">500</span></label>
+              <input id="pointCount" type="range" min="100" max="1200" step="50" value="500" />
+            </div>
+
+            <div class="row">
+              <label for="randomness">Data shape</label>
+              <input id="randomness" type="range" min="10" max="95" step="1" value="25" />
+              <div class="scale"><span>Clustered points</span><span>Random</span></div>
+            </div>
+
+            <div class="row inline">
+              <label for="clusters">Clusters :</label>
+              <input id="clusters" type="number" min="1" max="10" value="3" />
+            </div>
+
+            <div class="btn-row">
+              <button id="newPointsBtn" type="button">New Points</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--line); width: 100%;" />
+
+            <h2>Repeat until this AI stops improving</h2>
+            <div class="btn-row">
+              <button id="findClustersBtn" type="button">Find Clusters</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const svg = d3.select("#chart");
+      const pointCountInput = document.getElementById("pointCount");
+      const pointCountVal = document.getElementById("pointCountVal");
+      const randomnessInput = document.getElementById("randomness");
+      const clustersInput = document.getElementById("clusters");
+      const newPointsBtn = document.getElementById("newPointsBtn");
+      const findClustersBtn = document.getElementById("findClustersBtn");
+      const mspcdEl = document.getElementById("mspcd");
+      const chartEl = document.getElementById("chart");
+
+      const colors = d3.scale.category10();
+      const triangle = d3.svg.symbol().type("triangle-up").size(200);
+
+      let width = 700;
+      let height = 420;
+      let points = [];
+      let centroids = [];
+      let bins = [];
+
+      function distance(a, b) {
+        return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2);
+      }
+
+      function randomCenter(n) {
+        return Math.random() * n;
+      }
+
+      function avgXY(arr) {
+        const x = d3.sum(arr, (d) => d[0]) / arr.length;
+        const y = d3.sum(arr, (d) => d[1]) / arr.length;
+        return [x, y];
+      }
+
+      function normalPt(normalFn, max) {
+        const val = normalFn();
+        if (val > 0 && val < max) return val;
+        return normalPt(normalFn, max);
+      }
+
+      function resizeSvg() {
+        const rect = document.getElementById("chart").getBoundingClientRect();
+        width = Math.max(320, Math.round(rect.width));
+        height = Math.max(280, Math.round(rect.height));
+        svg.attr("viewBox", `0 0 ${width} ${height}`);
+      }
+
+      function clearLayer(id) {
+        d3.selectAll(`#${id} > *`).remove();
+      }
+
+      function ensureLayers() {
+        if (svg.select("#voronoi").empty()) svg.append("g").attr("id", "voronoi");
+        if (svg.select("#points").empty()) svg.append("g").attr("id", "points");
+        if (svg.select("#centroids").empty()) svg.append("g").attr("id", "centroids");
+      }
+
+      function drawUncoloredPoints() {
+        const pointsGroup = svg.select("#points");
+        clearLayer("points");
+        pointsGroup
+          .selectAll("circle")
+          .data(points)
+          .enter()
+          .append("circle")
+          .attr("cx", (d) => d[0])
+          .attr("cy", (d) => d[1])
+          .attr("r", 3)
+          .style("fill", "#000");
+      }
+
+      function drawCentroids() {
+        const centroidsGroup = svg.select("#centroids");
+        clearLayer("centroids");
+        centroidsGroup
+          .selectAll("path")
+          .data(centroids)
+          .enter()
+          .append("path")
+          .attr("d", triangle)
+          .attr("transform", (d) => `translate(${d[0]},${d[1]})`)
+          .style("fill", (d, i) => colors(i))
+          .style("stroke", "black")
+          .style("stroke-width", "0.7");
+      }
+
+      function colorOfPoint(point) {
+        for (let i = 0; i < bins.length; i += 1) {
+          if (bins[i].indexOf(point) !== -1) return colors(i);
+        }
+        return "#000";
+      }
+
+      function drawAssignments() {
+        const pointsGroup = svg.select("#points");
+        const voronoiGroup = svg.select("#voronoi");
+
+        clearLayer("points");
+        pointsGroup
+          .selectAll("circle")
+          .data(points)
+          .enter()
+          .append("circle")
+          .attr("cx", (d) => d[0])
+          .attr("cy", (d) => d[1])
+          .attr("r", 3)
+          .style("fill", (d) => colorOfPoint(d));
+
+        clearLayer("voronoi");
+        if (centroids.length >= 2) {
+          voronoiGroup
+            .selectAll("path")
+            .data(d3.geom.voronoi(centroids))
+            .enter()
+            .append("path")
+            .style("opacity", 0.2)
+            .style("fill", (d, i) => colors(i))
+            .attr("d", (d) => `M${d.join("L")}Z`);
+        }
+
+        drawCentroids();
+      }
+
+      function setMspcd(val) {
+        if (val == null) {
+          mspcdEl.textContent = "Mean square point-centroid distance: not yet calculated";
+        } else {
+          mspcdEl.textContent = `Mean square point-centroid distance: ${val.toFixed(2)}`;
+        }
+      }
+
+      function assignPointsToClosestCentroids() {
+        bins = Array.from({ length: centroids.length }, () => []);
+
+        points.forEach((point) => {
+          let minDist = Infinity;
+          let minIdx = 0;
+          centroids.forEach((centroid, idx) => {
+            const d = distance(point, centroid);
+            if (d < minDist) {
+              minDist = d;
+              minIdx = idx;
+            }
+          });
+          bins[minIdx].push(point);
+        });
+
+        let meanSquaredDistance = 0;
+        bins.forEach((bin, i) => {
+          bin.forEach((point) => {
+            const dist = distance(centroids[i], point);
+            meanSquaredDistance += dist * dist;
+          });
+        });
+
+        meanSquaredDistance /= Math.max(1, points.length);
+        return meanSquaredDistance;
+      }
+
+      function updateCentroids() {
+        let meanSquaredDistance = 0;
+        const next = centroids.slice();
+
+        bins.forEach((bin, i) => {
+          if (!bin.length) return;
+          const newCentroid = avgXY(bin);
+          next[i] = newCentroid;
+          bin.forEach((point) => {
+            const dist = distance(newCentroid, point);
+            meanSquaredDistance += dist * dist;
+          });
+        });
+
+        centroids = next;
+        meanSquaredDistance /= Math.max(1, points.length);
+        return meanSquaredDistance;
+      }
+
+      function generatePoints() {
+        const numPoints = Number(pointCountInput.value);
+        const randomness = Number(randomnessInput.value);
+        const numClusters = Math.max(1, Number(clustersInput.value) || 1);
+
+        points = [];
+        const variance = randomness / 2 + 5;
+        const percentageClusteredPoints = (100 - 0.8 * randomness) / 100;
+
+        for (let i = 0; i < numClusters; i += 1) {
+          const xNorm = d3.random.normal(randomCenter(width), variance);
+          const yNorm = d3.random.normal(randomCenter(height), variance);
+          const count = Math.floor((percentageClusteredPoints * numPoints) / numClusters);
+          for (let j = 0; j < count; j += 1) {
+            points.push([normalPt(xNorm, width), normalPt(yNorm, height)]);
+          }
+        }
+
+        while (points.length < numPoints) {
+          points.push([randomCenter(width), randomCenter(height)]);
+        }
+
+        clearLayer("voronoi");
+        drawUncoloredPoints();
+      }
+
+      function generateCentroids() {
+        const numClusters = Math.max(1, Math.min(10, Number(clustersInput.value) || 1));
+        clustersInput.value = String(numClusters);
+
+        centroids = [];
+        for (let i = 0; i < numClusters; i += 1) {
+          centroids.push([randomCenter(width), randomCenter(height)]);
+        }
+        drawCentroids();
+      }
+
+      function newPoints() {
+        setMspcd(null);
+        generatePoints();
+        generateCentroids();
+      }
+
+      function findClustersStep() {
+        if (!points.length || !centroids.length) return;
+
+        const before = assignPointsToClosestCentroids();
+        drawAssignments();
+        const after = updateCentroids();
+
+        // Re-assign with updated centroids so visualization matches current model state.
+        assignPointsToClosestCentroids();
+        drawAssignments();
+
+        setMspcd(after || before);
+      }
+
+      pointCountInput.addEventListener("input", () => {
+        pointCountVal.textContent = pointCountInput.value;
+      });
+
+      pointCountInput.addEventListener("change", newPoints);
+      randomnessInput.addEventListener("change", newPoints);
+      clustersInput.addEventListener("change", () => {
+        generateCentroids();
+        setMspcd(null);
+        assignPointsToClosestCentroids();
+        drawAssignments();
+      });
+
+      newPointsBtn.addEventListener("click", newPoints);
+      findClustersBtn.addEventListener("click", findClustersStep);
+      chartEl.addEventListener("click", (event) => {
+        const rect = chartEl.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * width;
+        const y = ((event.clientY - rect.top) / rect.height) * height;
+        points.push([x, y]);
+
+        if (centroids.length) {
+          const mean = assignPointsToClosestCentroids();
+          drawAssignments();
+          setMspcd(mean);
+        } else {
+          drawUncoloredPoints();
+          setMspcd(null);
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        resizeSvg();
+        // Resample to keep points in current bounds after resize
+        newPoints();
+      });
+
+      resizeSvg();
+      ensureLayers();
+      pointCountVal.textContent = pointCountInput.value;
+      newPoints();
+      assignPointsToClosestCentroids();
+      drawAssignments();
+    </script>
+  </body>
+</html>
