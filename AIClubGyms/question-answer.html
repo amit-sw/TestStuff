@@ -30,6 +30,12 @@
     .bubble { max-width:min(580px,100%); border-radius:14px; padding:10px 13px; background:var(--bot); color:#28374b; white-space:pre-wrap; line-height:1.42; }
     .me .bubble { background:var(--me); color:#fff; border-bottom-right-radius:6px; }
     .name { font-size:.8rem; font-weight:700; letter-spacing:.3px; margin-bottom:5px; opacity:.92; }
+    .typing { display:flex; align-items:center; gap:5px; min-height:16px; }
+    .typing__dot { width:8px; height:8px; border-radius:50%; background:#8d8c91; opacity:0; animation:loadingFade 1s infinite; }
+    .typing__dot:nth-child(1) { animation-delay:0s; }
+    .typing__dot:nth-child(2) { animation-delay:.2s; }
+    .typing__dot:nth-child(3) { animation-delay:.4s; }
+    @keyframes loadingFade { 0%{opacity:0;} 50%{opacity:.8;} 100%{opacity:0;} }
     .composer { display:grid; grid-template-columns:1fr auto auto auto auto; gap:6px; align-items:center; border-top:1px solid #e0e7f2; padding-top:10px; }
     input { width:100%; border-radius:7px; border:1px solid #c6d2e4; font-size:1.02rem; padding:10px 12px; outline:none; color:var(--text); background:#fff; }
     .icon-btn { border:1px solid #c7d3e6; background:#fff; border-radius:8px; color:#657a99; cursor:pointer; height:40px; min-width:44px; padding:0 8px; display:grid; place-items:center; }
@@ -130,12 +136,37 @@
       return body;
     }
 
+    function addTypingMessage(botLabel) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const avatar = document.createElement('img');
+      avatar.className = 'avatar';
+      avatar.src = BOT_IMAGE;
+      avatar.alt = 'Bot';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = botLabel;
+      const typing = document.createElement('div');
+      typing.className = 'typing';
+      typing.innerHTML = '<span class="typing__dot"></span><span class="typing__dot"></span><span class="typing__dot"></span>';
+      bubble.append(name, typing);
+
+      row.append(avatar, bubble);
+      chatEl.appendChild(row);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return row;
+    }
+
     async function sendMessage() {
       const question = qEl.value.trim();
       if (!question) return;
       addMessage({ who: 'me', text: question });
       qEl.value = '';
-      const slot = addMessage({ who: 'bot', text: '...' });
+      const typingRow = addTypingMessage('HOMEWORK BOT');
       try {
         const response = await fetch(API, {
           method: 'POST',
@@ -144,10 +175,12 @@
         });
         const data = await response.json();
         const answer = extractAnswer(data) || 'I could not generate a response.';
-        slot.textContent = answer;
+        typingRow.remove();
+        addMessage({ who: 'bot', text: answer });
         speak(answer);
       } catch {
-        slot.textContent = 'Request failed. Endpoint may require auth/CORS in your environment.';
+        typingRow.remove();
+        addMessage({ who: 'bot', text: 'Request failed. Endpoint may require auth/CORS in your environment.' });
       }
     }
 
