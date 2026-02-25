@@ -1,0 +1,1959 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Token Generation Pipeline Demo</title>
+    <style>
+:root {
+  --bg: #0b1020;
+  --panel: #121a31;
+  --panel-2: #171f3d;
+  --line: #2a345f;
+  --text: #e7ecff;
+  --muted: #95a0c6;
+  --accent: #5dd4ff;
+  --bar: #73a7ff;
+  --bar-2: #4d7ce2;
+  --top-panel-height: 390px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 20px;
+  color: var(--text);
+  background: radial-gradient(circle at 20% 20%, #1a2448, var(--bg) 42%),
+    linear-gradient(145deg, #0a0f1f, #0f1530);
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(122, 170, 255, 0.25);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  height: 52px;
+  width: auto;
+  display: block;
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #9db1db;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.controls button {
+  min-width: 54px;
+  min-height: 54px;
+  padding: 8px;
+  font-size: 1.45rem;
+  line-height: 1;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #1f2f60, #17244a);
+}
+
+#stepBtn {
+  border-color: #7bc6ff;
+  background: linear-gradient(160deg, #1e4f7a, #143a5a);
+  box-shadow: 0 0 16px rgba(112, 196, 255, 0.25);
+}
+
+#goBtn {
+  border-color: #7be0ad;
+  background: linear-gradient(160deg, #1e6a48, #164d35);
+  box-shadow: 0 0 16px rgba(123, 224, 173, 0.25);
+}
+
+#pauseBtn {
+  border-color: #ffcc7a;
+  background: linear-gradient(160deg, #735420, #5a3f15);
+  box-shadow: 0 0 16px rgba(255, 201, 112, 0.25);
+}
+
+#backBtn {
+  border-color: #b799ff;
+  background: linear-gradient(160deg, #4b3b7e, #382b61);
+  box-shadow: 0 0 16px rgba(183, 153, 255, 0.25);
+}
+
+#resetBtn {
+  border-color: #ff9fa5;
+  background: linear-gradient(160deg, #7a2d3f, #611f2f);
+  box-shadow: 0 0 16px rgba(255, 159, 165, 0.25);
+}
+
+button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+button:hover:enabled {
+  background: #1d2950;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scene {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.chat-row {
+  display: flex;
+  justify-content: center;
+}
+
+.chat-wrap {
+  width: 50%;
+  min-width: 520px;
+  max-width: 760px;
+}
+
+.pipeline-row {
+  display: grid;
+  grid-template-columns: 0.84fr 56px 0.72fr 56px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.monitor-wrap,
+.pass-wrap,
+.machinery-wrap,
+.table-wrap {
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.35);
+}
+
+.machinery-wrap,
+.table-wrap {
+  height: var(--top-panel-height);
+}
+
+.pipeline-connector {
+  height: var(--top-panel-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #90b4ff;
+}
+
+.connector-line {
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #7099ee, #9cc8ff);
+  box-shadow: 0 0 10px rgba(124, 176, 255, 0.45);
+}
+
+.connector-head {
+  font-size: 1.02rem;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(124, 176, 255, 0.45);
+}
+
+.machinery-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+}
+
+.machinery-title {
+  color: var(--muted);
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.machinery-core {
+  border: 1px solid #324375;
+  border-radius: 12px;
+  background: #0f1734;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.core-layer {
+  border: 1px solid #2b3d72;
+  border-radius: 8px;
+  padding: 7px 8px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #d7e8ff;
+  background: linear-gradient(180deg, #13204a, #101a3d);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.flow-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.flow-arrow {
+  text-align: center;
+  letter-spacing: 0.05em;
+  color: #4f679c;
+  font-weight: 700;
+  opacity: 0.5;
+  transition: color 180ms ease, opacity 180ms ease, text-shadow 180ms ease;
+}
+
+.machinery-status {
+  margin-top: 2px;
+  border-top: 1px solid #26365f;
+  padding-top: 8px;
+  text-align: center;
+  color: #90a4d8;
+  font-size: 0.96rem;
+  letter-spacing: 0.01em;
+}
+
+#pipelineScene[data-stage="encoding"] .flow-arrow-in {
+  color: #8cd2ff;
+  opacity: 1;
+  text-shadow: 0 0 12px rgba(119, 214, 255, 0.65);
+}
+
+#pipelineScene[data-stage="encoding"] .pipeline-connector:first-of-type {
+  color: #8cd2ff;
+}
+
+#pipelineScene[data-stage="encoding"] .pipeline-connector:first-of-type .connector-line {
+  background: linear-gradient(90deg, #75cbff, #9de7ff);
+}
+
+#pipelineScene[data-stage="computing"] .core-layer {
+  border-color: #4f7de0;
+  box-shadow: 0 0 16px rgba(90, 147, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+#pipelineScene[data-stage="decoded"] .flow-arrow-out {
+  color: #7be0ad;
+  opacity: 1;
+  text-shadow: 0 0 12px rgba(123, 224, 173, 0.65);
+}
+
+#pipelineScene[data-stage="decoded"] .pipeline-connector:last-of-type {
+  color: #7be0ad;
+}
+
+#pipelineScene[data-stage="decoded"] .pipeline-connector:last-of-type .connector-line {
+  background: linear-gradient(90deg, #7be0ad, #a7f2d1);
+}
+
+.monitor {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.monitor-header {
+  background: #0f1733;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.chat-thread {
+  flex: 1;
+  min-height: 120px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pass-panel {
+  padding: 0;
+  background: transparent;
+  max-height: none;
+  overflow: visible;
+}
+
+.pass-title {
+  color: var(--muted);
+  font-size: 0.98rem;
+  margin-bottom: 8px;
+}
+
+.pass-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.pass-table th,
+.pass-table td {
+  border: 1px solid #23335f;
+  padding: 6px 8px;
+  height: 30px;
+  font-size: 0.95rem;
+}
+
+.pass-table th {
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  background: #0f1733;
+}
+
+.pass-table td:nth-child(2) {
+  color: #9acaff;
+  font-variant-numeric: tabular-nums;
+}
+
+.pass-hit {
+  background: linear-gradient(90deg, rgba(123, 224, 173, 0.3), rgba(123, 224, 173, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(123, 224, 173, 0.55);
+  transition: background 240ms ease, box-shadow 240ms ease;
+}
+
+.message {
+  align-self: flex-end;
+  max-width: 88%;
+  background: #1f2b57;
+  border: 1px solid #30427e;
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: #d7e4ff;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+}
+
+.chat-input {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: #dce7ff;
+  background: #0f1734;
+}
+
+.chat-input.typing::after {
+  content: "";
+  width: 2px;
+  height: 16px;
+  margin-left: 4px;
+  background: var(--accent);
+  animation: blink 700ms steps(1, end) infinite;
+}
+
+.enter-key {
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.table-title {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  transition: opacity 700ms ease, filter 700ms ease;
+}
+
+.table-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  min-height: 30px;
+}
+
+.sampling-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  min-width: 84px;
+  text-align: center;
+  font-weight: 600;
+  opacity: 1;
+  z-index: 2;
+  color: #ecf3ff;
+  border-color: #7ca6ff;
+  background: #1b2e61;
+}
+
+.sampling-btn:disabled {
+  opacity: 1;
+  color: #d3def9;
+  border-color: #5b6f9f;
+  background: #223154;
+}
+
+.table-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.token-table {
+  width: 100%;
+  flex: 1;
+  border-collapse: collapse;
+  table-layout: fixed;
+  transition: opacity 700ms ease, filter 700ms ease;
+}
+
+.token-table th,
+.token-table td {
+  border: 1px solid var(--line);
+  padding: 8px;
+  height: 44px;
+}
+
+.token-table th {
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  background: #0f1733;
+}
+
+.token-table td {
+  font-size: 1.05rem;
+}
+
+.assistant-message {
+  align-self: flex-start;
+  max-width: 88%;
+  background: #172347;
+  border: 1px solid #2a3a6f;
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: #d7e4ff;
+}
+
+.answer-slot {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 260ms ease, transform 260ms ease;
+  font-weight: 600;
+  color: #e9f2ff;
+  white-space: pre-wrap;
+}
+
+.answer-slot.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.answer-meta {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+.answer-token {
+  display: inline;
+}
+
+.landing-marker {
+  opacity: 0;
+}
+
+.generation-cursor {
+  display: inline-block;
+  width: 10px;
+  color: #9ad9ff;
+  opacity: 0;
+  animation: blink 700ms steps(1, end) infinite;
+}
+
+.generation-cursor.visible {
+  opacity: 1;
+}
+
+.final-status {
+  display: none;
+  color: #9ad9ff;
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+}
+
+.final-status.visible {
+  display: inline;
+}
+
+.score-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-value {
+  min-width: 2.2ch;
+  text-align: right;
+  color: var(--muted);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: #0f1734;
+  border: 1px solid #28355f;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--bar), var(--bar-2));
+  transition: width 420ms ease;
+}
+
+.chosen-token {
+  color: #eff6ff;
+  text-shadow: 0 0 18px rgba(117, 205, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(117, 205, 255, 0.45);
+  background: linear-gradient(90deg, rgba(117, 205, 255, 0.13), transparent);
+}
+
+.table-wrap.fading .table-title,
+.table-wrap.fading .token-table {
+  opacity: 0.1;
+  filter: blur(1px);
+}
+
+.sampling-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 14, 30, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 10vh 10vw;
+}
+
+.sampling-modal.hidden {
+  display: none;
+}
+
+.sampling-modal-card {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  padding: 22px;
+  font-size: 18px;
+}
+
+.sampling-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sampling-modal-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.sampling-close-btn {
+  padding: 4px 9px;
+  border-radius: 7px;
+}
+
+.sampling-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 30px;
+  row-gap: 24px;
+}
+
+.sampling-section {
+  margin: 0;
+}
+
+.sampling-section-narrow {
+  width: 280px;
+}
+
+.sampling-section-wide {
+  width: 430px;
+}
+
+.sampling-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sampling-section h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.sampling-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sampling-controls button {
+  min-width: 26px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.sampling-controls input {
+  width: 70px;
+  background: #0f1734;
+  color: var(--text);
+  border: 1px solid #2b3d72;
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.sampling-input-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+}
+
+.sampling-input-row input {
+  width: 88px;
+  background: #0f1734;
+  color: var(--text);
+  border: 1px solid #2b3d72;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.sampling-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.sampling-table th,
+.sampling-table td {
+  border: 1px solid #2b3d72;
+  padding: 7px 8px;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sampling-table th {
+  background: #0f1733;
+  color: var(--muted);
+  text-align: left;
+}
+
+.star-burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.star {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  opacity: 0;
+  color: #a6ebff;
+  text-shadow: 0 0 10px rgba(98, 206, 255, 0.8);
+  animation: star-burst 760ms ease-out forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.flying-token {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) scale(1.06);
+  border: 1px solid rgba(120, 210, 255, 0.9);
+  border-radius: 10px;
+  padding: 6px 12px;
+  background: rgba(21, 36, 72, 0.96);
+  color: #edf6ff;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), 0 0 20px rgba(96, 193, 255, 0.45);
+  z-index: 45;
+  transition: left 900ms cubic-bezier(0.2, 0.9, 0.2, 1), top 900ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    transform 900ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 900ms ease;
+}
+
+.flying-token.run {
+  transform: translate(-50%, -50%) scale(0.92);
+}
+
+@keyframes star-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.28);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 920px) {
+  .pipeline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline-connector {
+    display: none;
+  }
+
+  .chat-wrap {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .machinery-wrap,
+  .table-wrap {
+    height: auto;
+  }
+
+  .monitor {
+    min-height: 320px;
+  }
+
+  .sampling-grid {
+    justify-content: stretch;
+    row-gap: 14px;
+    column-gap: 14px;
+  }
+
+  .sampling-section-narrow,
+  .sampling-section-wide {
+    width: 100%;
+  }
+}
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="brand-header">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <p class="brand-subtitle">Token Generation Pipeline Demo</p>
+      </div>
+      <header class="controls">
+        <button id="stepBtn" title="Step" aria-label="Step">⏭</button>
+        <button id="goBtn" title="Go" aria-label="Go">▶</button>
+        <button id="pauseBtn" title="Pause" aria-label="Pause" disabled>⏸</button>
+        <button id="backBtn" title="Back" aria-label="Back">⏮</button>
+        <button id="resetBtn" title="Restart" aria-label="Restart">↻</button>
+      </header>
+
+      <section class="scene" id="pipelineScene" data-stage="idle">
+        <div class="chat-row">
+          <div class="monitor-wrap chat-wrap">
+            <div class="monitor">
+              <div class="monitor-header">Chat Interface</div>
+              <div class="chat-thread" id="chatThread"></div>
+              <div class="chat-input-row">
+                <div class="chat-input" id="chatInput"></div>
+                <div class="enter-key">Enter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-row">
+          <div class="pass-wrap">
+            <div class="pass-panel">
+              <div class="pass-title" id="passTitle">Pass Input</div>
+              <table class="pass-table">
+                <thead>
+                  <tr>
+                    <th>Word</th>
+                    <th>Token ID</th>
+                  </tr>
+                </thead>
+                <tbody id="passList"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="pipeline-connector" aria-hidden="true">
+            <span class="connector-line"></span>
+            <span class="connector-head">▶</span>
+          </div>
+
+          <div class="machinery-wrap">
+            <div class="machinery-title">LLM Machinery</div>
+            <div class="flow-label flow-label-in">Encoded Prompt In</div>
+            <div class="flow-arrow flow-arrow-in">====&gt;</div>
+
+            <div class="machinery-core" id="machineryCore">
+              <div class="core-layer">Embedding</div>
+              <div class="core-layer">Transformer Layers</div>
+              <div class="core-layer">Logits</div>
+            </div>
+
+            <div class="flow-arrow flow-arrow-out">====&gt;</div>
+            <div class="flow-label flow-label-out">Token Candidates Out</div>
+            <div class="machinery-status" id="machineryStatus">Idle</div>
+          </div>
+
+          <div class="pipeline-connector" aria-hidden="true">
+            <span class="connector-line"></span>
+            <span class="connector-head">▶</span>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-title-row">
+              <div class="table-title">Token Candidates</div>
+              <button id="samplingBtn" class="sampling-btn" disabled>Sampling</button>
+            </div>
+            <table class="token-table">
+              <thead>
+                <tr>
+                  <th>Token</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="token0"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar0"></div></div><span class="score-value" id="score0">0%</span></div></td>
+                </tr>
+                <tr>
+                  <td id="token1"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar1"></div></div><span class="score-value" id="score1">0%</span></div></td>
+                </tr>
+                <tr>
+                  <td id="token2"></td>
+                  <td><div class="score-cell"><div class="bar-track"><div class="bar" id="bar2"></div></div><span class="score-value" id="score2">0%</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="sampling-modal hidden" id="samplingModal" role="dialog" aria-modal="true" aria-labelledby="samplingModalTitle">
+      <div class="sampling-modal-card">
+        <div class="sampling-modal-header">
+          <h2 id="samplingModalTitle">Sampling Choices</h2>
+          <button id="samplingCloseBtn" class="sampling-close-btn" aria-label="Close">✕</button>
+        </div>
+
+        <div class="sampling-grid">
+          <div class="sampling-section sampling-section-narrow">
+            <div class="sampling-section-head">
+              <h3>1. Base sampling</h3>
+            </div>
+            <table class="sampling-table">
+              <thead><tr><th>Token</th><th>Probability</th></tr></thead>
+              <tbody id="samplingBaseBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sampling-section sampling-section-narrow">
+            <div class="sampling-section-head">
+              <h3>2. Greedy sampling</h3>
+            </div>
+            <table class="sampling-table">
+              <thead><tr><th>Token</th><th>Probability</th></tr></thead>
+              <tbody id="samplingGreedyBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sampling-section sampling-section-wide">
+            <div class="sampling-section-head">
+              <h3>3. Temperature sampling</h3>
+            </div>
+            <table class="sampling-table">
+              <thead><tr><th>Token</th><th>T=0.5</th><th>T=1</th><th>T=2</th></tr></thead>
+              <tbody id="samplingTempBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sampling-section sampling-section-narrow">
+            <div class="sampling-section-head">
+              <h3>4. Top-k sampling</h3>
+              <div class="sampling-controls">
+                <button id="samplingKDecBtn" type="button" aria-label="Decrease k">−</button>
+                <input id="samplingKInput" type="number" min="1" max="10" value="3" />
+                <button id="samplingKIncBtn" type="button" aria-label="Increase k">+</button>
+              </div>
+            </div>
+            <table class="sampling-table">
+              <thead><tr><th>Token</th><th>Probability</th></tr></thead>
+              <tbody id="samplingTopKBody"></tbody>
+            </table>
+          </div>
+
+          <div class="sampling-section sampling-section-narrow">
+            <div class="sampling-section-head">
+              <h3>5. Top-p sampling</h3>
+              <div class="sampling-controls">
+                <button id="samplingPDecBtn" type="button" aria-label="Decrease p">−</button>
+                <input id="samplingPInput" type="number" min="0" max="100" value="90" />
+                <button id="samplingPIncBtn" type="button" aria-label="Increase p">+</button>
+              </div>
+            </div>
+            <table class="sampling-table">
+              <thead><tr><th>Token</th><th>Probability</th></tr></thead>
+              <tbody id="samplingTopPBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+const PROMPT = "What is the capital of France?";
+
+const TOKEN_ROUNDS = [
+  {
+    chosen: "\n\n",
+    contenders: [
+      { token: "\n\n", prob: 90.5128 },
+      { token: "\n", prob: 7.5592 },
+      { token: "The", prob: 0.7484 },
+      { token: " \n\n", prob: 0.6992 },
+      { token: " The", prob: 0.2022 },
+      { token: "\r\n\r\n", prob: 0.0926 },
+      { token: " \n", prob: 0.0796 },
+      { token: "Paris", prob: 0.0447 },
+      { token: "\n\n\n", prob: 0.0378 },
+      { token: " Paris", prob: 0.0234 },
+    ],
+  },
+  {
+    chosen: "The",
+    contenders: [
+      { token: "The", prob: 95.7863 },
+      { token: "Paris", prob: 4.1502 },
+      { token: "As", prob: 0.0447 },
+      { token: " The", prob: 0.0054 },
+      { token: "the", prob: 0.0047 },
+      { token: "Th", prob: 0.0026 },
+      { token: "\n", prob: 0.0023 },
+      { token: "T", prob: 0.0015 },
+      { token: "There", prob: 0.0013 },
+      { token: "Par", prob: 0.001 },
+    ],
+  },
+  {
+    chosen: " capital",
+    contenders: [
+      { token: " capital", prob: 99.9819 },
+      { token: " current", prob: 0.0048 },
+      { token: " ", prob: 0.0037 },
+      { token: " capita", prob: 0.0022 },
+      { token: " c", prob: 0.0017 },
+      { token: " city", prob: 0.0017 },
+      { token: " Capital", prob: 0.0011 },
+      { token: " ca", prob: 0.0011 },
+      { token: "<|endoftext|>", prob: 0.001 },
+      { token: " cap", prob: 0.0008 },
+    ],
+  },
+  {
+    chosen: " of",
+    contenders: [
+      { token: " of", prob: 99.8151 },
+      { token: " city", prob: 0.1782 },
+      { token: " and", prob: 0.0048 },
+      { token: " ", prob: 0.0012 },
+      { token: " o", prob: 0.0004 },
+      { token: " is", prob: 0.0001 },
+      { token: "<|endoftext|>", prob: 0.0001 },
+      { token: "of", prob: 0.0 },
+      { token: " City", prob: 0.0 },
+      { token: " or", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: " France",
+    contenders: [
+      { token: " France", prob: 99.9833 },
+      { token: " ", prob: 0.004 },
+      { token: " Fr", prob: 0.0032 },
+      { token: " F", prob: 0.0025 },
+      { token: " france", prob: 0.0021 },
+      { token: " Fra", prob: 0.0014 },
+      { token: " Fran", prob: 0.0011 },
+      { token: "<|endoftext|>", prob: 0.0009 },
+      { token: " Paris", prob: 0.0008 },
+      { token: " the", prob: 0.0007 },
+    ],
+  },
+  {
+    chosen: " is",
+    contenders: [
+      { token: " is", prob: 99.9986 },
+      { token: " ", prob: 0.0005 },
+      { token: " in", prob: 0.0003 },
+      { token: "<|endoftext|>", prob: 0.0002 },
+      { token: " i", prob: 0.0001 },
+      { token: ",", prob: 0.0001 },
+      { token: "is", prob: 0.0001 },
+      { token: " (", prob: 0.0 },
+      { token: " Paris", prob: 0.0 },
+      { token: "\n", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: " Paris",
+    contenders: [
+      { token: " Paris", prob: 99.9935 },
+      { token: " P", prob: 0.0042 },
+      { token: " ", prob: 0.001 },
+      { token: " Pa", prob: 0.0009 },
+      { token: "Paris", prob: 0.0003 },
+      { token: "\n", prob: 0.0001 },
+      { token: "<|endoftext|>", prob: 0.0 },
+      { token: " the", prob: 0.0 },
+      { token: " Par", prob: 0.0 },
+      { token: "\n\n", prob: 0.0 },
+    ],
+  },
+  {
+    chosen: ".",
+    contenders: [
+      { token: ".", prob: 99.4334 },
+      { token: ".\n", prob: 0.5406 },
+      { token: "<|endoftext|>", prob: 0.0105 },
+      { token: ".\n\n", prob: 0.0078 },
+      { token: ",", prob: 0.0064 },
+      { token: " ", prob: 0.0006 },
+      { token: " .", prob: 0.0004 },
+      { token: " (", prob: 0.0002 },
+      { token: "\n", prob: 0.0001 },
+      { token: ".\r\n", prob: 0.0 },
+    ],
+  },
+];
+
+const TIMING = {
+  typingMs: 55,
+  postEnterPauseMs: 400,
+  passSetupMs: 980,
+  machineryMs: 240,
+  cycleTickMs: 85,
+  cycleTicks: 10,
+  settleStaggerMs: 110,
+  selectTransferMs: 1200,
+  betweenRoundsMs: 520,
+  fadeClearDelayMs: 220,
+};
+const DISPLAY_TOP_K = 5;
+const SAMPLING_TOP_N = 10;
+
+const stepBtn = document.getElementById("stepBtn");
+const goBtn = document.getElementById("goBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const backBtn = document.getElementById("backBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+const chatThread = document.getElementById("chatThread");
+const chatInput = document.getElementById("chatInput");
+const tableWrap = document.querySelector(".table-wrap");
+const tokenBody = document.querySelector(".token-table tbody");
+const samplingBtn = document.getElementById("samplingBtn");
+const passTitle = document.getElementById("passTitle");
+const passList = document.getElementById("passList");
+const pipelineScene = document.getElementById("pipelineScene");
+const machineryStatus = document.getElementById("machineryStatus");
+const samplingModal = document.getElementById("samplingModal");
+const samplingCloseBtn = document.getElementById("samplingCloseBtn");
+const samplingBaseBody = document.getElementById("samplingBaseBody");
+const samplingGreedyBody = document.getElementById("samplingGreedyBody");
+const samplingTempBody = document.getElementById("samplingTempBody");
+const samplingTopKBody = document.getElementById("samplingTopKBody");
+const samplingTopPBody = document.getElementById("samplingTopPBody");
+const samplingKInput = document.getElementById("samplingKInput");
+const samplingPInput = document.getElementById("samplingPInput");
+const samplingKDecBtn = document.getElementById("samplingKDecBtn");
+const samplingKIncBtn = document.getElementById("samplingKIncBtn");
+const samplingPDecBtn = document.getElementById("samplingPDecBtn");
+const samplingPIncBtn = document.getElementById("samplingPIncBtn");
+
+let tokenEls = [];
+let barEls = [];
+let scoreEls = [];
+
+const state = {
+  running: false,
+  paused: false,
+  finished: false,
+  runMode: "step",
+  timeoutId: null,
+  fadeTimeoutId: null,
+  stepIndex: 0,
+  answerText: "",
+  replayMode: false,
+  checkpoints: [0],
+  checkpointIndex: 0,
+  currentCandidates: [],
+  activeRoundIndex: -1,
+};
+
+function parsePercent(value) {
+  const numeric = Number.parseFloat(String(value).replace("%", "").trim());
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function escapeToken(value) {
+  return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+}
+
+function formatToken(value) {
+  return `'${escapeToken(value)}'`;
+}
+
+function formatProbability(prob) {
+  let text = prob.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+  if (!text.includes(".")) text = `${text}.0`;
+  return `${text}%`;
+}
+
+function getCurrentCandidates() {
+  return state.currentCandidates.filter((x) => x && x.token);
+}
+
+function getSamplingCandidates() {
+  if (state.activeRoundIndex >= 0 && state.activeRoundIndex < TOKEN_ROUNDS.length) {
+    return TOKEN_ROUNDS[state.activeRoundIndex].contenders.slice(0, SAMPLING_TOP_N);
+  }
+  return getCurrentCandidates().slice(0, SAMPLING_TOP_N);
+}
+
+function setSamplingEnabled() {
+  const hasData = getCurrentCandidates().length > 0;
+  samplingBtn.disabled = !hasData;
+}
+
+function fillTwoColTable(bodyEl, rows) {
+  bodyEl.innerHTML = "";
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const tokenTd = document.createElement("td");
+    const probTd = document.createElement("td");
+    tokenTd.textContent = formatToken(row.token);
+    probTd.textContent = formatProbability(row.prob);
+    tr.appendChild(tokenTd);
+    tr.appendChild(probTd);
+    bodyEl.appendChild(tr);
+  });
+}
+
+function renormalizeRows(rows) {
+  const total = rows.reduce((sum, row) => sum + row.prob, 0);
+  if (total <= 0) return rows.map((row) => ({ ...row, prob: 0 }));
+  return rows.map((row) => ({ ...row, prob: (row.prob / total) * 100 }));
+}
+
+function softmaxAtTemp(candidates, temp) {
+  const t = Math.max(temp, 1e-6);
+  const logits = candidates.map((x) => Math.log(Math.max(x.prob / 100, 1e-12)));
+  const scaled = logits.map((z) => z / t);
+  const m = Math.max(...scaled);
+  const exps = scaled.map((z) => Math.exp(z - m));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map((e) => (e / sum) * 100);
+}
+
+function renderTemperatureTable(candidates) {
+  const probs05 = softmaxAtTemp(candidates, 0.5);
+  const probs1 = softmaxAtTemp(candidates, 1);
+  const probs2 = softmaxAtTemp(candidates, 2);
+  samplingTempBody.innerHTML = "";
+  candidates.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    const tokenTd = document.createElement("td");
+    const t05Td = document.createElement("td");
+    const t1Td = document.createElement("td");
+    const t2Td = document.createElement("td");
+    tokenTd.textContent = formatToken(row.token);
+    t05Td.textContent = formatProbability(probs05[idx]);
+    t1Td.textContent = formatProbability(probs1[idx]);
+    t2Td.textContent = formatProbability(probs2[idx]);
+    tr.appendChild(tokenTd);
+    tr.appendChild(t05Td);
+    tr.appendChild(t1Td);
+    tr.appendChild(t2Td);
+    samplingTempBody.appendChild(tr);
+  });
+}
+
+function renderTopKTable(candidates) {
+  const parsed = Number.parseInt(samplingKInput.value, 10);
+  const k = Math.max(1, Math.min(10, Number.isFinite(parsed) ? parsed : 3));
+  samplingKInput.value = String(k);
+  const selected = candidates.slice(0, k);
+  fillTwoColTable(samplingTopKBody, renormalizeRows(selected));
+}
+
+function renderTopPTable(candidates) {
+  const parsed = Number.parseFloat(samplingPInput.value);
+  const p = Math.max(0, Math.min(100, Number.isFinite(parsed) ? parsed : 90));
+  samplingPInput.value = String(p);
+
+  const selected = [];
+  let cum = 0;
+  for (const row of candidates) {
+    selected.push(row);
+    cum += row.prob;
+    if (cum >= p) break;
+  }
+  fillTwoColTable(samplingTopPBody, renormalizeRows(selected));
+}
+
+function adjustTopK(delta) {
+  const parsed = Number.parseInt(samplingKInput.value, 10);
+  const next = Math.max(1, Math.min(10, (Number.isFinite(parsed) ? parsed : 3) + delta));
+  samplingKInput.value = String(next);
+  renderTopKTable(getSamplingCandidates());
+}
+
+function adjustTopP(delta) {
+  const parsed = Number.parseFloat(samplingPInput.value);
+  const next = Math.max(0, Math.min(100, (Number.isFinite(parsed) ? parsed : 90) + delta));
+  samplingPInput.value = String(next);
+  renderTopPTable(getSamplingCandidates());
+}
+
+function renderSamplingTables() {
+  const candidates = getSamplingCandidates();
+  if (candidates.length === 0) return;
+
+  fillTwoColTable(samplingBaseBody, candidates);
+
+  const greedy = candidates.map((row, idx) => ({ token: row.token, prob: idx === 0 ? 100 : 0 }));
+  fillTwoColTable(samplingGreedyBody, greedy);
+
+  renderTemperatureTable(candidates);
+  renderTopKTable(candidates);
+  renderTopPTable(candidates);
+}
+
+function openSamplingModal() {
+  if (samplingBtn.disabled) return;
+  renderSamplingTables();
+  samplingModal.classList.remove("hidden");
+}
+
+function closeSamplingModal() {
+  samplingModal.classList.add("hidden");
+}
+
+function createProbabilityRows() {
+  const rowCount = Math.min(DISPLAY_TOP_K, TOKEN_ROUNDS[0].contenders.length);
+  tokenBody.innerHTML = "";
+  tokenEls = [];
+  barEls = [];
+  scoreEls = [];
+
+  for (let i = 0; i < rowCount; i += 1) {
+    const row = document.createElement("tr");
+
+    const tokenCell = document.createElement("td");
+    tokenCell.id = `token${i}`;
+
+    const scoreCell = document.createElement("td");
+    const scoreWrap = document.createElement("div");
+    scoreWrap.className = "score-cell";
+
+    const barTrack = document.createElement("div");
+    barTrack.className = "bar-track";
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.id = `bar${i}`;
+
+    const score = document.createElement("span");
+    score.className = "score-value";
+    score.id = `score${i}`;
+    score.textContent = "0%";
+
+    barTrack.appendChild(bar);
+    scoreWrap.appendChild(barTrack);
+    scoreWrap.appendChild(score);
+    scoreCell.appendChild(scoreWrap);
+
+    row.appendChild(tokenCell);
+    row.appendChild(scoreCell);
+    tokenBody.appendChild(row);
+
+    tokenEls.push(tokenCell);
+    barEls.push(bar);
+    scoreEls.push(score);
+  }
+  setSamplingEnabled();
+}
+
+function buildSteps() {
+  const builtSteps = [
+    { duration: 0, action: initTyping },
+    ...PROMPT.split("").map((char) => ({ duration: TIMING.typingMs, action: () => typeChar(char) })),
+    { duration: TIMING.postEnterPauseMs, action: pressEnter },
+  ];
+
+  TOKEN_ROUNDS.forEach((round, roundIndex) => {
+    const visibleContenders = round.contenders.slice(0, DISPLAY_TOP_K);
+
+    builtSteps.push({ duration: TIMING.passSetupMs, action: () => beginPass(roundIndex) });
+    builtSteps.push({ duration: TIMING.machineryMs, action: startMachinery });
+
+    builtSteps.push(
+      ...Array.from({ length: TIMING.cycleTicks }, (_, tick) => ({
+        duration: TIMING.cycleTickMs,
+        action: () => cycleRound(roundIndex, tick),
+      }))
+    );
+
+    builtSteps.push(
+      ...visibleContenders.map((_, rowIndex) => ({
+        duration: TIMING.settleStaggerMs,
+        action: () => settleRoundRow(roundIndex, rowIndex),
+      }))
+    );
+
+    builtSteps.push({
+      duration: TIMING.selectTransferMs,
+      action: () => selectAndTransferTopToken(roundIndex),
+      pauseAfter: true,
+    });
+
+    if (roundIndex < TOKEN_ROUNDS.length - 1) {
+      builtSteps.push({ duration: TIMING.betweenRoundsMs, action: prepNextRound });
+    }
+  });
+
+  builtSteps.push({ duration: 0, action: finalizeAnswer });
+  builtSteps.push({ duration: 0, action: finish });
+  return builtSteps;
+}
+
+const steps = buildSteps();
+
+function clearTimer() {
+  if (state.timeoutId) {
+    clearTimeout(state.timeoutId);
+    state.timeoutId = null;
+  }
+}
+
+function clearFadeTimer() {
+  if (state.fadeTimeoutId) {
+    clearTimeout(state.fadeTimeoutId);
+    state.fadeTimeoutId = null;
+  }
+}
+
+function setControls() {
+  const runLocked = state.running && !state.finished && !state.paused;
+  stepBtn.disabled = runLocked;
+  goBtn.disabled = runLocked;
+  pauseBtn.disabled = !state.running || state.finished;
+  pauseBtn.textContent = state.paused ? "▶" : "⏸";
+  pauseBtn.title = state.paused ? "Resume" : "Pause";
+  pauseBtn.setAttribute("aria-label", state.paused ? "Resume" : "Pause");
+  backBtn.disabled = !state.paused || state.checkpointIndex <= 0 || state.finished;
+}
+
+function clearCandidateTable() {
+  tokenEls.forEach((el) => {
+    el.textContent = "";
+    el.dataset.rawToken = "";
+    el.classList.remove("chosen-token");
+  });
+  barEls.forEach((bar) => {
+    bar.style.width = "0%";
+  });
+  scoreEls.forEach((el) => {
+    el.textContent = "0%";
+  });
+  state.currentCandidates = [];
+  setSamplingEnabled();
+}
+
+function setPipelineStage(stage) {
+  if (pipelineScene) pipelineScene.dataset.stage = stage;
+  if (!machineryStatus) return;
+
+  if (stage === "encoding") machineryStatus.textContent = "Encoding Prompt";
+  else if (stage === "computing") machineryStatus.textContent = "Running Forward Pass";
+  else if (stage === "decoded") machineryStatus.textContent = "Decoded Top Candidates";
+  else if (stage === "done") machineryStatus.textContent = "Generation Complete";
+  else machineryStatus.textContent = "Idle";
+}
+
+function setRow(row, token, prob) {
+  tokenEls[row].textContent = formatToken(token);
+  tokenEls[row].dataset.rawToken = token;
+  barEls[row].style.width = `${prob}%`;
+  scoreEls[row].textContent = formatProbability(prob);
+  state.currentCandidates[row] = { token, prob };
+  setSamplingEnabled();
+}
+
+function resetVisuals() {
+  chatThread.innerHTML = "";
+  chatInput.textContent = "";
+  chatInput.classList.remove("typing");
+  tableWrap.classList.remove("fading");
+  passTitle.textContent = "Pass Input";
+  renderPassSequence([]);
+  clearCandidateTable();
+  state.activeRoundIndex = -1;
+  closeSamplingModal();
+  setPipelineStage("idle");
+
+  document.querySelectorAll(".star-burst, .flying-token").forEach((el) => {
+    el.remove();
+  });
+}
+
+function initTyping() {
+  chatInput.classList.add("typing");
+}
+
+function typeChar(char) {
+  chatInput.textContent += char;
+}
+
+function pressEnter() {
+  const msg = document.createElement("div");
+  msg.className = "message";
+  msg.textContent = PROMPT;
+  chatThread.prepend(msg);
+
+  const assistantMsg = document.createElement("div");
+  assistantMsg.className = "assistant-message";
+  assistantMsg.innerHTML =
+    '<span class="answer-slot" id="answerSlot"></span><span class="answer-meta"><span class="generation-cursor visible" id="generationCursor">|</span><span class="final-status" id="finalStatus">Final</span></span>';
+  msg.after(assistantMsg);
+
+  chatInput.textContent = "";
+  chatInput.classList.remove("typing");
+}
+
+function tokenizeForPass(text) {
+  const normalized = text.replace(/\r\n/g, "\n");
+  const tokens = [];
+  let i = 0;
+
+  while (i < normalized.length) {
+    const ch = normalized[i];
+    if (ch === " " || ch === "\t") {
+      i += 1;
+      continue;
+    }
+    if (ch === "\n") {
+      tokens.push("\\n");
+      i += 1;
+      continue;
+    }
+
+    const wordMatch = normalized.slice(i).match(/^[A-Za-z0-9]+/);
+    if (wordMatch) {
+      tokens.push(wordMatch[0]);
+      i += wordMatch[0].length;
+      continue;
+    }
+
+    tokens.push(ch);
+    i += 1;
+  }
+
+  return tokens;
+}
+
+function tokenToId(token, index) {
+  let hash = 17;
+  for (const ch of token) {
+    hash = (hash * 31 + ch.charCodeAt(0)) % 50000;
+  }
+  return 1000 + hash + index;
+}
+
+function setPassRow(targetRow, token, index) {
+  if (!targetRow) return;
+  const wordCell = targetRow.children[0];
+  const idCell = targetRow.children[1];
+  if (!wordCell || !idCell) return;
+  wordCell.textContent = token;
+  idCell.textContent = token ? String(tokenToId(token, index)) : "";
+}
+
+function renderPassSequence(sequence, deferredIndex = -1) {
+  const MIN_PASS_ROWS = 10;
+  passList.innerHTML = "";
+  const padded = [...sequence];
+  while (padded.length < MIN_PASS_ROWS) padded.push("");
+
+  padded.forEach((token, index) => {
+    const row = document.createElement("tr");
+    row.dataset.seqIndex = String(index);
+    const wordCell = document.createElement("td");
+    const idCell = document.createElement("td");
+    const shouldDefer = index === deferredIndex;
+    wordCell.textContent = shouldDefer ? "" : token;
+    idCell.textContent = shouldDefer || !token ? "" : String(tokenToId(token, index));
+    row.appendChild(wordCell);
+    row.appendChild(idCell);
+    passList.appendChild(row);
+  });
+}
+
+function buildPassSequence() {
+  const questionTokens = tokenizeForPass(PROMPT);
+  const answerTokens = tokenizeForPass(state.answerText);
+  return ["<QUESTION>", ...questionTokens, "<ANSWER>", ...answerTokens];
+}
+
+function flyChatTokenToPass(sourceEl, targetEl, tokenText, onArrive) {
+  if (!sourceEl || !targetEl) return;
+
+  const sourceRect = sourceEl.getBoundingClientRect();
+  const targetRect = targetEl.getBoundingClientRect();
+  const flyer = document.createElement("div");
+  flyer.className = "flying-token";
+  flyer.textContent = tokenText;
+  flyer.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+  flyer.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.classList.add("run");
+    flyer.style.left = `${targetRect.left + targetRect.width / 2}px`;
+    flyer.style.top = `${targetRect.top + targetRect.height / 2}px`;
+  });
+
+  setTimeout(() => {
+    targetEl.classList.add("pass-hit");
+    flyer.remove();
+    if (typeof onArrive === "function") onArrive();
+    setTimeout(() => targetEl.classList.remove("pass-hit"), 380);
+  }, 900);
+}
+
+function animateLatestAnswerTokenIntoPass(sequenceLength, tokenToCommit) {
+  if (state.replayMode || sequenceLength <= 0 || !tokenToCommit) return;
+
+  const answerSlot = document.getElementById("answerSlot");
+  if (!answerSlot) return;
+  const tokenElsInAnswer = answerSlot.querySelectorAll(".answer-token");
+  const source = tokenElsInAnswer[tokenElsInAnswer.length - 1];
+  if (!source) return;
+
+  const targetRow = passList.querySelector(`tr[data-seq-index="${sequenceLength - 1}"]`);
+  const targetCell = targetRow ? targetRow.children[0] : null;
+  if (!targetCell) return;
+
+  const label = tokenToCommit || source.textContent || "";
+  flyChatTokenToPass(source, targetCell, label, () => {
+    setPassRow(targetRow, tokenToCommit, sequenceLength - 1);
+  });
+}
+
+function beginPass(roundIndex) {
+  state.activeRoundIndex = roundIndex;
+  const sequence = buildPassSequence();
+  const latestIndex = sequence.length - 1;
+  const latestToken = sequence[latestIndex] || "";
+  const shouldAnimateLatestToken = roundIndex > 0 && !state.replayMode && !!latestToken;
+  passTitle.textContent = `Pass ${roundIndex + 1}: Encoded Prompt`;
+  renderPassSequence(sequence, shouldAnimateLatestToken ? latestIndex : -1);
+  if (shouldAnimateLatestToken) {
+    animateLatestAnswerTokenIntoPass(sequence.length, latestToken);
+  }
+  clearCandidateTable();
+  setPipelineStage("encoding");
+}
+
+function startMachinery() {
+  setPipelineStage("computing");
+}
+
+function cycleRound(roundIndex, tick) {
+  const contenders = TOKEN_ROUNDS[roundIndex].contenders.slice(0, DISPLAY_TOP_K);
+  tokenEls.forEach((_, rowIndex) => {
+    const contender = contenders[(rowIndex + tick) % contenders.length];
+    setRow(rowIndex, contender.token, contender.prob);
+  });
+}
+
+function settleRoundRow(roundIndex, rowIndex) {
+  const contender = TOKEN_ROUNDS[roundIndex].contenders[rowIndex];
+  setRow(rowIndex, contender.token, contender.prob);
+  if (rowIndex === 0) setPipelineStage("decoded");
+}
+
+function prepNextRound() {
+  const clearProbabilityTable = () => {
+    clearCandidateTable();
+    tableWrap.classList.remove("fading");
+  };
+
+  if (state.replayMode) {
+    clearProbabilityTable();
+    return;
+  }
+
+  clearFadeTimer();
+  tableWrap.classList.add("fading");
+  state.fadeTimeoutId = setTimeout(() => {
+    clearProbabilityTable();
+    state.fadeTimeoutId = null;
+  }, TIMING.fadeClearDelayMs);
+}
+
+function selectAndTransferTopToken(roundIndex) {
+  const source = tokenEls[0];
+  const target = document.getElementById("answerSlot");
+  if (!source || !target) return;
+
+  tokenEls.forEach((el) => {
+    el.classList.remove("chosen-token");
+  });
+  source.classList.add("chosen-token");
+
+  const chosenToken = TOKEN_ROUNDS[roundIndex].chosen;
+  spawnStarBurst(source);
+  flyTokenToTarget(source, target, chosenToken);
+}
+
+function spawnStarBurst(source) {
+  if (state.replayMode) return;
+
+  const rect = source.getBoundingClientRect();
+  const burst = document.createElement("div");
+  burst.className = "star-burst";
+  burst.style.left = `${rect.left + rect.width / 2}px`;
+  burst.style.top = `${rect.top + rect.height / 2}px`;
+
+  for (let i = 0; i < 12; i += 1) {
+    const star = document.createElement("span");
+    const angle = (Math.PI * 2 * i) / 12;
+    const distance = 34 + Math.random() * 26;
+    const dx = `${Math.cos(angle) * distance}px`;
+    const dy = `${Math.sin(angle) * distance}px`;
+    star.className = "star";
+    star.textContent = "✦";
+    star.style.setProperty("--dx", dx);
+    star.style.setProperty("--dy", dy);
+    star.style.setProperty("--delay", `${Math.random() * 120}ms`);
+    burst.appendChild(star);
+  }
+
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 900);
+}
+
+function flyTokenToTarget(source, target, tokenText) {
+  const chunk = buildAnswerChunk(tokenText);
+
+  if (state.replayMode) {
+    const tokenSpan = document.createElement("span");
+    tokenSpan.className = "answer-token";
+    tokenSpan.textContent = chunk;
+    target.appendChild(tokenSpan);
+    state.answerText = `${state.answerText}${chunk}`;
+    target.classList.add("visible");
+    return;
+  }
+
+  const sourceRect = source.getBoundingClientRect();
+  const marker = document.createElement("span");
+  marker.className = "landing-marker";
+  marker.textContent = chunk;
+  target.appendChild(marker);
+  const targetRect = marker.getBoundingClientRect();
+
+  const flyer = document.createElement("div");
+  flyer.className = "flying-token";
+  flyer.textContent = formatToken(tokenText);
+  flyer.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+  flyer.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.classList.add("run");
+    flyer.style.left = `${targetRect.left + Math.max(targetRect.width / 2, 18)}px`;
+    flyer.style.top = `${targetRect.top + targetRect.height / 2}px`;
+  });
+
+  setTimeout(() => {
+    const tokenSpan = document.createElement("span");
+    tokenSpan.className = "answer-token";
+    tokenSpan.textContent = chunk;
+    target.appendChild(tokenSpan);
+    marker.remove();
+    state.answerText = `${state.answerText}${chunk}`;
+    target.classList.add("visible");
+    flyer.remove();
+  }, 920);
+}
+
+function buildAnswerChunk(tokenText) {
+  return tokenText;
+}
+
+function hideGenerationCursor() {
+  const cursor = document.getElementById("generationCursor");
+  if (cursor) cursor.classList.remove("visible");
+}
+
+function showFinalStatus() {
+  const finalStatus = document.getElementById("finalStatus");
+  if (finalStatus) finalStatus.classList.add("visible");
+}
+
+function finalizeAnswer() {
+  hideGenerationCursor();
+  showFinalStatus();
+  setPipelineStage("done");
+}
+
+function finish() {
+  state.running = false;
+  state.finished = true;
+  setControls();
+}
+
+function scheduleNextStep() {
+  if (!state.running || state.paused) return;
+  if (state.stepIndex >= steps.length) return;
+
+  const step = steps[state.stepIndex];
+  state.stepIndex += 1;
+  step.action();
+
+  state.timeoutId = setTimeout(() => {
+    if (!state.running || state.paused) return;
+
+    if (state.runMode === "step" && step.pauseAfter) {
+      state.paused = true;
+      recordCheckpoint(state.stepIndex);
+      clearTimer();
+      setControls();
+      return;
+    }
+
+    scheduleNextStep();
+  }, step.duration);
+}
+
+function recordCheckpoint(stepIndex) {
+  if (state.checkpoints[state.checkpoints.length - 1] !== stepIndex) {
+    state.checkpoints.push(stepIndex);
+  }
+  state.checkpointIndex = state.checkpoints.length - 1;
+}
+
+function jumpToCheckpoint(targetIndex) {
+  const targetStep = state.checkpoints[targetIndex];
+  if (typeof targetStep !== "number") return;
+
+  clearTimer();
+  clearFadeTimer();
+  state.running = true;
+  state.paused = true;
+  state.finished = false;
+  state.stepIndex = 0;
+  state.answerText = "";
+  resetVisuals();
+
+  state.replayMode = true;
+  while (state.stepIndex < targetStep && state.stepIndex < steps.length) {
+    const step = steps[state.stepIndex];
+    state.stepIndex += 1;
+    step.action();
+  }
+  state.replayMode = false;
+
+  state.checkpointIndex = targetIndex;
+  state.checkpoints = state.checkpoints.slice(0, targetIndex + 1);
+  setControls();
+}
+
+function startWithMode(mode) {
+  if (state.running && !state.finished) {
+    if (!state.paused) return;
+    state.runMode = mode;
+    state.paused = false;
+    setControls();
+    scheduleNextStep();
+    return;
+  }
+
+  if (state.finished) {
+    reset();
+  }
+
+  state.runMode = mode;
+  state.running = true;
+  state.paused = false;
+  setControls();
+  scheduleNextStep();
+}
+
+function startStep() {
+  startWithMode("step");
+}
+
+function startGo() {
+  startWithMode("go");
+}
+
+function togglePause() {
+  if (!state.running || state.finished) return;
+
+  state.paused = !state.paused;
+  if (!state.paused) {
+    scheduleNextStep();
+  } else {
+    clearTimer();
+  }
+  setControls();
+}
+
+function backOneStep() {
+  if (!state.paused || state.finished) return;
+  if (state.checkpointIndex <= 0) return;
+  jumpToCheckpoint(state.checkpointIndex - 1);
+}
+
+function reset() {
+  clearTimer();
+  clearFadeTimer();
+  state.running = false;
+  state.paused = false;
+  state.finished = false;
+  state.runMode = "step";
+  state.stepIndex = 0;
+  state.answerText = "";
+  state.replayMode = false;
+  state.checkpoints = [0];
+  state.checkpointIndex = 0;
+  resetVisuals();
+  setControls();
+}
+
+createProbabilityRows();
+stepBtn.addEventListener("click", startStep);
+goBtn.addEventListener("click", startGo);
+pauseBtn.addEventListener("click", togglePause);
+backBtn.addEventListener("click", backOneStep);
+resetBtn.addEventListener("click", reset);
+samplingBtn.addEventListener("click", openSamplingModal);
+samplingCloseBtn.addEventListener("click", closeSamplingModal);
+samplingModal.addEventListener("click", (event) => {
+  if (event.target === samplingModal) closeSamplingModal();
+});
+samplingKInput.addEventListener("input", () => {
+  renderTopKTable(getSamplingCandidates());
+});
+samplingPInput.addEventListener("input", () => {
+  renderTopPTable(getSamplingCandidates());
+});
+samplingKDecBtn.addEventListener("click", () => adjustTopK(-1));
+samplingKIncBtn.addEventListener("click", () => adjustTopK(1));
+samplingPDecBtn.addEventListener("click", () => adjustTopP(-1));
+samplingPIncBtn.addEventListener("click", () => adjustTopP(1));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !samplingModal.classList.contains("hidden")) closeSamplingModal();
+});
+
+reset();
+    </script>
+  </body>
+</html>
