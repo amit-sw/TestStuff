@@ -21,8 +21,23 @@
       button { cursor:pointer; background:#1f5fbf; border-color:#184a95; }
       button:disabled { opacity:.6; cursor:not-allowed; }
       .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-      .stage { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b1529; }
+      .stage { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#0b1529; position:relative; }
+      .stage.drop-active { border-color:#74c7ff; box-shadow:0 0 0 3px rgba(116,199,255,0.22) inset; }
       .stage img, .stage canvas { width:100%; display:block; max-height:58vh; object-fit:contain; }
+      .drop-hint {
+        position:absolute;
+        left:10px;
+        right:10px;
+        bottom:10px;
+        border:1px dashed #4a6392;
+        border-radius:8px;
+        text-align:center;
+        padding:8px;
+        color:var(--muted);
+        background:rgba(11,21,41,.75);
+        font-size:.84rem;
+        pointer-events:none;
+      }
       .row { display:flex; gap:10px; flex-wrap:wrap; }
       .pill { border-radius:999px; border:1px solid var(--line); padding:3px 8px; font-size:.8rem; color:var(--muted); }
       .hint { color:var(--muted); font-size:.88rem; }
@@ -72,8 +87,8 @@
       <section class="section">
         <h2>Result</h2>
         <div class="grid">
-          <div class="stage"><img id="contentImg" alt="content" /></div>
-          <div class="stage"><img id="styleImg" alt="style" /></div>
+          <div class="stage" id="contentStage"><img id="contentImg" alt="content" /><div id="contentHint" class="drop-hint">Drop content image here</div></div>
+          <div class="stage" id="styleStage"><img id="styleImg" alt="style" /><div id="styleHint" class="drop-hint">Drop style image here</div></div>
           <div class="stage"><canvas id="output"></canvas></div>
         </div>
       </section>
@@ -91,6 +106,10 @@
       const styleFile = document.getElementById('styleFile');
       const contentImg = document.getElementById('contentImg');
       const styleImg = document.getElementById('styleImg');
+      const contentStage = document.getElementById('contentStage');
+      const styleStage = document.getElementById('styleStage');
+      const contentHint = document.getElementById('contentHint');
+      const styleHint = document.getElementById('styleHint');
       const output = document.getElementById('output');
       const combineBtn = document.getElementById('combineBtn');
       const statusEl = document.getElementById('status');
@@ -107,8 +126,14 @@
 
       function setStatus(text) { statusEl.textContent = text; }
 
+      function updateHints() {
+        contentHint.style.display = contentImg.src ? 'none' : 'block';
+        styleHint.style.display = styleImg.src ? 'none' : 'block';
+      }
+
       function readFileToImg(file, target) {
         target.src = URL.createObjectURL(file);
+        updateHints();
       }
 
       async function loadModels() {
@@ -180,15 +205,41 @@
         c.height = video.videoHeight;
         c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
         contentImg.src = c.toDataURL('image/png');
+        updateHints();
+      }
+
+      function bindDrop(stage, targetImg) {
+        ['dragenter', 'dragover'].forEach((evt) => {
+          stage.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            stage.classList.add('drop-active');
+          });
+        });
+        ['dragleave', 'drop'].forEach((evt) => {
+          stage.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            stage.classList.remove('drop-active');
+          });
+        });
+        stage.addEventListener('drop', (e) => {
+          const file = e.dataTransfer?.files?.[0];
+          if (!file || !file.type.startsWith('image/')) return;
+          readFileToImg(file, targetImg);
+        });
       }
 
       contentFile.addEventListener('change', () => { const f = contentFile.files?.[0]; if (f) readFileToImg(f, contentImg); });
       styleFile.addEventListener('change', () => { const f = styleFile.files?.[0]; if (f) readFileToImg(f, styleImg); });
       combineBtn.addEventListener('click', combine);
-      sampleBtn.addEventListener('click', () => { contentImg.crossOrigin = 'anonymous'; styleImg.crossOrigin = 'anonymous'; contentImg.src = SAMPLE_CONTENT; styleImg.src = SAMPLE_STYLE; });
+      sampleBtn.addEventListener('click', () => { contentImg.crossOrigin = 'anonymous'; styleImg.crossOrigin = 'anonymous'; contentImg.src = SAMPLE_CONTENT; styleImg.src = SAMPLE_STYLE; updateHints(); });
       cameraBtn.addEventListener('click', () => openCamera().catch((e) => alert(e.message)));
       closeCamBtn.addEventListener('click', closeCamera);
       snapBtn.addEventListener('click', snapCamera);
+      bindDrop(contentStage, contentImg);
+      bindDrop(styleStage, styleImg);
+      updateHints();
 
       loadModels().catch((e) => { console.error(e); setStatus('Model load failed'); combineBtn.textContent = 'Model load failed'; combineBtn.disabled = true; });
     </script>
