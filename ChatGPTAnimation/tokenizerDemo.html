@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tokenizer Demo Animation</title>
+    <title>Schovia | Tokenizer Demo</title>
     <style>
       :root {
         --bg: #08101d;
@@ -39,14 +39,26 @@
         flex-wrap: wrap;
       }
 
-      .topbar h1 {
-        margin: 0;
-        font-size: 1.25rem;
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         margin-right: auto;
       }
 
+      .brand-logo {
+        height: 52px;
+        width: auto;
+        display: block;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+
       .badge {
-        font-size: 0.82rem;
+        font-size: 0.86rem;
         color: var(--muted);
         border: 1px solid var(--line);
         border-radius: 999px;
@@ -133,6 +145,9 @@
   <body>
     <main class="app">
       <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
         <h1>Tokenizer Demo</h1>
         <span class="badge">GPT-5.x / o1-o3 tokenizer (o200k_base)</span>
       </div>

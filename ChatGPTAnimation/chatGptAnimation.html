@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ChatGPT Submit Animation</title>
+    <title>Schovia | Token Generation Pipeline Demo</title>
     <style>
 :root {
   --bg: #0b1020;
@@ -36,6 +36,34 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(122, 170, 255, 0.25);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  height: 52px;
+  width: auto;
+  display: block;
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #9db1db;
 }
 
 .controls {
@@ -793,6 +821,12 @@ button:disabled {
   </head>
   <body>
     <main class="app">
+      <div class="brand-header">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <p class="brand-subtitle">Token Generation Pipeline Demo</p>
+      </div>
       <header class="controls">
         <button id="stepBtn" title="Step" aria-label="Step">⏭</button>
         <button id="goBtn" title="Go" aria-label="Go">▶</button>
