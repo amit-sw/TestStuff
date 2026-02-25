@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schovia | Toonify Gym</title>
+  <style>
+    :root {
+      --bg: #08101d;
+      --panel: #101a2e;
+      --panel2: #15233d;
+      --line: #2a3f68;
+      --text: #e8f0ff;
+      --muted: #9db2d8;
+      --accent: #1f5fbf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .app { width: min(1120px, 95vw); margin: 24px auto; display: grid; gap: 14px; }
+    .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .brand-lockup { margin-right: auto; }
+    .brand-logo { height: 52px; }
+    .badge { font-size: .86rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+    .section { background: linear-gradient(165deg, var(--panel), var(--panel2)); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, button {
+      border-radius: 10px;
+      border: 1px solid #2d4d82;
+      background: #132746;
+      color: var(--text);
+      padding: 8px 10px;
+    }
+    input { flex: 1 1 260px; }
+    button { cursor: pointer; background: var(--accent); border-color: #184a95; }
+    button.secondary { background: #1b3359; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stage { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0b1529; min-height: 280px; display: grid; place-items: center; }
+    .stage img, .stage video, .stage canvas { width: 100%; max-height: 62vh; object-fit: contain; display: block; }
+    .hint { color: var(--muted); font-size: .88rem; margin: 8px 0 0; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+      </div>
+      <h1>Find out your cartoon avatar</h1>
+      <span class="badge">RapidAPI Toonify</span>
+    </div>
+
+    <section class="section">
+      <div class="controls">
+        <input id="file" type="file" accept="image/*" />
+        <button id="startCam" class="secondary">Start Camera</button>
+        <button id="snap" class="secondary">Capture Frame</button>
+        <button id="run">Toonify</button>
+      </div>
+      <p class="hint">Supports upload + webcam capture and calls the same Toonify endpoint used in the original app bundle.</p>
+    </section>
+
+    <section class="section">
+      <div class="grid">
+        <div class="stage">
+          <video id="video" autoplay playsinline style="display:none;"></video>
+          <img id="src" alt="source" />
+          <canvas id="capture" style="display:none;"></canvas>
+        </div>
+        <div class="stage">
+          <img id="dst" alt="result" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const TOONIFY_URL = 'https://toonify.p.rapidapi.com/v0/toonify';
+    const API_KEY = 'c6407c6414mshd292f749e805465p1f93f8jsnf892f934aef1';
+
+    const fileInput = document.getElementById('file');
+    const startCamBtn = document.getElementById('startCam');
+    const snapBtn = document.getElementById('snap');
+    const runBtn = document.getElementById('run');
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('capture');
+    const src = document.getElementById('src');
+    const dst = document.getElementById('dst');
+
+    let stream = null;
+    let selectedBlob = null;
+
+    function stopStream() {
+      if (!stream) return;
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      video.style.display = 'none';
+    }
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      stopStream();
+      selectedBlob = file;
+      src.src = URL.createObjectURL(file);
+      src.style.display = 'block';
+    });
+
+    startCamBtn.addEventListener('click', async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        src.style.display = 'none';
+      } catch (err) {
+        alert('Could not access webcam: ' + err.message);
+      }
+    });
+
+    snapBtn.addEventListener('click', () => {
+      if (!stream || !video.videoWidth || !video.videoHeight) {
+        alert('Start camera first.');
+        return;
+      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        if (!blob) {
+          alert('Could not capture frame.');
+          return;
+        }
+        selectedBlob = blob;
+        src.src = canvas.toDataURL('image/png');
+        src.style.display = 'block';
+        video.style.display = 'none';
+      }, 'image/png');
+    });
+
+    runBtn.addEventListener('click', async () => {
+      if (!selectedBlob) {
+        alert('Upload an image or capture a webcam frame first.');
+        return;
+      }
+
+      dst.alt = 'Processing...';
+      dst.removeAttribute('src');
+
+      try {
+        const form = new FormData();
+        form.append('image', selectedBlob, 'input.png');
+
+        const response = await fetch(TOONIFY_URL, {
+          method: 'POST',
+          headers: {
+            'X-RapidAPI-Key': API_KEY,
+            'X-RapidAPI-Host': 'toonify.p.rapidapi.com'
+          },
+          body: form
+        });
+
+        const data = await response.json();
+        if (data && data.b64_encoded_output) {
+          dst.src = 'data:image/png;base64,' + data.b64_encoded_output;
+          dst.alt = 'Toonified image';
+        } else {
+          dst.alt = 'Unexpected response';
+          alert('Unexpected response from toonify endpoint.');
+          console.log(data);
+        }
+      } catch (err) {
+        dst.alt = 'Request failed';
+        alert('Toonify request failed. API key quota or CORS restrictions may apply.');
+      }
+    });
+
+    window.addEventListener('beforeunload', stopStream);
+  </script>
+</body>
+</html>

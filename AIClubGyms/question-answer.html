@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schovia | Can an AI do your homework?</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <style>
+    :root { --bg:#eef3fb; --surface:#fff; --line:#d7e1ef; --text:#223146; --muted:#60738f; --bot:#ececec; --me:#579ffb; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:var(--text); font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; background:linear-gradient(180deg,#f8fbff,#edf2fa); }
+    .topbar { background:#fff; border-bottom:1px solid #d5deeb; box-shadow:0 2px 7px rgba(0,0,0,.08); }
+    .topbar-inner { width:min(1180px,95vw); margin:0 auto; min-height:76px; display:flex; align-items:center; gap:20px; }
+    .brand-logo { height:44px; }
+    .menu { display:flex; flex-wrap:wrap; gap:14px; color:#1a5fb6; font-weight:600; font-size:.95rem; }
+    .page { width:min(1240px,96vw); margin:24px auto 34px; display:grid; grid-template-columns:170px minmax(650px,1fr) 170px; gap:14px; align-items:center; }
+    .side-image { width:150px; display:block; margin:auto; }
+    .center { display:grid; gap:14px; }
+    .hero { text-align:center; }
+    .hero h1 { margin:0; color:#2c86ea; font-weight:500; letter-spacing:.3px; font-size:clamp(1.65rem,2.8vw,2.45rem); }
+    .hero p { margin:8px 0 0; color:#4f617d; font-size:1.12rem; }
+    .shell { border:1px solid #d2dbe9; border-radius:10px; background:var(--surface); box-shadow:0 8px 22px rgba(31,53,84,.22); padding:16px; display:grid; gap:10px; }
+    .context { border:1px solid #cfd9e8; border-radius:8px; background:#f7fafe; padding:8px; }
+    .context label { display:block; font-size:.82rem; color:var(--muted); margin-bottom:4px; }
+    textarea { width:100%; min-height:76px; resize:vertical; border:1px solid #c6d2e4; border-radius:7px; padding:9px 10px; font:inherit; color:var(--text); background:#fff; }
+    .chat { min-height:320px; max-height:410px; overflow:auto; padding:18px 14px; border-radius:9px; border:1px solid #dce4ef; background:radial-gradient(circle at 30px 30px,#f6f8fc 20px,transparent 21px) 0 0/120px 90px,radial-gradient(circle at 85px 58px,#f6f8fc 13px,transparent 14px) 0 0/120px 90px,#fafbfd; display:grid; gap:10px; align-content:start; }
+    .row { display:flex; gap:10px; align-items:flex-start; }
+    .row.me { justify-content:flex-end; margin-left:25%; }
+    .avatar { width:60px; height:60px; border-radius:50%; object-fit:cover; border:1px solid #ced9ea; background:#fff; flex-shrink:0; }
+    .bubble { max-width:min(580px,100%); border-radius:14px; padding:10px 13px; background:var(--bot); color:#28374b; white-space:pre-wrap; line-height:1.42; }
+    .me .bubble { background:var(--me); color:#fff; border-bottom-right-radius:6px; }
+    .name { font-size:.8rem; font-weight:700; letter-spacing:.3px; margin-bottom:5px; opacity:.92; }
+    .composer { display:grid; grid-template-columns:1fr auto auto auto auto; gap:6px; align-items:center; border-top:1px solid #e0e7f2; padding-top:10px; }
+    input { width:100%; border-radius:7px; border:1px solid #c6d2e4; font-size:1.02rem; padding:10px 12px; outline:none; color:var(--text); background:#fff; }
+    .icon-btn { border:1px solid #c7d3e6; background:#fff; border-radius:8px; color:#657a99; cursor:pointer; height:40px; min-width:44px; padding:0 8px; display:grid; place-items:center; }
+    .icon-btn .material-icons { font-size:21px; }
+    .icon-btn.primary { background:#f1f6ff; color:#276ecd; border-color:#afd0fa; }
+    .hint { color:var(--muted); font-size:.83rem; text-align:right; }
+    @media (max-width:980px) { .page { grid-template-columns:1fr; } .side-image { display:none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /><nav class="menu" aria-label="Demo menu"><span>Home</span><span>Students</span><span>Educators</span><span>Courses</span><span>Projects</span><span>Resources</span></nav></div></header>
+  <main class="page">
+    <img class="side-image" src="https://my.aiclub.world/8a0a8f4cec847539bb4fd6f2d553f441.png" alt="Bot" />
+    <section class="center">
+      <div class="hero"><h1>Can an AI do your homework?</h1><p>Chat with a tutor-style AI bot</p></div>
+      <div class="shell">
+        <div class="context"><label for="ctx">Tutor context</label><textarea id="ctx">You are a helpful tutor for middle/high school students. Explain briefly, then show steps.</textarea></div>
+        <div id="chat" class="chat" role="log" aria-live="polite"></div>
+        <div class="composer">
+          <input id="q" placeholder="Message" autocomplete="off" />
+          <button id="sendBtn" class="icon-btn primary" title="Send"><span class="material-icons">send</span></button>
+          <button id="micBtn" class="icon-btn" title="Enable/Disable speech to text"><span id="micIcon" class="material-icons">mic</span></button>
+          <button id="audioBtn" class="icon-btn" title="Enable/Disable bot audio"><span id="audioIcon" class="material-icons">volume_up</span></button>
+          <button id="clearBtn" class="icon-btn" title="Clear chat"><span class="material-icons">clear_all</span></button>
+        </div>
+        <div id="hint" class="hint">Audio: Enabled | API: /aiclub/gym/chatbot</div>
+      </div>
+    </section>
+    <img class="side-image" src="https://my.aiclub.world/1b7cc10a8dbb9c139aa5a4055f79add4.png" alt="Student" />
+  </main>
+
+  <script>
+    const API = 'https://apigateway.navigator.pyxeda.ai/aiclub/gym/chatbot';
+    const BOT_IMAGE = 'https://my.aiclub.world/8a0a8f4cec847539bb4fd6f2d553f441.png';
+    const USER_IMAGE = 'https://my.aiclub.world/1b7cc10a8dbb9c139aa5a4055f79add4.png';
+
+    const chatEl = document.getElementById('chat');
+    const qEl = document.getElementById('q');
+    const ctxEl = document.getElementById('ctx');
+    const hintEl = document.getElementById('hint');
+    const micIcon = document.getElementById('micIcon');
+    const audioIcon = document.getElementById('audioIcon');
+
+    let audioEnabled = true;
+    let isListening = false;
+    let recognition = null;
+
+    function updateHint() {
+      hintEl.textContent = `Audio: ${audioEnabled ? 'Enabled' : 'Disabled'} | API: /aiclub/gym/chatbot`;
+      audioIcon.textContent = audioEnabled ? 'volume_up' : 'volume_off';
+      micIcon.textContent = isListening ? 'record_voice_over' : 'mic';
+    }
+
+    function extractAnswer(payload) {
+      if (!payload) return '';
+      if (typeof payload === 'string') return payload;
+      return payload.answer || payload.response || payload.output || payload.data?.answers || payload.data?.answer || payload.result?.answer || payload.result?.answers || payload.answers || '';
+    }
+
+    function speak(text) {
+      if (!audioEnabled || !('speechSynthesis' in window) || !text) return;
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 0.9;
+      speechSynthesis.speak(utterance);
+    }
+
+    function addMessage({ who, text }) {
+      const row = document.createElement('div');
+      row.className = `row ${who === 'me' ? 'me' : ''}`;
+      if (who !== 'me') {
+        const avatar = document.createElement('img');
+        avatar.className = 'avatar';
+        avatar.src = BOT_IMAGE;
+        avatar.alt = 'Bot';
+        row.appendChild(avatar);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = who === 'me' ? 'Me' : 'HOMEWORK BOT';
+      const body = document.createElement('div');
+      body.textContent = text;
+      bubble.append(name, body);
+      row.appendChild(bubble);
+      if (who === 'me') {
+        const avatar = document.createElement('img');
+        avatar.className = 'avatar';
+        avatar.src = USER_IMAGE;
+        avatar.alt = 'User';
+        row.appendChild(avatar);
+      }
+      chatEl.appendChild(row);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return body;
+    }
+
+    async function sendMessage() {
+      const question = qEl.value.trim();
+      if (!question) return;
+      addMessage({ who: 'me', text: question });
+      qEl.value = '';
+      const slot = addMessage({ who: 'bot', text: '...' });
+      try {
+        const response = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ examples_context: ctxEl.value, question, max_tokens: 80 })
+        });
+        const data = await response.json();
+        const answer = extractAnswer(data) || 'I could not generate a response.';
+        slot.textContent = answer;
+        speak(answer);
+      } catch {
+        slot.textContent = 'Request failed. Endpoint may require auth/CORS in your environment.';
+      }
+    }
+
+    function setupSpeechRecognition() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      recognition = new SR();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.onresult = (event) => {
+        const last = event.results[event.results.length - 1];
+        qEl.value = last[0].transcript;
+      };
+      recognition.onerror = () => {
+        isListening = false;
+        updateHint();
+      };
+      recognition.onend = () => {
+        if (isListening) recognition.start();
+      };
+    }
+
+    function toggleMic() {
+      if (!recognition) { alert('Speech recognition is not available in this browser.'); return; }
+      isListening = !isListening;
+      if (isListening) recognition.start(); else recognition.stop();
+      updateHint();
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      if (!audioEnabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+      updateHint();
+    }
+
+    function clearChat() {
+      chatEl.innerHTML = '';
+      addMessage({ who: 'bot', text: 'Hi! Ask me your homework question and I will guide you.' });
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+    document.getElementById('micBtn').addEventListener('click', toggleMic);
+    document.getElementById('audioBtn').addEventListener('click', toggleAudio);
+    document.getElementById('clearBtn').addEventListener('click', clearChat);
+
+    setupSpeechRecognition();
+    updateHint();
+    clearChat();
+  </script>
+</body>
+</html>

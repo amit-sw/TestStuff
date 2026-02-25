@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schovia | Labeling with Image Classification</title>
+  <style>
+    :root {
+      --bg: #08101d;
+      --panel: #101a2e;
+      --panel2: #15233d;
+      --line: #2a3f68;
+      --text: #e8f0ff;
+      --muted: #9db2d8;
+      --accent: #1f5fbf;
+      --ok: #2b8f48;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .app { width: min(1120px, 95vw); margin: 24px auto; display: grid; gap: 14px; }
+    .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .brand-lockup { margin-right: auto; }
+    .brand-logo { height: 52px; }
+    .badge { font-size: .86rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+    .section { background: linear-gradient(165deg, var(--panel), var(--panel2)); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+    .section h2 { margin: 0 0 10px; color: var(--muted); font-size: 1rem; }
+    .controls { display: grid; grid-template-columns: 1fr 220px 170px 170px; gap: 10px; align-items: end; }
+    label { display: block; font-size: .82rem; margin-bottom: 4px; color: var(--muted); }
+    input, button, select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #2d4d82;
+      background: #132746;
+      color: var(--text);
+      padding: 8px 10px;
+    }
+    button { cursor: pointer; background: var(--accent); border-color: #184a95; }
+    button.ok { background: var(--ok); border-color: #1f7539; }
+    button.secondary { background: #1b3359; }
+    .hint { color: var(--muted); font-size: .88rem; margin: 6px 0 0; }
+    .list { display: grid; gap: 8px; max-height: 460px; overflow: auto; }
+    .row {
+      display: grid;
+      grid-template-columns: 130px minmax(180px, 1fr) 220px 80px;
+      gap: 10px;
+      align-items: center;
+      background: #0b1529;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    .row img { width: 130px; height: 86px; object-fit: cover; border-radius: 8px; border: 1px solid #2b3f64; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; color: #afc2e2; }
+    .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: .78rem; color: var(--muted); }
+    @media (max-width: 920px) {
+      .controls { grid-template-columns: 1fr 1fr; }
+      .row { grid-template-columns: 1fr; }
+      .row img { width: 100%; height: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+      </div>
+      <h1>Labeling with Image Classification</h1>
+      <span class="badge">Dataset builder</span>
+    </div>
+
+    <section class="section">
+      <h2>Labeling Controls</h2>
+      <div class="controls">
+        <div>
+          <label for="labels">Labels (comma-separated)</label>
+          <input id="labels" placeholder="cat,dog,bird" />
+        </div>
+        <div>
+          <label for="files">Images</label>
+          <input id="files" type="file" accept="image/*" multiple />
+        </div>
+        <div>
+          <label for="defaultLabel">Default Label</label>
+          <select id="defaultLabel"></select>
+        </div>
+        <div>
+          <button id="add">Add Images</button>
+        </div>
+      </div>
+      <div class="controls" style="margin-top:10px;">
+        <div><button id="save" class="ok">Save Dataset Locally</button></div>
+        <div><button id="openTrainer" class="secondary">Open Trainer Page</button></div>
+        <div><button id="export" class="secondary">Export labels.json</button></div>
+        <div><button id="clear" class="secondary">Clear Dataset</button></div>
+      </div>
+      <p class="hint">This mirrors the original label-first workflow and stores dataset records for the training page.</p>
+    </section>
+
+    <section class="section">
+      <div class="stats" id="stats"></div>
+      <div id="list" class="list" style="margin-top:10px;"></div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'aiclubImageDataset';
+
+    const labelsInput = document.getElementById('labels');
+    const filesInput = document.getElementById('files');
+    const defaultLabel = document.getElementById('defaultLabel');
+    const list = document.getElementById('list');
+    const stats = document.getElementById('stats');
+
+    const state = { rows: [] };
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getLabels() {
+      return labelsInput.value.split(',').map(x => x.trim()).filter(Boolean);
+    }
+
+    function refreshDefaultLabel() {
+      const labels = getLabels();
+      defaultLabel.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = labels.length ? 'Choose label' : 'Set labels first';
+      defaultLabel.appendChild(placeholder);
+      labels.forEach(label => {
+        const option = document.createElement('option');
+        option.value = label;
+        option.textContent = label;
+        defaultLabel.appendChild(option);
+      });
+    }
+
+    function updateStats() {
+      const byLabel = {};
+      state.rows.forEach(row => {
+        const key = row.label || '(unlabeled)';
+        byLabel[key] = (byLabel[key] || 0) + 1;
+      });
+      stats.innerHTML = '';
+      const total = document.createElement('div');
+      total.className = 'chip';
+      total.textContent = `${state.rows.length} total images`;
+      stats.appendChild(total);
+      Object.entries(byLabel).forEach(([label, count]) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = `${label}: ${count}`;
+        stats.appendChild(chip);
+      });
+    }
+
+    function render() {
+      list.innerHTML = '';
+      if (!state.rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'mono';
+        empty.textContent = 'No images added yet.';
+        list.appendChild(empty);
+      }
+
+      const labels = getLabels();
+
+      state.rows.forEach((row, index) => {
+        const item = document.createElement('div');
+        item.className = 'row';
+
+        const image = document.createElement('img');
+        image.src = row.dataUrl;
+
+        const meta = document.createElement('div');
+        meta.innerHTML = `<div>${row.name}</div><div class="mono">${(row.size / 1024).toFixed(1)} KB</div>`;
+
+        const select = document.createElement('select');
+        labels.forEach(label => {
+          const option = document.createElement('option');
+          option.value = label;
+          option.textContent = label;
+          select.appendChild(option);
+        });
+        if (!labels.includes(row.label) && row.label) {
+          const extra = document.createElement('option');
+          extra.value = row.label;
+          extra.textContent = row.label;
+          select.appendChild(extra);
+        }
+        select.value = row.label || labels[0] || '';
+        select.onchange = () => {
+          state.rows[index].label = select.value;
+          updateStats();
+        };
+
+        const remove = document.createElement('button');
+        remove.textContent = 'Remove';
+        remove.onclick = () => {
+          state.rows.splice(index, 1);
+          render();
+        };
+
+        item.append(image, meta, select, remove);
+        list.appendChild(item);
+      });
+
+      updateStats();
+    }
+
+    async function addImages() {
+      const labels = getLabels();
+      if (!labels.length) {
+        alert('Set labels first.');
+        return;
+      }
+      const selected = Array.from(filesInput.files || []);
+      if (!selected.length) {
+        alert('Choose images first.');
+        return;
+      }
+      const chosenLabel = defaultLabel.value || labels[0];
+      for (const file of selected) {
+        state.rows.push({
+          name: file.name,
+          size: file.size,
+          label: chosenLabel,
+          mime: file.type || 'image/png',
+          dataUrl: await fileToDataUrl(file)
+        });
+      }
+      filesInput.value = '';
+      render();
+    }
+
+    function saveDataset() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.rows));
+      alert('Dataset saved locally for Image Classification page.');
+    }
+
+    function exportJson() {
+      const payload = state.rows.map(row => ({ file: row.name, label: row.label }));
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'labels.json';
+      a.click();
+    }
+
+    function clearDataset() {
+      state.rows = [];
+      render();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    }
+
+    function openTrainer() {
+      saveDataset();
+      window.location.href = './tensorflow-images-gym.html';
+    }
+
+    function init() {
+      refreshDefaultLabel();
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) state.rows = parsed.filter(r => r && r.name && r.dataUrl);
+        } catch {
+          state.rows = [];
+        }
+      }
+      render();
+    }
+
+    labelsInput.addEventListener('input', () => {
+      refreshDefaultLabel();
+      render();
+    });
+
+    document.getElementById('add').addEventListener('click', () => addImages().catch(err => alert('Failed to add images: ' + err.message)));
+    document.getElementById('save').addEventListener('click', saveDataset);
+    document.getElementById('openTrainer').addEventListener('click', openTrainer);
+    document.getElementById('export').addEventListener('click', exportJson);
+    document.getElementById('clear').addEventListener('click', clearDataset);
+
+    init();
+  </script>
+</body>
+</html>

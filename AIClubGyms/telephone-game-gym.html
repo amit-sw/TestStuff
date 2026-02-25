@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Telephone Game Gym</title>
+    <style>
+      :root { --bg:#08101d; --panel:#101a2e; --panel2:#15233d; --line:#2a3f68; --text:#e8f0ff; --muted:#9db2d8; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:radial-gradient(circle at 20% 10%,#172a4b,var(--bg) 45%), #08101d; color:var(--text); font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; }
+      .app { width:min(1040px,95vw); margin:28px auto; display:grid; gap:14px; }
+      .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+      .brand-lockup { margin-right:auto; }
+      .brand-logo { height:52px; }
+      .badge { font-size:.86rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 10px; }
+      .section { background:linear-gradient(165deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:14px; }
+      .section h2 { margin:0 0 10px; color:var(--muted); font-size:1rem; }
+      .grid { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; }
+      textarea, select, button { width:100%; border-radius:10px; border:1px solid #2d4d82; background:#132746; color:var(--text); padding:9px 10px; }
+      textarea { min-height:120px; resize:vertical; }
+      button { cursor:pointer; background:#1f5fbf; border-color:#184a95; }
+      .danger { background:#b71c1c; border-color:#7f1010; }
+      .result { white-space:pre-wrap; background:#0b1529; border:1px solid var(--line); border-radius:10px; padding:10px; min-height:80px; }
+      .row { display:flex; gap:10px; flex-wrap:wrap; }
+      .hint { color:var(--muted); font-size:.88rem; }
+      @media (max-width:900px){ .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup"><img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" /></div>
+        <h1>Telephone Game</h1>
+        <span class="badge">Translate + detect language</span>
+      </div>
+
+      <section class="section">
+        <h2>Input</h2>
+        <textarea id="text" placeholder="Type text for translation..."></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button id="detectBtn">Detect Language</button>
+          <button id="swapBtn">Swap From/To</button>
+          <button id="clearBtn" class="danger">Clear</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Languages</h2>
+        <div class="grid">
+          <select id="from"></select>
+          <select id="to"></select>
+          <button id="translateBtn">Translate</button>
+        </div>
+        <p class="hint">Uses AIClub translation endpoint + Google detect/languages endpoints used in the original bundle.</p>
+      </section>
+
+      <section class="section">
+        <h2>Output</h2>
+        <div id="out" class="result">No translation yet.</div>
+      </section>
+    </main>
+
+    <script>
+      const GOOGLE_API_KEY = 'AIzaSyDhlVecatWhamO25bgsEXSyeDbmTfTIA9U';
+      const GYM_TRANSLATE_ENDPOINT = 'https://apigateway.navigator.pyxeda.ai/aiclub/gym/telephone-game';
+      const fromEl = document.getElementById('from');
+      const toEl = document.getElementById('to');
+      const textEl = document.getElementById('text');
+      const outEl = document.getElementById('out');
+
+      function setOut(text) { outEl.textContent = text; }
+
+      async function getSupportedLanguages() {
+        const url = `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=en`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data?.data?.languages || [];
+      }
+
+      async function detectLanguage(userInput) {
+        const url = `https://translation.googleapis.com/language/translate/v2/detect?key=${GOOGLE_API_KEY}&q=${encodeURIComponent(userInput)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data?.data?.detections?.[0]?.[0]?.language || null;
+      }
+
+      async function getTranslation(from, to, text) {
+        const res = await fetch(`${GYM_TRANSLATE_ENDPOINT}?`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from, to, text }),
+        });
+        return await res.json();
+      }
+
+      function fillLangs(langs) {
+        fromEl.innerHTML = '';
+        toEl.innerHTML = '';
+        langs.forEach((l) => {
+          const code = l.language;
+          const name = l.name || code;
+          const a = document.createElement('option');
+          a.value = code;
+          a.textContent = `${name} (${code})`;
+          const b = a.cloneNode(true);
+          fromEl.appendChild(a);
+          toEl.appendChild(b);
+        });
+        fromEl.value = 'en';
+        toEl.value = 'es';
+      }
+
+      document.getElementById('translateBtn').addEventListener('click', async () => {
+        const text = textEl.value.trim();
+        if (!text) return;
+        setOut('Translating...');
+        try {
+          const data = await getTranslation(fromEl.value, toEl.value, text);
+          setOut(data.translation || data.translatedText || data.text || data.output || JSON.stringify(data, null, 2));
+        } catch (e) {
+          setOut('Translation failed. Endpoint may require auth/CORS in this environment.');
+        }
+      });
+
+      document.getElementById('detectBtn').addEventListener('click', async () => {
+        const text = textEl.value.trim();
+        if (!text) return;
+        setOut('Detecting language...');
+        try {
+          const lang = await detectLanguage(text);
+          if (lang) {
+            fromEl.value = lang;
+            setOut(`Detected language: ${lang}`);
+          } else {
+            setOut('Could not detect language.');
+          }
+        } catch (e) {
+          setOut('Language detection failed.');
+        }
+      });
+
+      document.getElementById('swapBtn').addEventListener('click', () => {
+        const a = fromEl.value;
+        fromEl.value = toEl.value;
+        toEl.value = a;
+      });
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        textEl.value = '';
+        setOut('No translation yet.');
+      });
+
+      (async function init() {
+        setOut('Loading supported languages...');
+        try {
+          const langs = await getSupportedLanguages();
+          fillLangs(langs);
+          setOut('Ready.');
+        } catch (e) {
+          setOut('Could not load supported languages.');
+          fillLangs([{ language: 'en', name: 'English' }, { language: 'es', name: 'Spanish' }, { language: 'fr', name: 'French' }]);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -3,172 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schovia | AI Club Gym Index</title>
+    <title>Schovia | AI Club Gyms</title>
     <style>
-      :root {
-        --bg: #f2f6fc;
-        --card: #ffffff;
-        --line: #d7e1ef;
-        --text: #172335;
-        --muted: #4c607d;
-        --accent: #1f5fbf;
-      }
-
+      :root { --bg:#f2f6fc; --card:#fff; --line:#d7e1ef; --text:#172335; --muted:#4c607d; --accent:#1f5fbf; }
       * { box-sizing: border-box; }
-
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        color: var(--text);
-        background: linear-gradient(180deg, #f8faff 0%, var(--bg) 100%);
-      }
-
-      .page {
-        width: min(960px, 92vw);
-        margin: 40px auto;
-      }
-
-      h1 {
-        margin: 0 0 10px;
-        font-size: 2rem;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-
-      .brand-logo {
-        height: 56px;
-        width: auto;
-        display: block;
-      }
-
-      .intro {
-        margin: 0 0 24px;
-        color: var(--muted);
-        line-height: 1.55;
-        font-size: 1.04rem;
-      }
-
-      .grid {
-        display: grid;
-        gap: 14px;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: 0 8px 24px rgba(16, 34, 64, 0.06);
-      }
-
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 1.2rem;
-      }
-
-      .card p {
-        margin: 0 0 14px;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
-      .meta {
-        margin: 0 0 14px;
-        font-size: 0.92rem;
-        color: #5f6f86;
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .btn {
-        display: inline-block;
-        text-decoration: none;
-        border: 1px solid #b9c8df;
-        background: #eaf1ff;
-        color: var(--accent);
-        font-weight: 600;
-        border-radius: 10px;
-        padding: 9px 12px;
-      }
-
-      .pill {
-        display: inline-block;
-        font-size: 0.78rem;
-        color: #0f4f12;
-        border: 1px solid #8bd78f;
-        border-radius: 999px;
-        padding: 2px 8px;
-        background: #eaffeb;
-        vertical-align: middle;
-      }
+      body { margin: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; color: var(--text); background: linear-gradient(180deg,#f8faff 0%,var(--bg) 100%); }
+      .page { width: min(1020px, 92vw); margin: 40px auto; }
+      .brand { display:flex; align-items:center; gap:10px; margin-bottom: 10px; }
+      .brand-logo { height: 56px; }
+      h1 { margin: 0; font-size: 2rem; }
+      .intro { margin:0 0 22px; color:var(--muted); line-height:1.55; }
+      .grid { display:grid; gap:12px; }
+      .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 8px 24px rgba(16,34,64,.06); }
+      .card h2 { margin:0 0 6px; font-size:1.1rem; }
+      .card p { margin:0 0 12px; color:var(--muted); line-height:1.45; }
+      .actions { display:flex; gap:10px; flex-wrap:wrap; }
+      .btn { display:inline-block; text-decoration:none; border:1px solid #b9c8df; background:#eaf1ff; color:var(--accent); font-weight:600; border-radius:10px; padding:8px 12px; }
+      .pill { display:inline-block; font-size:.74rem; padding:2px 8px; border-radius:999px; border:1px solid #cfd8e6; color:#415776; background:#f6f9ff; }
+      .pill.client { border-color:#8bd78f; color:#0f4f12; background:#eaffeb; }
+      .pill.mixed { border-color:#e5c67a; color:#8a5b00; background:#fff5df; }
     </style>
   </head>
   <body>
     <main class="page">
       <div class="brand">
         <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
-        <h1>AI Club Gym (Client-Side Set)</h1>
+        <h1>AI Club Gym Equivalents</h1>
       </div>
-
-      <p class="intro">
-        This local bundle recreates the five AI Gym activities that are browser-only. Each demo is a single HTML file,
-        with no back-end dependency required for the core activity.
-      </p>
+      <p class="intro">Single-page equivalents with Schovia styling. Client-only gyms run fully in-browser; mixed gyms include API-backed flows using the same endpoint families discovered in production bundles.</p>
 
       <section class="grid">
-        <article class="card">
-          <h2>1. Object Detection <span class="pill">CLIENT ONLY</span></h2>
-          <p>Upload an image and detect objects using COCO-SSD in-browser inference.</p>
-          <p class="meta"><strong>File:</strong> <code>object-detect.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./object-detect.html">Open Gym</a>
-          </div>
-        </article>
+        <article class="card"><h2>Object Detection <span class="pill client">CLIENT ONLY</span></h2><p>COCO-SSD browser inference with bounding boxes.</p><div class="actions"><a class="btn" href="./object-detect.html">Open</a></div></article>
+        <article class="card"><h2>Fit Lines <span class="pill client">CLIENT ONLY</span></h2><p>Interactive linear regression with live m, b, and R².</p><div class="actions"><a class="btn" href="./fit-lines.html">Open</a></div></article>
+        <article class="card"><h2>Clustering Visualization <span class="pill client">CLIENT ONLY</span></h2><p>k-means with point/cluster controls and canvas click-to-add points.</p><div class="actions"><a class="btn" href="./clustering-visualization.html">Open</a></div></article>
+        <article class="card"><h2>Handpose Detection <span class="pill client">CLIENT ONLY</span></h2><p>Webcam hand landmark detection in browser.</p><div class="actions"><a class="btn" href="./handpose-detect.html">Open</a></div></article>
+        <article class="card"><h2>Emotion Detection <span class="pill client">CLIENT ONLY</span></h2><p>Webcam face expression detection with voice playback.</p><div class="actions"><a class="btn" href="./emotion-detect.html">Open</a></div></article>
 
-        <article class="card">
-          <h2>2. Fit Lines <span class="pill">CLIENT ONLY</span></h2>
-          <p>Place points on a graph and fit a least-squares regression line instantly.</p>
-          <p class="meta"><strong>File:</strong> <code>fit-lines.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./fit-lines.html">Open Gym</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>3. Clustering Visualization <span class="pill">CLIENT ONLY</span></h2>
-          <p>Create or sample point clouds and run k-means clustering directly in the browser.</p>
-          <p class="meta"><strong>File:</strong> <code>clustering-visualization.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./clustering-visualization.html">Open Gym</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>4. Handpose Detection <span class="pill">CLIENT ONLY</span></h2>
-          <p>Stream webcam input and draw hand landmarks using TensorFlow Handpose.</p>
-          <p class="meta"><strong>File:</strong> <code>handpose-detect.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./handpose-detect.html">Open Gym</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>5. Emotion Detection <span class="pill">CLIENT ONLY</span></h2>
-          <p>Estimate facial expression probabilities from webcam input with face-api.js.</p>
-          <p class="meta"><strong>File:</strong> <code>emotion-detect.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./emotion-detect.html">Open Gym</a>
-          </div>
-        </article>
+        <article class="card"><h2>Ask Sage - AI Literacy Bot <span class="pill mixed">CLIENT + SERVER</span></h2><p>Book-based AI literacy Q&A using API endpoint flow.</p><div class="actions"><a class="btn" href="./ai-literacy-bot.html">Open</a></div></article>
+        <article class="card"><h2>Can an AI do your homework? <span class="pill mixed">CLIENT + SERVER</span></h2><p>Question-answer gym via chatbot endpoint.</p><div class="actions"><a class="btn" href="./question-answer.html">Open</a></div></article>
+        <article class="card"><h2>Style Transfer <span class="pill mixed">CLIENT + SERVER</span></h2><p>TF.js style+transform graph model flow with upload or webcam capture.</p><div class="actions"><a class="btn" href="./style-transfer.html">Open</a></div></article>
+        <article class="card"><h2>Telephone Game <span class="pill mixed">CLIENT + SERVER</span></h2><p>Language detect, supported-language load, and translation via original API chain.</p><div class="actions"><a class="btn" href="./telephone-game-gym.html">Open</a></div></article>
+        <article class="card"><h2>Chai the AI Bot <span class="pill mixed">CLIENT + SERVER</span></h2><p>Friendly chatbot variant using gym chatbot endpoint.</p><div class="actions"><a class="btn" href="./chai-bot.html">Open</a></div></article>
+        <article class="card"><h2>Image Classification <span class="pill mixed">CLIENT + SERVER</span></h2><p>Dataset upload/delete, train payload parity, and experiment polling.</p><div class="actions"><a class="btn" href="./tensorflow-images-gym.html">Open</a></div></article>
+        <article class="card"><h2>Labeling with Image Classification <span class="pill mixed">CLIENT + SERVER</span></h2><p>Label-first dataset builder with local handoff to trainer page.</p><div class="actions"><a class="btn" href="./label-and-classify-images.html">Open</a></div></article>
+        <article class="card"><h2>Find out your cartoon avatar <span class="pill mixed">CLIENT + SERVER</span></h2><p>Toonify flow with upload and webcam capture using the same RapidAPI endpoint.</p><div class="actions"><a class="btn" href="./toonify.html">Open</a></div></article>
       </section>
     </main>
   </body>

@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schovia | Image Classification Gym</title>
+  <style>
+    :root {
+      --bg: #08101d;
+      --panel: #101a2e;
+      --panel2: #15233d;
+      --line: #2a3f68;
+      --text: #e8f0ff;
+      --muted: #9db2d8;
+      --accent: #1f5fbf;
+      --ok: #32a852;
+      --warn: #d79a2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .app { width: min(1160px, 95vw); margin: 24px auto; display: grid; gap: 14px; }
+    .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .brand-lockup { margin-right: auto; }
+    .brand-logo { height: 52px; }
+    .badge { font-size: .86rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+    .section { background: linear-gradient(165deg, var(--panel), var(--panel2)); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+    .section h2 { margin: 0 0 10px; color: var(--muted); font-size: 1rem; }
+    .controls { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; }
+    .controls .wide { grid-column: span 2; }
+    .stack { display: grid; gap: 10px; }
+    .inline { display: flex; gap: 10px; flex-wrap: wrap; }
+    .inline > * { flex: 1 1 170px; }
+    label { display: block; font-size: .82rem; margin-bottom: 4px; color: var(--muted); }
+    input, button, textarea, select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #2d4d82;
+      background: #132746;
+      color: var(--text);
+      padding: 8px 10px;
+    }
+    textarea { min-height: 110px; }
+    button { cursor: pointer; background: var(--accent); border-color: #184a95; }
+    button.secondary { background: #1b3359; }
+    button.ok { background: #1f6b37; border-color: #16572b; }
+    button.warn { background: #74500f; border-color: #8f6518; }
+    .hint { color: var(--muted); font-size: .88rem; margin: 8px 0 0; }
+    .list { display: grid; gap: 8px; max-height: 270px; overflow: auto; }
+    .row {
+      display: grid;
+      grid-template-columns: 96px minmax(120px, 1fr) 170px 64px;
+      gap: 8px;
+      align-items: center;
+      background: #0b1529;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    .row img { width: 96px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #2b3f64; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; color: #afc2e2; }
+    .result {
+      white-space: pre-wrap;
+      padding: 10px;
+      background: #0b1529;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      max-height: 280px;
+      overflow: auto;
+    }
+    .kv { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; }
+    .chip { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-size: .76rem; color: var(--muted); }
+    .ok-text { color: #91d6a1; }
+    .warn-text { color: #f0ca83; }
+    @media (max-width: 920px) {
+      .controls, .kv { grid-template-columns: 1fr 1fr; }
+      .controls .wide { grid-column: span 2; }
+      .row { grid-template-columns: 70px minmax(90px, 1fr) 130px 56px; }
+      .row img { width: 70px; height: 60px; }
+    }
+    @media (max-width: 620px) {
+      .controls, .kv { grid-template-columns: 1fr; }
+      .controls .wide { grid-column: auto; }
+      .row { grid-template-columns: 1fr; }
+      .row img { width: 100%; height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+      </div>
+      <h1>Image Classification</h1>
+      <span class="badge">API parity flow</span>
+    </div>
+
+    <section class="section stack">
+      <h2>Service + Hyperparameters</h2>
+      <div class="controls">
+        <div>
+          <label for="serviceId">Service ID</label>
+          <input id="serviceId" placeholder="service-id" />
+        </div>
+        <div>
+          <label for="project">Project (optional)</label>
+          <input id="project" placeholder="project-name" />
+        </div>
+        <div>
+          <label for="epochs">Epochs</label>
+          <input id="epochs" type="number" value="5" min="1" />
+        </div>
+        <div>
+          <label for="learningRate">Learning Rate</label>
+          <input id="learningRate" type="number" value="0.001" step="0.0001" min="0.0001" />
+        </div>
+        <div>
+          <label for="batchSize">Batch Size</label>
+          <input id="batchSize" type="number" value="8" min="1" />
+        </div>
+        <div class="wide">
+          <label for="labels">Labels (comma-separated)</label>
+          <input id="labels" placeholder="cat,dog,bird" />
+        </div>
+        <div>
+          <label for="experimentId">Experiment ID (for status poll)</label>
+          <input id="experimentId" placeholder="exp-..." />
+        </div>
+      </div>
+      <p class="hint">Uses original endpoint contracts: <span class="mono">/aiclub/gym/images/train</span> and <span class="mono">/storage/efs/files</span>.</p>
+    </section>
+
+    <section class="section stack">
+      <h2>Dataset</h2>
+      <div class="inline">
+        <input id="files" type="file" accept="image/*" multiple />
+        <select id="quickLabel"></select>
+        <button id="addSelected">Add Selected Images</button>
+        <button id="loadLabeler" class="secondary">Load From Labeler</button>
+      </div>
+      <div class="inline">
+        <button id="upload" class="ok">Upload Dataset</button>
+        <button id="deleteRemote" class="warn">Delete Uploaded Files</button>
+        <button id="clear" class="secondary">Clear Local Dataset</button>
+      </div>
+      <div id="datasetMeta" class="mono">0 images in dataset</div>
+      <div id="dataset" class="list"></div>
+    </section>
+
+    <section class="section stack">
+      <h2>Train + Poll</h2>
+      <div class="inline">
+        <button id="train" class="ok">Train Model</button>
+        <button id="poll">Poll Experiment</button>
+      </div>
+      <div id="status" class="result">No request yet.</div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = 'https://apigateway.navigator.pyxeda.ai';
+    const TRAIN_ENDPOINT = API_BASE + '/aiclub/gym/images/train';
+    const EFS_ENDPOINT = API_BASE + '/storage/efs/files';
+    const STORAGE_KEY = 'aiclubImageDataset';
+
+    const filesInput = document.getElementById('files');
+    const quickLabel = document.getElementById('quickLabel');
+    const labelsInput = document.getElementById('labels');
+    const datasetEl = document.getElementById('dataset');
+    const datasetMeta = document.getElementById('datasetMeta');
+    const statusEl = document.getElementById('status');
+
+    const state = {
+      rows: [],
+      uploadedFiles: []
+    };
+
+    function log(msg, obj) {
+      if (obj === undefined) {
+        statusEl.textContent = msg;
+        return;
+      }
+      statusEl.textContent = msg + '\n\n' + JSON.stringify(obj, null, 2);
+    }
+
+    function refreshLabelChoices() {
+      const labels = labelsInput.value.split(',').map(x => x.trim()).filter(Boolean);
+      quickLabel.innerHTML = '';
+      const fallback = document.createElement('option');
+      fallback.value = '';
+      fallback.textContent = labels.length ? 'Choose label' : 'Set labels first';
+      quickLabel.appendChild(fallback);
+      labels.forEach(label => {
+        const option = document.createElement('option');
+        option.value = label;
+        option.textContent = label;
+        quickLabel.appendChild(option);
+      });
+    }
+
+    function updateMeta() {
+      const labelsCount = new Set(state.rows.map(r => r.label).filter(Boolean)).size;
+      datasetMeta.textContent = `${state.rows.length} images in dataset | ${labelsCount} labels used`;
+    }
+
+    function saveLocalDataset() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.rows));
+      updateMeta();
+    }
+
+    function removeRow(index) {
+      state.rows.splice(index, 1);
+      saveLocalDataset();
+      renderDataset();
+    }
+
+    function renderDataset() {
+      datasetEl.innerHTML = '';
+      if (!state.rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'mono';
+        empty.textContent = 'No images added yet.';
+        datasetEl.appendChild(empty);
+      }
+      state.rows.forEach((row, index) => {
+        const item = document.createElement('div');
+        item.className = 'row';
+
+        const img = document.createElement('img');
+        img.src = row.dataUrl;
+
+        const meta = document.createElement('div');
+        meta.innerHTML = `<div>${row.name}</div><div class="mono">${(row.size / 1024).toFixed(1)} KB</div>`;
+
+        const sel = document.createElement('select');
+        const labels = labelsInput.value.split(',').map(x => x.trim()).filter(Boolean);
+        labels.forEach(label => {
+          const op = document.createElement('option');
+          op.value = label;
+          op.textContent = label;
+          sel.appendChild(op);
+        });
+        if (!labels.includes(row.label) && row.label) {
+          const extra = document.createElement('option');
+          extra.value = row.label;
+          extra.textContent = row.label;
+          sel.appendChild(extra);
+        }
+        sel.value = row.label || labels[0] || '';
+        sel.onchange = () => {
+          row.label = sel.value;
+          saveLocalDataset();
+        };
+
+        const del = document.createElement('button');
+        del.textContent = 'X';
+        del.onclick = () => removeRow(index);
+
+        item.append(img, meta, sel, del);
+        datasetEl.appendChild(item);
+      });
+      updateMeta();
+    }
+
+    async function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function addSelectedFiles() {
+      const selected = Array.from(filesInput.files || []);
+      if (!selected.length) {
+        alert('Choose one or more images first.');
+        return;
+      }
+      const defaultLabel = quickLabel.value;
+      if (!defaultLabel) {
+        alert('Pick a label first.');
+        return;
+      }
+      for (const file of selected) {
+        const dataUrl = await fileToDataUrl(file);
+        state.rows.push({
+          name: file.name,
+          size: file.size,
+          label: defaultLabel,
+          mime: file.type || 'image/png',
+          dataUrl
+        });
+      }
+      filesInput.value = '';
+      saveLocalDataset();
+      renderDataset();
+      log('Added selected images to local dataset.');
+    }
+
+    function loadFromLabeler() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        alert('No local dataset found from the labeling page.');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error('bad format');
+        state.rows = parsed.filter(r => r && r.dataUrl && r.name);
+        renderDataset();
+        log('Loaded dataset from local storage.');
+      } catch {
+        log('Could not parse local dataset cache.');
+      }
+    }
+
+    async function uploadDataset() {
+      const serviceId = document.getElementById('serviceId').value.trim();
+      if (!serviceId) {
+        alert('Service ID is required.');
+        return;
+      }
+      if (!state.rows.length) {
+        alert('Dataset is empty.');
+        return;
+      }
+
+      const files = state.rows.map((row, index) => ({
+        name: row.name || `image-${index + 1}.png`,
+        label: row.label || '',
+        mimeType: row.mime || 'image/png',
+        data: row.dataUrl
+      }));
+
+      log('Uploading dataset to EFS endpoint...');
+      const res = await fetch(EFS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceId, files })
+      });
+      const data = await res.json();
+      state.uploadedFiles = files.map(f => f.name);
+      log('Upload response', data);
+    }
+
+    async function deleteUploadedFiles() {
+      const serviceId = document.getElementById('serviceId').value.trim();
+      if (!serviceId) {
+        alert('Service ID is required.');
+        return;
+      }
+      if (!state.uploadedFiles.length) {
+        alert('No uploaded files recorded in this session.');
+        return;
+      }
+      log('Deleting uploaded files...');
+      const res = await fetch(EFS_ENDPOINT, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceId, files: state.uploadedFiles })
+      });
+      const data = await res.json();
+      log('Delete response', data);
+    }
+
+    function collectImageLabels() {
+      const map = {};
+      state.rows.forEach(row => {
+        if (!row.label) return;
+        if (!map[row.label]) map[row.label] = [];
+        map[row.label].push(row.name);
+      });
+      return map;
+    }
+
+    async function trainModel() {
+      const serviceId = document.getElementById('serviceId').value.trim();
+      if (!serviceId) {
+        alert('Service ID is required.');
+        return;
+      }
+
+      const project = document.getElementById('project').value.trim();
+      const epochs = Number(document.getElementById('epochs').value || 5);
+      const learningRate = Number(document.getElementById('learningRate').value || 0.001);
+      const batchSize = Number(document.getElementById('batchSize').value || 8);
+
+      const payload = {
+        serviceId,
+        mode: 'aws-tensorflow-serverless',
+        params: [{
+          HyperParameters: {
+            epochs,
+            learning_rate: learningRate,
+            batch_size: batchSize
+          }
+        }]
+      };
+
+      if (project) payload.project = project;
+      if (state.rows.length) payload.imageLabels = collectImageLabels();
+
+      log('Launching training job...', payload);
+      const res = await fetch(TRAIN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const expId = data?.experimentId || data?.data?.experimentId || data?.result?.experimentId;
+      if (expId) {
+        document.getElementById('experimentId').value = expId;
+      }
+      log('Train response', data);
+    }
+
+    async function pollExperiment() {
+      const experimentId = document.getElementById('experimentId').value.trim();
+      if (!experimentId) {
+        alert('Set experiment ID first.');
+        return;
+      }
+      log('Polling experiment status...');
+      const res = await fetch(`${TRAIN_ENDPOINT}?experimentId=${encodeURIComponent(experimentId)}`);
+      const data = await res.json();
+      log('Poll response', data);
+    }
+
+    function clearDataset() {
+      state.rows = [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      renderDataset();
+      log('Cleared local dataset.');
+    }
+
+    function initFromStorage() {
+      refreshLabelChoices();
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        renderDataset();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          state.rows = parsed.filter(r => r && r.dataUrl && r.name);
+        }
+      } catch {
+        state.rows = [];
+      }
+      renderDataset();
+    }
+
+    labelsInput.addEventListener('input', () => {
+      refreshLabelChoices();
+      renderDataset();
+    });
+
+    document.getElementById('addSelected').addEventListener('click', () => addSelectedFiles().catch(err => log('Failed to add files: ' + err.message)));
+    document.getElementById('loadLabeler').addEventListener('click', loadFromLabeler);
+    document.getElementById('upload').addEventListener('click', () => uploadDataset().catch(err => log('Upload failed: ' + err.message)));
+    document.getElementById('deleteRemote').addEventListener('click', () => deleteUploadedFiles().catch(err => log('Delete failed: ' + err.message)));
+    document.getElementById('train').addEventListener('click', () => trainModel().catch(err => log('Train failed: ' + err.message)));
+    document.getElementById('poll').addEventListener('click', () => pollExperiment().catch(err => log('Poll failed: ' + err.message)));
+    document.getElementById('clear').addEventListener('click', clearDataset);
+
+    initFromStorage();
+  </script>
+</body>
+</html>
