@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tokenizer Demo Animation</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+        --accent: #74c7ff;
+        --chip: #132746;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app {
+        width: min(1040px, 94vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 1.25rem;
+        margin-right: auto;
+      }
+
+      .badge {
+        font-size: 0.82rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 160px;
+        resize: vertical;
+        background: #0b1529;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 1rem;
+        line-height: 1.45;
+      }
+
+      .tokens,
+      .ids {
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        background: #0b1529;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .line-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 30px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: var(--chip);
+        padding: 6px 9px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+        white-space: pre;
+        opacity: 0;
+        transform: translateY(6px) scale(0.98);
+        animation: pop 220ms ease forwards;
+      }
+
+      .chip.token { color: #dff1ff; }
+      .chip.id { color: #ffe8ba; border-color: #6b5530; background: #2a2215; }
+
+      .hint {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      @keyframes pop {
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <h1>Tokenizer Demo</h1>
+        <span class="badge">GPT-5.x / o1-o3 tokenizer (o200k_base)</span>
+      </div>
+
+      <section class="section">
+        <h2>1. Input Text</h2>
+        <textarea id="inputText" placeholder="Type text here...">What is the capital of France?</textarea>
+      </section>
+
+      <section class="section">
+        <h2>2. Tokens</h2>
+        <div id="tokens" class="tokens"></div>
+      </section>
+
+      <section class="section">
+        <h2>3. Token IDs</h2>
+        <div id="ids" class="ids"></div>
+      </section>
+    </main>
+
+    <script>
+      const inputText = document.getElementById("inputText");
+      const tokensEl = document.getElementById("tokens");
+      const idsEl = document.getElementById("ids");
+      const statusBadge = document.querySelector(".badge");
+
+      const state = {
+        encoder: null,
+        encode: null,
+        decodeSingle: null,
+      };
+
+      function formatTokenText(text) {
+        return text
+          .replaceAll("\\", "\\\\")
+          .replaceAll("\r", "\\r")
+          .replaceAll("\t", "\\t");
+      }
+
+      function createLineRow(parent) {
+        const row = document.createElement("div");
+        row.className = "line-row";
+        parent.appendChild(row);
+        return row;
+      }
+
+      function clearOutputs() {
+        tokensEl.innerHTML = "";
+        idsEl.innerHTML = "";
+      }
+
+      function normalizeNewlines(text) {
+        return text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+      }
+
+      function newlineCount(text) {
+        return (text.match(/\n/g) || []).length;
+      }
+
+      function renderAll() {
+        if (!state.encode || !state.decodeSingle) return;
+        clearOutputs();
+        const text = inputText.value || "";
+        const normalizedInput = normalizeNewlines(text);
+        const ids = state.encode(text);
+        const lineCount = Math.max(1, normalizedInput.split("\n").length);
+        const tokenRows = [];
+        const idRows = [];
+        for (let i = 0; i < lineCount; i += 1) {
+          tokenRows.push(createLineRow(tokensEl));
+          idRows.push(createLineRow(idsEl));
+        }
+
+        let consumedChars = 0;
+
+        ids.forEach((id) => {
+          const rawToken = state.decodeSingle(id);
+          const normalizedToken = normalizeNewlines(rawToken);
+          const startRow = newlineCount(normalizedInput.slice(0, consumedChars));
+          const leadingNewlineCount = (normalizedToken.match(/^\n+/) || [""])[0].length;
+          const tokenRemainder = normalizedToken.slice(leadingNewlineCount);
+          const displayToken = tokenRemainder.replaceAll("\n", "");
+          const visibleToken = displayToken.length > 0 ? displayToken : " ";
+          const targetRowIndex = Math.min(lineCount - 1, startRow + leadingNewlineCount);
+          const tokenRow = tokenRows[targetRowIndex];
+          const idRow = idRows[targetRowIndex];
+
+          const token = document.createElement("span");
+          token.className = "chip token";
+          token.textContent = `'${formatTokenText(visibleToken)}'`;
+          tokenRow.appendChild(token);
+
+          const idEl = document.createElement("span");
+          idEl.className = "chip id";
+          idEl.textContent = String(id);
+          idRow.appendChild(idEl);
+          consumedChars += normalizedToken.length;
+        });
+      }
+
+      function makeFallbackTokenizer() {
+        const tokenToId = new Map();
+        const idToToken = new Map();
+        let nextId = 1000;
+
+        const split = (text) => text.match(/\r\n|\n|[A-Za-z]+|[0-9]+|[^\sA-Za-z0-9]|\s+/g) || [];
+        const getId = (token) => {
+          if (!tokenToId.has(token)) {
+            tokenToId.set(token, nextId);
+            idToToken.set(nextId, token);
+            nextId += 1;
+          }
+          return tokenToId.get(token);
+        };
+
+        return {
+          encode: (text) => split(text).map(getId),
+          decodeSingle: (id) => idToToken.get(id) || "",
+        };
+      }
+
+      async function initTokenizer() {
+        try {
+          const mod = await import("https://cdn.jsdelivr.net/npm/js-tiktoken@1.0.21/+esm");
+          state.encoder = mod.getEncoding("o200k_base");
+          state.encode = (text) => state.encoder.encode(text);
+          state.decodeSingle = (id) => {
+            const decoded = state.encoder.decode([id]);
+            return typeof decoded === "string" ? decoded : new TextDecoder().decode(decoded);
+          };
+          statusBadge.textContent = "GPT-5.x / o1-o3 tokenizer (o200k_base)";
+        } catch (err) {
+          const fallback = makeFallbackTokenizer();
+          state.encode = fallback.encode;
+          state.decodeSingle = fallback.decodeSingle;
+          statusBadge.textContent = "Tokenizer fallback mode (local split)";
+        }
+        renderAll();
+      }
+
+      inputText.addEventListener("input", renderAll);
+      initTokenizer();
+    </script>
+  </body>
+</html>
