@@ -88,11 +88,11 @@ interface TraceSession {
 }
 
 interface TraceOverlayDragState {
-  pointerId: number;
   startClientX: number;
   startClientY: number;
   startLeft: number;
   startTop: number;
+  touchId: number;
 }
 
 let INPUTS: {[name: string]: InputFeature} = {
@@ -975,19 +975,17 @@ function applyTraceOverlayPosition() {
 function startTraceOverlayDrag(pointerId: number, clientX: number,
     clientY: number) {
   traceOverlayDragState = {
-    pointerId,
     startClientX: clientX,
     startClientY: clientY,
     startLeft: traceOverlayPosition.left,
-    startTop: traceOverlayPosition.top
+    startTop: traceOverlayPosition.top,
+    touchId: pointerId
   };
   d3.select("#trace-overlay").classed("dragging", true);
 }
 
-function moveTraceOverlayDrag(pointerId: number, clientX: number,
-    clientY: number) {
-  if (traceOverlayDragState == null ||
-      traceOverlayDragState.pointerId !== pointerId) {
+function moveTraceOverlayDrag(clientX: number, clientY: number) {
+  if (traceOverlayDragState == null) {
     return;
   }
   let nextLeft = traceOverlayDragState.startLeft +
@@ -998,9 +996,8 @@ function moveTraceOverlayDrag(pointerId: number, clientX: number,
   applyTraceOverlayPosition();
 }
 
-function finishTraceOverlayDrag(pointerId: number) {
-  if (traceOverlayDragState == null ||
-      traceOverlayDragState.pointerId !== pointerId) {
+function finishTraceOverlayDrag() {
+  if (traceOverlayDragState == null) {
     return;
   }
   traceOverlayDragState = null;
@@ -1012,28 +1009,79 @@ function initializeTraceOverlayDragging() {
     return;
   }
   traceOverlayDragInitialized = true;
-  let handleElement =
-      document.getElementById("trace-overlay-drag-handle") as HTMLElement;
-  if (handleElement == null) {
+  let overlayElement = document.getElementById("trace-overlay") as HTMLElement;
+  if (overlayElement == null) {
     return;
   }
-  handleElement.addEventListener("pointerdown", (event: PointerEvent) => {
-    event.preventDefault();
-    if (handleElement.setPointerCapture != null) {
-      handleElement.setPointerCapture(event.pointerId);
+  let onMouseMove = (event: MouseEvent) => {
+    if (traceOverlayDragState == null) {
+      return;
     }
-    startTraceOverlayDrag(event.pointerId, event.clientX, event.clientY);
-  });
-  handleElement.addEventListener("pointermove", (event: PointerEvent) => {
     event.preventDefault();
-    moveTraceOverlayDrag(event.pointerId, event.clientX, event.clientY);
+    moveTraceOverlayDrag(event.clientX, event.clientY);
+  };
+  let onMouseUp = () => {
+    if (traceOverlayDragState == null) {
+      return;
+    }
+    finishTraceOverlayDrag();
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+  };
+  overlayElement.addEventListener("mousedown", (event: MouseEvent) => {
+    event.preventDefault();
+    startTraceOverlayDrag(-1, event.clientX, event.clientY);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   });
-  handleElement.addEventListener("pointerup", (event: PointerEvent) => {
-    finishTraceOverlayDrag(event.pointerId);
-  });
-  handleElement.addEventListener("pointercancel", (event: PointerEvent) => {
-    finishTraceOverlayDrag(event.pointerId);
-  });
+
+  let onTouchMove = (event: TouchEvent) => {
+    if (traceOverlayDragState == null) {
+      return;
+    }
+    let targetTouch: Touch = null;
+    for (let i = 0; i < event.touches.length; i++) {
+      if (event.touches[i].identifier === traceOverlayDragState.touchId) {
+        targetTouch = event.touches[i];
+        break;
+      }
+    }
+    if (targetTouch == null) {
+      return;
+    }
+    event.preventDefault();
+    moveTraceOverlayDrag(targetTouch.clientX, targetTouch.clientY);
+  };
+  let onTouchEnd = (event: TouchEvent) => {
+    if (traceOverlayDragState == null) {
+      return;
+    }
+    let activeTouchEnded = false;
+    for (let i = 0; i < event.changedTouches.length; i++) {
+      if (event.changedTouches[i].identifier === traceOverlayDragState.touchId) {
+        activeTouchEnded = true;
+        break;
+      }
+    }
+    if (!activeTouchEnded) {
+      return;
+    }
+    finishTraceOverlayDrag();
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
+    window.removeEventListener("touchcancel", onTouchEnd);
+  };
+  overlayElement.addEventListener("touchstart", (event: TouchEvent) => {
+    if (event.changedTouches.length === 0) {
+      return;
+    }
+    let touch = event.changedTouches[0];
+    event.preventDefault();
+    startTraceOverlayDrag(touch.identifier, touch.clientX, touch.clientY);
+    window.addEventListener("touchmove", onTouchMove, {passive: false});
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchEnd);
+  }, {passive: false});
   window.addEventListener("resize", () => applyTraceOverlayPosition());
   applyTraceOverlayPosition();
 }
