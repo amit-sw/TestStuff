@@ -87,6 +87,14 @@ interface TraceSession {
   applied: boolean;
 }
 
+interface TraceOverlayDragState {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startLeft: number;
+  startTop: number;
+}
+
 let INPUTS: {[name: string]: InputFeature} = {
   "x": {f: (x, y) => x, label: "X_1"},
   "y": {f: (x, y) => y, label: "X_2"},
@@ -200,6 +208,9 @@ let lineChart = new AppendingLineChart(d3.select("#linechart"),
     ["#777", "black"]);
 let traceModeEnabled = false;
 let traceSession: TraceSession = null;
+let traceOverlayPosition = {left: 2, top: 2};
+let traceOverlayDragState: TraceOverlayDragState = null;
+let traceOverlayDragInitialized = false;
 
 function makeGUI() {
   d3.select("#reset-button").on("click", () => {
@@ -244,6 +255,7 @@ function makeGUI() {
   d3.select("#trace-mode-toggle").on("change", function() {
     setTraceMode(this.checked);
   });
+  initializeTraceOverlayDragging();
 
   d3.select("#data-regen-button").on("click", () => {
     generateData();
@@ -931,10 +943,106 @@ function formatTraceSigned(value: number, digits = 4): string {
   return (value >= 0 ? "+" : "-") + absValue;
 }
 
+function clampTraceOverlayPosition(left: number, top: number): {
+  left: number, top: number
+} {
+  let overlayElement = document.getElementById("trace-overlay") as HTMLElement;
+  let networkElement = document.getElementById("network") as HTMLElement;
+  if (overlayElement == null || networkElement == null) {
+    return {left, top};
+  }
+  let margin = 2;
+  let minLeft = margin;
+  let minTop = margin;
+  let maxLeft = Math.max(
+      minLeft, networkElement.clientWidth - overlayElement.offsetWidth - margin);
+  let maxTop = Math.max(
+      minTop, networkElement.clientHeight - overlayElement.offsetHeight - margin);
+  return {
+    left: Math.max(minLeft, Math.min(maxLeft, left)),
+    top: Math.max(minTop, Math.min(maxTop, top))
+  };
+}
+
+function applyTraceOverlayPosition() {
+  traceOverlayPosition = clampTraceOverlayPosition(
+      traceOverlayPosition.left, traceOverlayPosition.top);
+  d3.select("#trace-overlay")
+      .style("left", `${traceOverlayPosition.left}px`)
+      .style("top", `${traceOverlayPosition.top}px`);
+}
+
+function startTraceOverlayDrag(pointerId: number, clientX: number,
+    clientY: number) {
+  traceOverlayDragState = {
+    pointerId,
+    startClientX: clientX,
+    startClientY: clientY,
+    startLeft: traceOverlayPosition.left,
+    startTop: traceOverlayPosition.top
+  };
+  d3.select("#trace-overlay").classed("dragging", true);
+}
+
+function moveTraceOverlayDrag(pointerId: number, clientX: number,
+    clientY: number) {
+  if (traceOverlayDragState == null ||
+      traceOverlayDragState.pointerId !== pointerId) {
+    return;
+  }
+  let nextLeft = traceOverlayDragState.startLeft +
+      (clientX - traceOverlayDragState.startClientX);
+  let nextTop = traceOverlayDragState.startTop +
+      (clientY - traceOverlayDragState.startClientY);
+  traceOverlayPosition = clampTraceOverlayPosition(nextLeft, nextTop);
+  applyTraceOverlayPosition();
+}
+
+function finishTraceOverlayDrag(pointerId: number) {
+  if (traceOverlayDragState == null ||
+      traceOverlayDragState.pointerId !== pointerId) {
+    return;
+  }
+  traceOverlayDragState = null;
+  d3.select("#trace-overlay").classed("dragging", false);
+}
+
+function initializeTraceOverlayDragging() {
+  if (traceOverlayDragInitialized) {
+    return;
+  }
+  traceOverlayDragInitialized = true;
+  let handleElement =
+      document.getElementById("trace-overlay-drag-handle") as HTMLElement;
+  if (handleElement == null) {
+    return;
+  }
+  handleElement.addEventListener("pointerdown", (event: PointerEvent) => {
+    event.preventDefault();
+    if (handleElement.setPointerCapture != null) {
+      handleElement.setPointerCapture(event.pointerId);
+    }
+    startTraceOverlayDrag(event.pointerId, event.clientX, event.clientY);
+  });
+  handleElement.addEventListener("pointermove", (event: PointerEvent) => {
+    event.preventDefault();
+    moveTraceOverlayDrag(event.pointerId, event.clientX, event.clientY);
+  });
+  handleElement.addEventListener("pointerup", (event: PointerEvent) => {
+    finishTraceOverlayDrag(event.pointerId);
+  });
+  handleElement.addEventListener("pointercancel", (event: PointerEvent) => {
+    finishTraceOverlayDrag(event.pointerId);
+  });
+  window.addEventListener("resize", () => applyTraceOverlayPosition());
+  applyTraceOverlayPosition();
+}
+
 function setTraceOverlay(status: string, sample: string, detailHtml: string) {
   d3.select("#trace-overlay-status").text(status);
   d3.select("#trace-overlay-sample").text(sample);
   d3.select("#trace-overlay-detail").html(detailHtml || "");
+  applyTraceOverlayPosition();
 }
 
 function clearTraceHighlights() {
