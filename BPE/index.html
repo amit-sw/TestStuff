@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Byte-Pair Encoding Demo</title>
+    <style>
+      :root {
+        --bg: #f4f6fa;
+        --panel: #ffffff;
+        --ink: #1b2430;
+        --muted: #5f6b7a;
+        --accent: #0f766e;
+        --accent-soft: #d9f3f1;
+        --border: #d8dee9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top right, #d9e9ff 0%, #f4f6fa 45%);
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 28px 16px 24px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup {
+        flex: 0 0 auto;
+      }
+
+      .brand-logo {
+        height: 52px;
+        width: auto;
+        display: block;
+      }
+
+      .title {
+        margin: 0;
+        font-size: clamp(1.4rem, 2.5vw, 2.1rem);
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+      }
+
+      .source {
+        margin-top: 8px;
+        font-size: 0.9rem;
+        color: #3d4a59;
+      }
+
+      .controls {
+        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: 1px solid #94a3b8;
+        background: #ffffff;
+        color: #1f2937;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 0.93rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button:hover:not(:disabled) {
+        background: #f8fafc;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      #status {
+        min-height: 1.5rem;
+        margin-top: 10px;
+        color: #0f172a;
+      }
+
+      #status.error {
+        color: #b91c1c;
+      }
+
+      .stats {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .stat-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .stat-value {
+        margin-top: 6px;
+        font-size: 1.3rem;
+        font-weight: 700;
+      }
+
+      .layout {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .panel h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .panel-note {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .chart-wrap {
+        margin-top: 10px;
+        width: 100%;
+        height: 320px;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #fcfdff, #f9fbff);
+        border: 1px solid #e5ebf3;
+      }
+
+      #history-chart {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .table-wrap {
+        margin-top: 10px;
+        max-height: 520px;
+        overflow: auto;
+        border: 1px solid #e5ebf3;
+        border-radius: 10px;
+      }
+
+      .table-grid {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .table-title {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--accent-soft);
+        z-index: 1;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 7px 10px;
+        border-bottom: 1px solid #edf2f7;
+      }
+
+      td.token-cell {
+        font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      td.freq-cell {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      @media (max-width: 900px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .chart-wrap {
+          height: 260px;
+        }
+
+        .table-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          gap: 10px;
+        }
+
+        .brand-logo {
+          height: 44px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img
+            class="brand-logo"
+            src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg"
+            alt="Schovia logo"
+          />
+        </div>
+        <h1 class="title">Byte-Pair Encoding (BPE) Demo</h1>
+      </header>
+      <p class="subtitle">
+        Starts with character tokens, then repeatedly merges the most frequent adjacent token pair.
+      </p>
+      <p class="source" id="source"></p>
+
+      <section class="controls" aria-label="BPE Controls">
+        <button class="primary" data-rounds="1">Run 1 round</button>
+        <button data-rounds="5">Run 5 rounds</button>
+        <button data-rounds="10">Run 10 rounds</button>
+        <button data-rounds="20">Run 20 rounds</button>
+        <button data-rounds="50">Run 50 rounds</button>
+        <button data-rounds="100">Run 100 rounds</button>
+        <button id="reset-btn">Reset</button>
+      </section>
+
+      <p id="status" role="status" aria-live="polite"></p>
+
+      <section class="stats" aria-label="Current Step Stats">
+        <article class="stat-card">
+          <div class="stat-label">Step</div>
+          <div class="stat-value" id="stat-step">0</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Vocabulary Size</div>
+          <div class="stat-value" id="stat-vocab">0</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Context Size</div>
+          <div class="stat-value" id="stat-context">0</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-label">Last Merge</div>
+          <div class="stat-value" id="stat-merge">-</div>
+        </article>
+      </section>
+
+      <section class="layout">
+        <article class="panel">
+          <h2>Token Tables</h2>
+          <p class="panel-note">Created tokens and likely next merges for the current step.</p>
+          <div class="table-grid">
+            <section>
+              <h3 class="table-title">Created Tokens (Latest First)</h3>
+              <p class="panel-note">Shows merged tokens and their current frequency in the tokenized text.</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Token</th>
+                      <th>Created At Step</th>
+                      <th>Current Frequency</th>
+                    </tr>
+                  </thead>
+                  <tbody id="created-token-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section>
+              <h3 class="table-title">Top Next Merge Candidates</h3>
+              <p class="panel-note">Most frequent adjacent token pairs that BPE can merge next.</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Pair</th>
+                      <th>Merged Token</th>
+                      <th>Frequency</th>
+                    </tr>
+                  </thead>
+                  <tbody id="candidate-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="panel">
+          <h2>Vocabulary Size vs Context Size</h2>
+          <p class="panel-note">
+            X-axis: vocabulary size. Y-axis: context size (number of tokens used to represent the original text).
+          </p>
+          <div class="chart-wrap">
+            <canvas id="history-chart" aria-label="Vocabulary vs Context graph"></canvas>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const DATA_URL = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt";
+      const LOCAL_FILE = "input.txt";
+
+      let originalText = "";
+      let tokens = [];
+      let step = 0;
+      let history = [];
+      let isRunning = false;
+      let lastMerge = null;
+      let createdTokens = [];
+
+      const sourceEl = document.getElementById("source");
+      const statusEl = document.getElementById("status");
+      const stepEl = document.getElementById("stat-step");
+      const vocabEl = document.getElementById("stat-vocab");
+      const contextEl = document.getElementById("stat-context");
+      const mergeEl = document.getElementById("stat-merge");
+      const createdTokenTableBodyEl = document.getElementById("created-token-table-body");
+      const candidateTableBodyEl = document.getElementById("candidate-table-body");
+      const chartEl = document.getElementById("history-chart");
+      const roundButtons = Array.from(document.querySelectorAll("button[data-rounds]"));
+      const resetBtn = document.getElementById("reset-btn");
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle("error", isError);
+      }
+
+      function formatInt(value) {
+        return value.toLocaleString("en-US");
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatToken(token) {
+        const pretty = token
+          .replace(/\\/g, "\\\\")
+          .replace(/\n/g, "\\n")
+          .replace(/\r/g, "\\r")
+          .replace(/\t/g, "\\t")
+          .replace(/ /g, "␠");
+        const clipped = pretty.length > 70 ? `${pretty.slice(0, 67)}...` : pretty;
+        return clipped || "(empty)";
+      }
+
+      function buildTokenFrequencyMap(tokenList) {
+        const counts = new Map();
+        for (const token of tokenList) {
+          counts.set(token, (counts.get(token) || 0) + 1);
+        }
+        return counts;
+      }
+
+      function renderCreatedTokensTable(mergeCreatedTokens, countMap) {
+        if (mergeCreatedTokens.length === 0) {
+          createdTokenTableBodyEl.innerHTML =
+            '<tr><td colspan="3" class="token-cell">No merged tokens yet. Run at least 1 BPE round.</td></tr>';
+          return;
+        }
+
+        const latestFirstRows = [...mergeCreatedTokens].reverse();
+        const html = latestFirstRows
+          .map((entry) => {
+            const currentFrequency = countMap.get(entry.token) || 0;
+            return `<tr><td class="token-cell">${escapeHtml(formatToken(entry.token))}</td><td class="freq-cell">${formatInt(entry.step)}</td><td class="freq-cell">${formatInt(currentFrequency)}</td></tr>`;
+          })
+          .join("");
+        createdTokenTableBodyEl.innerHTML = html;
+      }
+
+      function buildPairCandidateRows(tokenList) {
+        if (tokenList.length < 2) {
+          return [];
+        }
+
+        const pairCounts = new Map();
+        for (let i = 0; i < tokenList.length - 1; i += 1) {
+          const left = tokenList[i];
+          const right = tokenList[i + 1];
+          const key = `${left}\u0001${right}`;
+          let entry = pairCounts.get(key);
+          if (!entry) {
+            entry = { left, right, frequency: 0, firstIndex: i };
+            pairCounts.set(key, entry);
+          }
+          entry.frequency += 1;
+        }
+
+        return Array.from(pairCounts.values()).sort((a, b) => {
+          if (b.frequency !== a.frequency) {
+            return b.frequency - a.frequency;
+          }
+          if (a.firstIndex !== b.firstIndex) {
+            return a.firstIndex - b.firstIndex;
+          }
+          const aPair = `${a.left}${a.right}`;
+          const bPair = `${b.left}${b.right}`;
+          return aPair < bPair ? -1 : aPair > bPair ? 1 : 0;
+        });
+      }
+
+      function renderCandidateTable(tokenList) {
+        const rows = buildPairCandidateRows(tokenList).filter((row) => row.frequency >= 2).slice(0, 30);
+        if (rows.length === 0) {
+          candidateTableBodyEl.innerHTML =
+            '<tr><td colspan="3" class="token-cell">No mergeable pair remains (all adjacent pair frequencies are 1).</td></tr>';
+          return;
+        }
+
+        const html = rows
+          .map((row) => {
+            const pairLabel = `${formatToken(row.left)} + ${formatToken(row.right)}`;
+            const mergedLabel = formatToken(row.left + row.right);
+            return `<tr><td class="token-cell">${escapeHtml(pairLabel)}</td><td class="token-cell">${escapeHtml(mergedLabel)}</td><td class="freq-cell">${formatInt(row.frequency)}</td></tr>`;
+          })
+          .join("");
+        candidateTableBodyEl.innerHTML = html;
+      }
+
+      function pushHistory(countMap) {
+        history.push({
+          step,
+          vocabSize: countMap.size,
+          contextSize: tokens.length,
+        });
+      }
+
+      function renderStats(countMap) {
+        stepEl.textContent = formatInt(step);
+        vocabEl.textContent = formatInt(countMap.size);
+        contextEl.textContent = formatInt(tokens.length);
+
+        if (lastMerge) {
+          mergeEl.textContent = `${formatToken(lastMerge.left)} + ${formatToken(lastMerge.right)}`;
+          mergeEl.title = `Merged token: ${formatToken(lastMerge.merged)} (pair frequency: ${lastMerge.frequency})`;
+        } else {
+          mergeEl.textContent = "-";
+          mergeEl.removeAttribute("title");
+        }
+      }
+
+      function drawChart() {
+        const rect = chartEl.getBoundingClientRect();
+        const width = Math.max(320, rect.width || 320);
+        const height = Math.max(220, rect.height || 220);
+        const dpr = window.devicePixelRatio || 1;
+
+        chartEl.width = Math.floor(width * dpr);
+        chartEl.height = Math.floor(height * dpr);
+
+        const ctx = chartEl.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const pad = { left: 58, right: 18, top: 18, bottom: 44 };
+        const plotW = width - pad.left - pad.right;
+        const plotH = height - pad.top - pad.bottom;
+
+        if (plotW <= 10 || plotH <= 10 || history.length === 0) {
+          return;
+        }
+
+        const xValues = history.map((d) => d.vocabSize);
+        const yValues = history.map((d) => d.contextSize);
+
+        let minX = Math.min(...xValues);
+        let maxX = Math.max(...xValues);
+        let minY = Math.min(...yValues);
+        let maxY = Math.max(...yValues);
+
+        if (minX === maxX) {
+          maxX += 1;
+        }
+        if (minY === maxY) {
+          maxY += 1;
+        }
+
+        const xToPx = (x) => pad.left + ((x - minX) / (maxX - minX)) * plotW;
+        const yToPx = (y) => pad.top + (1 - (y - minY) / (maxY - minY)) * plotH;
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#d0d8e5";
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "12px sans-serif";
+
+        const ticks = 5;
+        for (let i = 0; i <= ticks; i += 1) {
+          const tx = pad.left + (plotW * i) / ticks;
+          const xVal = Math.round(minX + ((maxX - minX) * i) / ticks);
+          ctx.beginPath();
+          ctx.moveTo(tx, pad.top);
+          ctx.lineTo(tx, height - pad.bottom);
+          ctx.stroke();
+          ctx.fillText(String(xVal), tx - 10, height - pad.bottom + 18);
+
+          const ty = pad.top + (plotH * i) / ticks;
+          const yVal = Math.round(maxY - ((maxY - minY) * i) / ticks);
+          ctx.beginPath();
+          ctx.moveTo(pad.left, ty);
+          ctx.lineTo(width - pad.right, ty);
+          ctx.stroke();
+          ctx.fillText(String(yVal), 6, ty + 4);
+        }
+
+        ctx.strokeStyle = "#0f766e";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        history.forEach((entry, index) => {
+          const x = xToPx(entry.vocabSize);
+          const y = yToPx(entry.contextSize);
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = "#0f766e";
+        for (const entry of history) {
+          const x = xToPx(entry.vocabSize);
+          const y = yToPx(entry.contextSize);
+          ctx.beginPath();
+          ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "#111827";
+        ctx.font = "bold 12px sans-serif";
+        ctx.fillText("Vocabulary size", width / 2 - 46, height - 8);
+
+        ctx.save();
+        ctx.translate(12, height / 2 + 28);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText("Context size", 0, 0);
+        ctx.restore();
+      }
+
+      function findBestPair(tokenList) {
+        const rows = buildPairCandidateRows(tokenList);
+        if (rows.length === 0 || rows[0].frequency < 2) {
+          return null;
+        }
+        return rows[0];
+      }
+
+      function mergePair(tokenList, pair) {
+        const mergedToken = pair.left + pair.right;
+        const mergedList = [];
+
+        for (let i = 0; i < tokenList.length; i += 1) {
+          if (i < tokenList.length - 1 && tokenList[i] === pair.left && tokenList[i + 1] === pair.right) {
+            mergedList.push(mergedToken);
+            i += 1;
+          } else {
+            mergedList.push(tokenList[i]);
+          }
+        }
+
+        return { mergedToken, mergedList };
+      }
+
+      function runOneRound() {
+        const bestPair = findBestPair(tokens);
+        if (!bestPair) {
+          return false;
+        }
+
+        const { mergedToken, mergedList } = mergePair(tokens, bestPair);
+        tokens = mergedList;
+        step += 1;
+        lastMerge = {
+          left: bestPair.left,
+          right: bestPair.right,
+          merged: mergedToken,
+          frequency: bestPair.frequency,
+        };
+        createdTokens.push({ token: mergedToken, step });
+
+        const countMap = buildTokenFrequencyMap(tokens);
+        pushHistory(countMap);
+        return true;
+      }
+
+      function rerender() {
+        const countMap = buildTokenFrequencyMap(tokens);
+        renderStats(countMap);
+        renderCreatedTokensTable(createdTokens, countMap);
+        renderCandidateTable(tokens);
+        drawChart();
+      }
+
+      function setButtonsDisabled(disabled) {
+        roundButtons.forEach((button) => {
+          button.disabled = disabled;
+        });
+        resetBtn.disabled = disabled;
+      }
+
+      async function runRounds(roundCount) {
+        if (isRunning || roundCount <= 0) {
+          return;
+        }
+
+        isRunning = true;
+        setButtonsDisabled(true);
+
+        let completed = 0;
+        for (let i = 0; i < roundCount; i += 1) {
+          const didMerge = runOneRound();
+          if (!didMerge) {
+            break;
+          }
+          completed += 1;
+
+          if (i % 8 === 0) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        }
+
+        rerender();
+        if (completed === 0) {
+          setStatus("No pair with frequency >= 2 remains, so BPE is finished.");
+        } else if (completed < roundCount) {
+          setStatus(`Ran ${completed} rounds. BPE stopped because no mergeable pair remained.`);
+        } else {
+          setStatus(`Ran ${completed} BPE round${completed === 1 ? "" : "s"}.`);
+        }
+
+        isRunning = false;
+        setButtonsDisabled(false);
+      }
+
+      function resetSimulation() {
+        tokens = Array.from(originalText);
+        step = 0;
+        history = [];
+        lastMerge = null;
+        createdTokens = [];
+
+        const countMap = buildTokenFrequencyMap(tokens);
+        pushHistory(countMap);
+        renderStats(countMap);
+        renderCreatedTokensTable(createdTokens, countMap);
+        renderCandidateTable(tokens);
+        drawChart();
+
+        setStatus("Reset to step 0 (character-level tokenization).");
+      }
+
+      async function fetchTextFrom(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.text();
+      }
+
+      async function loadText() {
+        try {
+          const text = await fetchTextFrom(LOCAL_FILE);
+          return { text, source: `Loaded local file: ${LOCAL_FILE}` };
+        } catch (localErr) {
+          try {
+            const text = await fetchTextFrom(DATA_URL);
+            return { text, source: `Loaded remote source: ${DATA_URL}` };
+          } catch (remoteErr) {
+            const message = `Unable to load input text from local file or remote URL. Local error: ${localErr.message}. Remote error: ${remoteErr.message}.`;
+            throw new Error(message);
+          }
+        }
+      }
+
+      function wireControls() {
+        roundButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            runRounds(Number(button.dataset.rounds));
+          });
+        });
+
+        resetBtn.addEventListener("click", () => {
+          if (!isRunning) {
+            resetSimulation();
+          }
+        });
+
+        window.addEventListener("resize", () => {
+          drawChart();
+        });
+      }
+
+      async function init() {
+        setStatus("Loading dataset...");
+
+        try {
+          const result = await loadText();
+          originalText = result.text;
+          sourceEl.textContent = `${result.source} • characters: ${formatInt(originalText.length)}`;
+          wireControls();
+          resetSimulation();
+        } catch (error) {
+          sourceEl.textContent = "";
+          setStatus(error.message, true);
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
