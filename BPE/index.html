@@ -311,13 +311,13 @@
           <div class="table-grid">
             <section>
               <h3 class="table-title">Created Tokens (Latest First)</h3>
-              <p class="panel-note">Shows merged tokens and their current frequency in the tokenized text.</p>
+              <p class="panel-note">Shows base character tokens and merged tokens with their current frequency.</p>
               <div class="table-wrap">
                 <table>
                   <thead>
                     <tr>
+                      <th>Token ID</th>
                       <th>Token</th>
-                      <th>Created At Step</th>
                       <th>Current Frequency</th>
                     </tr>
                   </thead>
@@ -368,6 +368,8 @@
       let isRunning = false;
       let lastMerge = null;
       let createdTokens = [];
+      let tokenToId = new Map();
+      let nextTokenId = 0;
 
       const sourceEl = document.getElementById("source");
       const statusEl = document.getElementById("status");
@@ -418,10 +420,24 @@
         return counts;
       }
 
+      function initializeBaseCreatedTokens(tokenList) {
+        createdTokens = [];
+        tokenToId = new Map();
+        nextTokenId = 0;
+
+        for (const token of tokenList) {
+          if (!tokenToId.has(token)) {
+            tokenToId.set(token, nextTokenId);
+            createdTokens.push({ token, id: nextTokenId });
+            nextTokenId += 1;
+          }
+        }
+      }
+
       function renderCreatedTokensTable(mergeCreatedTokens, countMap) {
         if (mergeCreatedTokens.length === 0) {
           createdTokenTableBodyEl.innerHTML =
-            '<tr><td colspan="3" class="token-cell">No merged tokens yet. Run at least 1 BPE round.</td></tr>';
+            '<tr><td colspan="3" class="token-cell">No tokens available.</td></tr>';
           return;
         }
 
@@ -429,7 +445,7 @@
         const html = latestFirstRows
           .map((entry) => {
             const currentFrequency = countMap.get(entry.token) || 0;
-            return `<tr><td class="token-cell">${escapeHtml(formatToken(entry.token))}</td><td class="freq-cell">${formatInt(entry.step)}</td><td class="freq-cell">${formatInt(currentFrequency)}</td></tr>`;
+            return `<tr><td class="freq-cell">${formatInt(entry.id)}</td><td class="token-cell">${escapeHtml(formatToken(entry.token))}</td><td class="freq-cell">${formatInt(currentFrequency)}</td></tr>`;
           })
           .join("");
         createdTokenTableBodyEl.innerHTML = html;
@@ -642,7 +658,12 @@
           merged: mergedToken,
           frequency: bestPair.frequency,
         };
-        createdTokens.push({ token: mergedToken, step });
+
+        if (!tokenToId.has(mergedToken)) {
+          tokenToId.set(mergedToken, nextTokenId);
+          createdTokens.push({ token: mergedToken, id: nextTokenId });
+          nextTokenId += 1;
+        }
 
         const countMap = buildTokenFrequencyMap(tokens);
         pushHistory(countMap);
@@ -703,7 +724,7 @@
         step = 0;
         history = [];
         lastMerge = null;
-        createdTokens = [];
+        initializeBaseCreatedTokens(tokens);
 
         const countMap = buildTokenFrequencyMap(tokens);
         pushHistory(countMap);
@@ -712,7 +733,7 @@
         renderCandidateTable(tokens);
         drawChart();
 
-        setStatus("Reset to step 0 (character-level tokenization).");
+        setStatus("Reset to step 0 (character-level tokens are pre-created).");
       }
 
       async function fetchTextFrom(url) {
