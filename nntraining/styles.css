@@ -158,35 +158,7 @@ body {
 
 /* Header */
 
-.github-link {
-  width: 60px;
-  height: 60px;
-  position: absolute;
-  display: block;
-  top: 0;
-  right: 0;
-  z-index: 1000;
-}
-
-.github-link .bg {
-  fill: #fff;
-  fill-opacity: 0.2;
-}
-
-.github-link:hover .bg {
-  fill-opacity: 0.3;
-}
-
-.github-link .icon {
-  fill: #fff;
-  fill-opacity: 0.6;
-}
-
-.github-link:hover .icon {
-  fill-opacity: 0.7;
-}
-
-header {
+.app-header {
   border-bottom: solid 1px rgba(0,0,0,0.4);
   background-color: #183D4E;
   color: white;
@@ -195,36 +167,43 @@ header {
   position: relative;
 }
 
-header h1 {
-  font-size: 30px;
+.app-header-inner {
+  position: relative;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scovia-logo {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 400;
+  color: #ffffff;
   text-align: center;
-  margin-top: 30px;
-  margin-bottom: 30px;
   -webkit-font-smoothing: antialiased;
 }
 
-header h1 .optional {
-  display: none;
-}
-
-@media (min-width: 1064px) {
-  header h1 .optional {
-    display: inline;
+@media (max-width: 1100px) {
+  .app-title {
+    font-size: 28px;
   }
 }
 
-@media (min-height: 700px) {
-  header h1 {
-    margin-top: 40px;
-    margin-bottom: 40px;
-  }
-}
-
-@media (min-height: 800px) {
-  header h1 {
-    font-size: 34px;
-    margin-top: 60px;
-    margin-bottom: 60px;
+@media (max-width: 980px) {
+  .scovia-logo {
+    font-size: 18px;
   }
 }
 
@@ -997,32 +976,42 @@ article p {
 
 footer {
   border-top: solid 1px #eee;
-  color: #ccc;
-  font-weight: 300;
-  padding: 40px 0;
-  height: 30px;
+  color: #666;
+  font-weight: 400;
+  padding: 18px 0 24px 0;
 }
 
-footer svg {
-  margin-top: 2px;
-  float: left;
-  width: 110px;
-  height: 18px;
-  fill: #aaa;
+.footer-note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  width: 944px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-footer .links {
-  float: right;
+@media (min-width: 1180px) {
+  .footer-note {
+    width: 1100px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .footer-note {
+    width: 1220px;
+  }
+}
+
+.footer-note .ack {
   font-size: 13px;
-  height: 30px;
-  line-height: 30px;
-  margin-left: 20px;
+  line-height: 1.35;
 }
 
 footer .links a {
-  margin-right: 15px;
+  font-size: 13px;
   text-decoration: none;
-  color: #999;
+  color: #0D658C;
 }
 
 footer .links a:hover {

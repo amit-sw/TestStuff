@@ -382,8 +382,8 @@ function makeGUI() {
     }
   });
 
-  d3.select("#trace-mode-toggle").property("checked", false);
-  setTraceMode(false);
+  d3.select("#trace-mode-toggle").property("checked", true);
+  setTraceMode(true);
 
   // Hide the text below the visualization depending on the URL.
   if (state.hideText) {
