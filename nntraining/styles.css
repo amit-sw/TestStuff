@@ -180,10 +180,8 @@ body {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #ffffff;
+  height: 44px;
+  width: auto;
 }
 
 .app-title {
@@ -203,7 +201,7 @@ body {
 
 @media (max-width: 980px) {
   .scovia-logo {
-    font-size: 18px;
+    height: 38px;
   }
 }
 
