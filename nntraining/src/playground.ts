@@ -219,6 +219,9 @@ function makeGUI() {
   d3.select("#trace-step-button").on("click", () => {
     player.pause();
     userHasInteracted();
+    if (iter === 0) {
+      simulationStarted();
+    }
     runTraceExampleStep();
   });
 
@@ -934,7 +937,257 @@ function constructInput(x: number, y: number): number[] {
   return input;
 }
 
+function formatTraceValue(value: number, digits = 4): string {
+  return value.toFixed(digits);
+}
+
+function formatTraceSigned(value: number, digits = 4): string {
+  let absValue = Math.abs(value).toFixed(digits);
+  return (value >= 0 ? "+" : "-") + absValue;
+}
+
+function tracePhaseLabel(phase: TracePhase): string {
+  switch (phase) {
+    case "forward":
+      return "Forward";
+    case "loss":
+      return "Loss";
+    case "backward":
+      return "Backward";
+    case "update":
+      return "Update";
+    default:
+      return "Info";
+  }
+}
+
+function setTraceDefaultSummary() {
+  d3.select("#trace-summary").text(
+      "Pause the simulation and click \"Trace 1 Example\" to walk one sample " +
+      "through forward pass, loss, backprop, and parameter updates.");
+}
+
+function clearTraceNetworkHighlights() {
+  d3.selectAll("#network .node").classed("trace-active", false);
+  d3.selectAll("#network .core .link").classed("trace-active-link", false);
+}
+
+function cancelTraceAnimation(resetEventState = false) {
+  traceAnimationToken++;
+  clearTraceNetworkHighlights();
+  if (resetEventState) {
+    d3.select("#trace-events")
+      .selectAll("li")
+      .classed("trace-active", false)
+      .classed("trace-complete", false);
+  }
+}
+
+function buildTraceEvents(trace: nn.SingleExampleTrace): TraceEvent[] {
+  let events: TraceEvent[] = [];
+
+  trace.forward.forEach(step => {
+    let weightedTerms = step.contributions.map(contribution =>
+      `${formatTraceValue(contribution.weight)}*` +
+      `${formatTraceValue(contribution.sourceOutput)}`
+    );
+    let termsText = weightedTerms.length ? weightedTerms.join(" + ") : "0";
+    let detail = `z = ${formatTraceValue(step.bias)} + (${termsText}) = ` +
+        `${formatTraceValue(step.totalInput)}, a = f(z) = ` +
+        `${formatTraceValue(step.output)}`;
+    events.push({
+      phase: "forward",
+      title: `Layer ${step.layerIdx}, node ${step.nodeId}`,
+      detail,
+      nodeId: step.nodeId
+    });
+  });
+
+  events.push({
+    phase: "loss",
+    title: "Squared error for this sample",
+    detail: `E = 0.5 * (y_hat - y)^2 = 0.5 * ` +
+        `(${formatTraceValue(trace.output)} - ` +
+        `${formatTraceValue(trace.target)})^2 = ` +
+        `${formatTraceValue(trace.loss)}`
+  });
+
+  trace.backward.forEach(step => {
+    let detail = `dE/da = ${formatTraceValue(step.outputDer)}, ` +
+        `f'(z) = ${formatTraceValue(step.activationDer)}, ` +
+        `delta = dE/dz = ${formatTraceValue(step.inputDer)}`;
+    if (step.backpropContributions.length) {
+      let terms = step.backpropContributions.map(contribution =>
+        `${formatTraceValue(contribution.weight)}*` +
+        `${formatTraceValue(contribution.destInputDer)}`
+      );
+      detail = `dE/da = sum(w * delta_next) = ${terms.join(" + ")} = ` +
+          `${formatTraceValue(step.outputDer)}, f'(z) = ` +
+          `${formatTraceValue(step.activationDer)}, delta = ` +
+          `${formatTraceValue(step.inputDer)}`;
+    }
+    events.push({
+      phase: "backward",
+      title: `Layer ${step.layerIdx}, node ${step.nodeId}`,
+      detail,
+      nodeId: step.nodeId
+    });
+  });
+
+  trace.biasUpdates.forEach(step => {
+    events.push({
+      phase: "update",
+      title: `Bias b(${step.nodeId})`,
+      detail: `delta_b = -lr * delta = ${formatTraceSigned(step.delta)}, ` +
+          `new b = ${formatTraceValue(step.oldBias)} ` +
+          `${formatTraceSigned(step.delta)} = ` +
+          `${formatTraceValue(step.newBias)}`,
+      nodeId: step.nodeId
+    });
+  });
+
+  trace.linkUpdates.forEach(step => {
+    let detail = `delta_w = ${formatTraceSigned(step.totalDelta)}, ` +
+        `new w = ${formatTraceValue(step.oldWeight)} ` +
+        `${formatTraceSigned(step.totalDelta)} = ` +
+        `${formatTraceValue(step.newWeight)}`;
+    if (step.isDead && step.totalDelta === 0) {
+      detail = "Link is inactive (dead), so its weight is unchanged.";
+    } else {
+      detail += ` (grad: ${formatTraceSigned(step.gradientStep)}, reg: ` +
+          `${formatTraceSigned(step.regularizationStep)})`;
+      if (step.isDead) {
+        detail += " Regularization crossed zero, so this link is now dead.";
+      }
+    }
+    events.push({
+      phase: "update",
+      title: `Weight ${step.sourceId} -> ${step.destId}`,
+      detail,
+      linkId: step.linkId
+    });
+  });
+
+  if (events.length > TRACE_MAX_EVENTS) {
+    let omitted = events.length - TRACE_MAX_EVENTS;
+    events = events.slice(0, TRACE_MAX_EVENTS);
+    events.push({
+      phase: "meta",
+      title: "Trace truncated",
+      detail: `${omitted} additional steps were omitted. Reduce network size ` +
+          "for a complete walkthrough."
+    });
+  }
+
+  return events;
+}
+
+function renderTraceEvents(events: TraceEvent[]) {
+  let items = d3.select("#trace-events").selectAll("li").data(events);
+  items.exit().remove();
+  items.enter().append("li");
+  items.attr("class", null)
+      .html(d => {
+        return `<span class="trace-phase">${tracePhaseLabel(d.phase)}</span>` +
+            `<span class="trace-title">${d.title}</span>` +
+            `<div class="trace-detail">${d.detail}</div>`;
+      });
+}
+
+function animateTraceEvents(events: TraceEvent[], onFinished: () => void) {
+  traceAnimationToken++;
+  let localToken = traceAnimationToken;
+  clearTraceNetworkHighlights();
+  d3.select("#trace-events")
+    .selectAll("li")
+    .classed("trace-active", false)
+    .classed("trace-complete", false);
+
+  if (!events.length) {
+    onFinished();
+    return;
+  }
+
+  let eventIndex = 0;
+  function showNextEvent() {
+    if (localToken !== traceAnimationToken) {
+      return;
+    }
+    let event = events[eventIndex];
+    d3.select("#trace-events")
+      .selectAll("li")
+      .classed("trace-complete", (d, i) => i < eventIndex)
+      .classed("trace-active", (d, i) => i === eventIndex);
+    clearTraceNetworkHighlights();
+    if (event.nodeId != null) {
+      d3.select(`#node${event.nodeId}`).classed("trace-active", true);
+    }
+    if (event.linkId != null) {
+      d3.select(`#link${event.linkId}`).classed("trace-active-link", true);
+    }
+
+    let element = document.querySelector(
+        `#trace-events li:nth-child(${eventIndex + 1})`) as HTMLElement;
+    if (element != null && element.scrollIntoView != null) {
+      element.scrollIntoView(false);
+    }
+
+    eventIndex++;
+    if (eventIndex < events.length) {
+      window.setTimeout(showNextEvent, traceStepMs);
+      return;
+    }
+    window.setTimeout(() => {
+      if (localToken !== traceAnimationToken) {
+        return;
+      }
+      clearTraceNetworkHighlights();
+      onFinished();
+    }, traceStepMs);
+  }
+  showNextEvent();
+}
+
+function runTraceExampleStep() {
+  if (network == null || trainData.length === 0) {
+    d3.select("#trace-summary").text(
+        "No training samples are available for tracing right now.");
+    return;
+  }
+  let sampleIndex = iter % trainData.length;
+  let point = trainData[sampleIndex];
+  let input = constructInput(point.x, point.y);
+  let trace = nn.traceSingleExample(
+      network, input, point.label, nn.Errors.SQUARE,
+      state.learningRate, state.regularizationRate);
+  let events = buildTraceEvents(trace);
+  renderTraceEvents(events);
+  d3.select("#trace-summary").text(
+      `Tracing sample ${sampleIndex + 1}/${trainData.length} ` +
+      `(x=${formatTraceValue(point.x, 2)}, y=${formatTraceValue(point.y, 2)}, ` +
+      `target=${formatTraceValue(point.label, 2)}). This trace will apply one ` +
+      "single-example update when the animation ends.");
+
+  animateTraceEvents(events, () => {
+    nn.clearDerivatives(network);
+    nn.applySingleExampleTrace(network, trace);
+    nn.clearDerivatives(network);
+    iter++;
+    lossTrain = getLoss(network, trainData);
+    lossTest = getLoss(network, testData);
+    updateUI();
+
+    let updatedOutput = nn.forwardProp(network, input);
+    let updatedLoss = nn.Errors.SQUARE.error(updatedOutput, point.label);
+    d3.select("#trace-summary").text(
+        `Applied one-sample update at lr=${state.learningRate}. ` +
+        `Sample loss moved ${formatTraceValue(trace.loss)} -> ` +
+        `${formatTraceValue(updatedLoss)}.`);
+  });
+}
+
 function oneStep(): void {
+  cancelTraceAnimation(true);
   iter++;
   trainData.forEach((point, i) => {
     let input = constructInput(point.x, point.y);
@@ -972,6 +1225,9 @@ function reset(onStartup=false) {
     userHasInteracted();
   }
   player.pause();
+  cancelTraceAnimation(true);
+  d3.select("#trace-events").selectAll("li").remove();
+  setTraceDefaultSummary();
 
   let suffix = state.numHiddenLayers !== 1 ? "s" : "";
   d3.select("#layers-label").text("Hidden layer" + suffix);
