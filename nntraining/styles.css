@@ -736,7 +736,7 @@ g.column rect {
 }
 
 #network .trace-node-info {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   fill: #171717;
   text-anchor: middle;
@@ -745,6 +745,19 @@ g.column rect {
 }
 
 body.trace-mode #network .trace-node-info.trace-active-value {
+  opacity: 1;
+}
+
+#network .trace-node-context {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #2f2f2f;
+  text-anchor: middle;
+  pointer-events: none;
+  opacity: 0;
+}
+
+body.trace-mode #network .trace-node-context.trace-context-visible {
   opacity: 1;
 }
 
@@ -788,16 +801,32 @@ body.trace-mode #trace-overlay {
   margin-bottom: 4px;
 }
 
-#trace-overlay-sample {
-  font-size: 12px;
-  color: #333;
-  margin-bottom: 3px;
-}
-
 #trace-overlay-detail {
   font-size: 12px;
   color: #4b4b4b;
   line-height: 1.35;
+}
+
+#trace-overlay-detail .trace-row {
+  margin-top: 4px;
+}
+
+#trace-overlay-detail .trace-row-label {
+  font-weight: 600;
+  color: #202020;
+}
+
+#trace-output-groundtruth {
+  display: none;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f2f2f;
+}
+
+body.trace-mode #trace-output-groundtruth {
+  display: block;
 }
 
 /** Invisible thick links used for showing weight values on mouse hover. */

@@ -27,22 +27,6 @@ import * as d3 from 'd3';
 
 let mainWidth;
 
-// More scrolling
-d3.select(".more button").on("click", function() {
-  let position = 800;
-  d3.transition()
-    .duration(1000)
-    .tween("scroll", scrollTween(position));
-});
-
-function scrollTween(offset) {
-  return function() {
-    let i = d3.interpolateNumber(window.pageYOffset ||
-        document.documentElement.scrollTop, offset);
-    return function(t) { scrollTo(0, i(t)); };
-  };
-}
-
 const RECT_SIZE = 30;
 const BIAS_SIZE = 5;
 const NUM_SAMPLES_CLASSIFY = 500;
@@ -512,6 +496,15 @@ function drawNode(cx: number, cy: number, nodeId: string, isInput: boolean,
       class: "trace-node-info",
       x: RECT_SIZE / 2,
       y: RECT_SIZE / 2 + 3
+    })
+    .text("");
+
+  nodeGroup.append("text")
+    .attr({
+      id: `trace-node-context-${nodeId}`,
+      class: "trace-node-context",
+      x: RECT_SIZE / 2,
+      y: RECT_SIZE + 12
     })
     .text("");
 
@@ -1086,9 +1079,8 @@ function initializeTraceOverlayDragging() {
   applyTraceOverlayPosition();
 }
 
-function setTraceOverlay(status: string, sample: string, detailHtml: string) {
+function setTraceOverlay(status: string, detailHtml: string) {
   d3.select("#trace-overlay-status").text(status);
-  d3.select("#trace-overlay-sample").text(sample);
   d3.select("#trace-overlay-detail").html(detailHtml || "");
   applyTraceOverlayPosition();
 }
@@ -1102,6 +1094,10 @@ function clearTraceNodeText() {
   d3.selectAll("#network .trace-node-info")
     .classed("trace-active-value", false)
     .text("");
+  d3.selectAll("#network .trace-node-context")
+    .classed("trace-context-visible", false)
+    .text("");
+  d3.select("#trace-output-groundtruth").text("");
 }
 
 function setTraceNodeInfo(nodeId: string, text: string) {
@@ -1112,6 +1108,79 @@ function setTraceNodeInfo(nodeId: string, text: string) {
   d3.select(`#trace-node-info-${nodeId}`)
     .classed("trace-active-value", true)
     .text(text);
+}
+
+function setTraceNodeContext(nodeId: string, text: string) {
+  if (nodeId == null) {
+    return;
+  }
+  d3.select(`#trace-node-context-${nodeId}`)
+    .classed("trace-context-visible", true)
+    .text(text);
+}
+
+function getTraceActivationKey(nodeId: string): string {
+  for (let layerIdx = 1; layerIdx < network.length; layerIdx++) {
+    for (let i = 0; i < network[layerIdx].length; i++) {
+      if (network[layerIdx][i].id !== nodeId) {
+        continue;
+      }
+      if (layerIdx === network.length - 1) {
+        return "tanh";
+      }
+      return getKeyFromValue(activations, state.activation) || "tanh";
+    }
+  }
+  return "linear";
+}
+
+function getTraceActivationFormula(nodeId: string, z: number): string {
+  let activationKey = getTraceActivationKey(nodeId);
+  if (activationKey === "relu") {
+    return `a = ReLU(z) = max(0, ${formatTraceValue(z)})`;
+  }
+  if (activationKey === "sigmoid") {
+    let expTerm = Math.exp(-z);
+    return `a = sigmoid(z) = 1/(1 + e^(-z)) = ` +
+        `1/(1 + ${formatTraceValue(expTerm)})`;
+  }
+  if (activationKey === "linear") {
+    return `a = linear(z) = z = ${formatTraceValue(z)}`;
+  }
+  return `a = tanh(z) = tanh(${formatTraceValue(z)})`;
+}
+
+function getTraceActivationDerivativeFormula(nodeId: string, z: number,
+    activationDer: number): string {
+  let activationKey = getTraceActivationKey(nodeId);
+  if (activationKey === "relu") {
+    return `f'(z) = ReLU'(${formatTraceValue(z)}) = ${formatTraceValue(activationDer)}`;
+  }
+  if (activationKey === "sigmoid") {
+    let sig = 1 / (1 + Math.exp(-z));
+    return `f'(z) = sigmoid(z)*(1-sigmoid(z)) = ` +
+        `${formatTraceValue(sig)}*(1-${formatTraceValue(sig)}) = ` +
+        `${formatTraceValue(activationDer)}`;
+  }
+  if (activationKey === "linear") {
+    return `f'(z) = 1`;
+  }
+  let tanhValue = (Math as any).tanh(z);
+  return `f'(z) = 1 - tanh(z)^2 = 1 - ${formatTraceValue(tanhValue)}^2 = ` +
+      `${formatTraceValue(activationDer)}`;
+}
+
+function formatTraceRow(stepNumber: number, label: string, value: string): string {
+  return `<div class="trace-row"><span class="trace-row-label">${stepNumber}) ` +
+      `${label}:</span> ${value}</div>`;
+}
+
+function renderTraceContext(session: TraceSession) {
+  session.inputIds.forEach((id, i) => {
+    setTraceNodeContext(id, `${id}=${formatTraceValue(session.trace.inputs[i], 2)}`);
+  });
+  d3.select("#trace-output-groundtruth")
+    .text(`Ground truth = ${formatTraceValue(session.trace.target, 2)}`);
 }
 
 function setTraceMode(isEnabled: boolean) {
@@ -1132,19 +1201,17 @@ function setTraceMode(isEnabled: boolean) {
     d3.select("#next-step-button").attr("title", "Step");
   }
   if (!traceModeEnabled) {
-    setTraceOverlay("", "", "");
+    setTraceOverlay("", "");
     return;
   }
   if (trainData.length === 0) {
     setTraceOverlay(
         "Step mode",
-        "",
         "No training samples are available. Regenerate or adjust data.");
     return;
   }
   setTraceOverlay(
       "Step mode",
-      "Press Play to start tracing a single sample.",
       "Play: next step. Rewind: previous step. Go-to-end: finish this sample.");
   renderTraceView();
 }
@@ -1218,13 +1285,6 @@ function createTraceSession(): TraceSession {
   };
 }
 
-function getTraceSampleText(session: TraceSession): string {
-  let parts = session.inputIds.map((id, i) =>
-      `${id}=${formatTraceValue(session.trace.inputs[i], 2)}`);
-  return `Sample ${session.sampleIndex + 1}/${trainData.length}: ` +
-      `${parts.join(", ")}; target=${formatTraceValue(session.trace.target, 2)}`;
-}
-
 function getTraceSourceOutput(session: TraceSession, sourceId: string): number {
   let inputIndex = session.inputIds.indexOf(sourceId);
   if (inputIndex !== -1) {
@@ -1240,19 +1300,30 @@ function getTraceNarrative(session: TraceSession, step: TraceStep): {
 } {
   if (step.kind === "forward") {
     let nodeStep = session.trace.forward[step.index];
-    let terms = nodeStep.contributions.map(contribution =>
-      `${formatTraceValue(contribution.weight)} x ` +
-      `${formatTraceValue(contribution.sourceOutput)} = ` +
-      `${formatTraceValue(contribution.weightedValue)}`);
+    let inputValues = nodeStep.contributions.map(contribution =>
+      `${contribution.sourceId}=${formatTraceValue(contribution.sourceOutput)}`)
+      .join(", ");
+    let parameterValues = nodeStep.contributions.map(contribution =>
+      `w_${contribution.sourceId}=${formatTraceValue(contribution.weight)}`)
+      .join(", ");
     let sumTerms = nodeStep.contributions.map(contribution =>
       formatTraceValue(contribution.weightedValue)).join(" + ");
+    let activationFormula =
+        getTraceActivationFormula(nodeStep.nodeId, nodeStep.totalInput);
     return {
       status: `Forward ${step.index + 1}/${session.trace.forward.length}`,
-      detailHtml: `<b>Node ${nodeStep.nodeId}</b><br>` +
-          `Inputs: ${terms.length ? terms.join("<br>") : "none"}<br>` +
-          `z = b + sum(w*a) = ${formatTraceValue(nodeStep.bias)} + ` +
-          `(${sumTerms || "0"}) = ${formatTraceValue(nodeStep.totalInput)}<br>` +
-          `a = f(z) = ${formatTraceValue(nodeStep.output)}`,
+      detailHtml: `<b>Node ${nodeStep.nodeId}</b>` +
+          formatTraceRow(1, "Inputs", inputValues || "none") +
+          formatTraceRow(
+              2, "Parameters",
+              `b=${formatTraceValue(nodeStep.bias)}; ` +
+              `${parameterValues || "no incoming weights"}`) +
+          formatTraceRow(
+              3, "Intermediate",
+              `z = b + sum(w*a) = ${formatTraceValue(nodeStep.bias)} + ` +
+              `(${sumTerms || "0"}) = ${formatTraceValue(nodeStep.totalInput)}`) +
+          formatTraceRow(4, "Activation formula", activationFormula) +
+          formatTraceRow(5, "Final value", `a = ${formatTraceValue(nodeStep.output)}`),
       nodeId: nodeStep.nodeId,
       nodeValue: `a=${formatTraceValue(nodeStep.output, 3)}`,
       highlightLinkIds: nodeStep.contributions.map(contribution =>
@@ -1263,13 +1334,22 @@ function getTraceNarrative(session: TraceSession, step: TraceStep): {
     let outputNodeId = nn.getOutputNode(network).id;
     return {
       status: "Loss",
-      detailHtml: `<b>Output loss</b><br>` +
-          `y_hat = ${formatTraceValue(session.trace.output)}, ` +
-          `y = ${formatTraceValue(session.trace.target)}<br>` +
-          `E = 0.5 * (y_hat - y)^2 = 0.5 * ` +
-          `(${formatTraceValue(session.trace.output)} - ` +
-          `${formatTraceValue(session.trace.target)})^2 = ` +
-          `${formatTraceValue(session.trace.loss)}`,
+      detailHtml: `<b>Output loss</b>` +
+          formatTraceRow(
+              1, "Inputs",
+              `y_hat=${formatTraceValue(session.trace.output)}, ` +
+              `y=${formatTraceValue(session.trace.target)}`) +
+          formatTraceRow(
+              2, "Parameters", "Square loss: E = 0.5*(y_hat - y)^2") +
+          formatTraceRow(
+              3, "Intermediate",
+              `y_hat - y = ${formatTraceValue(session.trace.output)} - ` +
+              `${formatTraceValue(session.trace.target)} = ` +
+              `${formatTraceValue(session.trace.output - session.trace.target)}`) +
+          formatTraceRow(
+              4, "Loss formula",
+              `E = 0.5*(${formatTraceValue(session.trace.output - session.trace.target)})^2`) +
+          formatTraceRow(5, "Final value", `E = ${formatTraceValue(session.trace.loss)}`),
       nodeId: outputNodeId,
       nodeValue: `E=${formatTraceValue(session.trace.loss, 3)}`,
       highlightLinkIds: []
@@ -1277,27 +1357,45 @@ function getTraceNarrative(session: TraceSession, step: TraceStep): {
   }
   let nodeStep = session.trace.backward[step.index];
   if (step.kind === "backward_activation") {
+    let inputRow = "";
     let outputDerFormula = "";
     if (nodeStep.backpropContributions.length) {
+      inputRow = nodeStep.backpropContributions.map(contribution =>
+          `${contribution.destId}: delta_next=${formatTraceValue(contribution.destInputDer)}`)
+          .join(", ");
       let terms = nodeStep.backpropContributions.map(contribution =>
-        `${formatTraceValue(contribution.weight)} x ` +
-        `${formatTraceValue(contribution.destInputDer)}`);
+          `${formatTraceValue(contribution.weight)}*` +
+          `${formatTraceValue(contribution.destInputDer)}`);
       outputDerFormula = `dE/da = sum(w*delta_next) = ${terms.join(" + ")} = ` +
           `${formatTraceValue(nodeStep.outputDer)}`;
     } else {
+      inputRow = `y_hat=${formatTraceValue(session.trace.output)}, ` +
+          `y=${formatTraceValue(session.trace.target)}`;
       outputDerFormula = `dE/da = y_hat - y = ` +
           `${formatTraceValue(session.trace.output)} - ` +
           `${formatTraceValue(session.trace.target)} = ` +
           `${formatTraceValue(nodeStep.outputDer)}`;
     }
+    let forwardStep = session.forwardByNodeId[nodeStep.nodeId];
+    let nodeTotalInput = forwardStep ? forwardStep.totalInput : 0;
+    let nodeOutput = forwardStep ? forwardStep.output : 0;
+    let activationDerivativeFormula = getTraceActivationDerivativeFormula(
+        nodeStep.nodeId, nodeTotalInput, nodeStep.activationDer);
     return {
       status: `Backward flow ${step.index + 1}/${session.trace.backward.length}`,
-      detailHtml: `<b>Node ${nodeStep.nodeId}: loss -> activation</b><br>` +
-          `1) ${outputDerFormula}<br>` +
-          `2) delta = dE/dz = dE/da * f'(z) = ` +
-          `${formatTraceValue(nodeStep.outputDer)} x ` +
-          `${formatTraceValue(nodeStep.activationDer)} = ` +
-          `${formatTraceValue(nodeStep.inputDer)}`,
+      detailHtml: `<b>Node ${nodeStep.nodeId}: loss -> activation</b>` +
+          formatTraceRow(1, "Inputs", inputRow) +
+          formatTraceRow(
+              2, "Parameters",
+              `z=${formatTraceValue(nodeTotalInput)}, ` +
+              `a=${formatTraceValue(nodeOutput)}`) +
+          formatTraceRow(3, "Intermediate", outputDerFormula) +
+          formatTraceRow(4, "Activation derivative", activationDerivativeFormula) +
+          formatTraceRow(
+              5, "Final value",
+              `delta = dE/dz = ${formatTraceValue(nodeStep.outputDer)} * ` +
+              `${formatTraceValue(nodeStep.activationDer)} = ` +
+              `${formatTraceValue(nodeStep.inputDer)}`),
       nodeId: nodeStep.nodeId,
       nodeValue: `d=${formatTraceValue(nodeStep.inputDer, 3)}`,
       highlightLinkIds: nodeStep.backpropContributions.map(contribution =>
@@ -1307,13 +1405,25 @@ function getTraceNarrative(session: TraceSession, step: TraceStep): {
 
   let incoming = session.trace.linkUpdates
       .filter(update => update.destId === nodeStep.nodeId);
-  let weightLines = incoming.map(update => {
+  let inputRow = incoming.map(update =>
+      `${update.sourceId}=${formatTraceValue(getTraceSourceOutput(session, update.sourceId))}`)
+      .join(", ");
+  let parameterRow = incoming.map(update =>
+      `w_${update.sourceId}=${formatTraceValue(update.oldWeight)}`)
+      .join(", ");
+  let weightGradientLines = incoming.map(update => {
     let sourceOutput = getTraceSourceOutput(session, update.sourceId);
-    return `${update.sourceId}->${update.destId}: ` +
-        `dE/dw = delta*a_src = ${formatTraceValue(nodeStep.inputDer)} x ` +
-        `${formatTraceValue(sourceOutput)} = ${formatTraceValue(update.errorDer)}; ` +
-        `delta_w = -lr*dE/dw = ${formatTraceSigned(update.totalDelta)}; ` +
-        `w_new = ${formatTraceValue(update.newWeight)}`;
+    return `${update.sourceId}: dE/dw = delta*a_src = ` +
+        `${formatTraceValue(nodeStep.inputDer)}*${formatTraceValue(sourceOutput)} = ` +
+        `${formatTraceValue(update.errorDer)}`;
+  });
+  let weightUpdateLines = incoming.map(update => {
+    return `${update.sourceId}: w_new = w - lr*dE/dw = ` +
+        `${formatTraceValue(update.oldWeight)} + ` +
+        `${formatTraceSigned(update.totalDelta)} = ${formatTraceValue(update.newWeight)}`;
+  });
+  let finalWeightRow = incoming.map(update => {
+    return `w_${update.sourceId}=${formatTraceValue(update.newWeight)}`;
   });
   let biasDelta = -state.learningRate * nodeStep.inputDer;
   let oldBias = session.startBiasByNodeId[nodeStep.nodeId];
@@ -1322,10 +1432,26 @@ function getTraceNarrative(session: TraceSession, step: TraceStep): {
       `db=${formatTraceSigned(biasDelta, 3)}`;
   return {
     status: `Backward update ${step.index + 1}/${session.trace.backward.length}`,
-    detailHtml: `<b>Node ${nodeStep.nodeId}: neuron update</b><br>` +
-        `${weightLines.length ? weightLines.join("<br>") : "No incoming weights."}` +
-        `<br>Bias: delta_b = -lr*delta = ${formatTraceSigned(biasDelta)}; ` +
-        `b_new = ${formatTraceValue(oldBias + biasDelta)}`,
+    detailHtml: `<b>Node ${nodeStep.nodeId}: neuron update</b>` +
+        formatTraceRow(1, "Inputs", inputRow || "No incoming links") +
+        formatTraceRow(
+            2, "Parameters",
+            `lr=${formatTraceValue(state.learningRate)}; ` +
+            `b=${formatTraceValue(oldBias)}; ` +
+            `${parameterRow || "no incoming weights"}`) +
+        formatTraceRow(
+            3, "Intermediate",
+            weightGradientLines.length ? weightGradientLines.join("<br>") :
+                "No weight gradients") +
+        formatTraceRow(
+            4, "Update formula",
+            (weightUpdateLines.length ? weightUpdateLines.join("<br>") + "<br>" : "") +
+            `b_new = b - lr*delta = ${formatTraceValue(oldBias)} + ` +
+            `${formatTraceSigned(biasDelta)} = ${formatTraceValue(oldBias + biasDelta)}`) +
+        formatTraceRow(
+            5, "Final value",
+            `${finalWeightRow.join(", ") || "No weight updates"}; ` +
+            `b=${formatTraceValue(oldBias + biasDelta)}`),
     nodeId: nodeStep.nodeId,
     nodeValue: focusValue,
     highlightLinkIds: incoming.map(update => `${update.sourceId}-${update.destId}`)
@@ -1419,7 +1545,6 @@ function traceStepForward() {
   if (network == null || trainData.length === 0) {
     setTraceOverlay(
         "Step mode",
-        "",
         "No training samples are available. Regenerate or adjust data.");
     return;
   }
@@ -1444,7 +1569,6 @@ function traceStepToEnd() {
   if (network == null || trainData.length === 0) {
     setTraceOverlay(
         "Step mode",
-        "",
         "No training samples are available. Regenerate or adjust data.");
     return;
   }
@@ -1462,18 +1586,17 @@ function renderTraceView() {
   clearTraceHighlights();
   clearTraceNodeText();
   if (network == null) {
-    setTraceOverlay("Step mode", "", "Network is not ready.");
+    setTraceOverlay("Step mode", "Network is not ready.");
     return;
   }
   if (traceSession == null) {
     setTraceOverlay(
         "Step mode",
-        "Press Play to start tracing a single sample.",
         "Play: next step. Rewind: previous step. Go-to-end: finish this sample.");
     return;
   }
 
-  let sampleText = getTraceSampleText(traceSession);
+  renderTraceContext(traceSession);
   if (traceSession.cursor >= 0 &&
       traceSession.cursor < traceSession.steps.length) {
     let step = traceSession.steps[traceSession.cursor];
@@ -1485,10 +1608,10 @@ function renderTraceView() {
     narrative.highlightLinkIds.forEach(id => {
       d3.select(`#link${id}`).classed("trace-active-link", true);
     });
-    setTraceOverlay(narrative.status, sampleText, narrative.detailHtml);
+    setTraceOverlay(narrative.status, narrative.detailHtml);
     return;
   }
-  setTraceOverlay(traceSession.statusText, sampleText, traceSession.detailHtml);
+  setTraceOverlay(traceSession.statusText, traceSession.detailHtml);
 }
 
 
@@ -1555,7 +1678,6 @@ function reset(onStartup=false) {
   if (traceModeEnabled) {
     setTraceOverlay(
         "Step mode",
-        "Press Play to start tracing a single sample.",
         "Play: next step. Rewind: previous step. Go-to-end: finish this sample.");
   }
 };
