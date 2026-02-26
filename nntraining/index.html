@@ -56,6 +56,12 @@ limitations under the License.
   <!-- Top Controls -->
   <div id="top-controls">
     <div class="container l--page">
+      <div class="control trace-mode-control">
+        <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="trace-mode-toggle">
+          <input type="checkbox" id="trace-mode-toggle" class="mdl-checkbox__input">
+          <span class="mdl-checkbox__label">Step</span>
+        </label>
+      </div>
       <div class="timeline-controls">
         <button class="mdl-button mdl-js-button mdl-button--icon ui-resetButton" id="reset-button" title="Reset the network">
           <i class="material-icons">replay</i>
@@ -98,42 +104,6 @@ limitations under the License.
             <option value="tanh">Tanh</option>
             <option value="sigmoid">Sigmoid</option>
             <option value="linear">Linear</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-regularization">
-        <label for="regularizations">Regularization</label>
-        <div class="select">
-          <select id="regularizations">
-            <option value="none">None</option>
-            <option value="L1">L1</option>
-            <option value="L2">L2</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-regularizationRate">
-        <label for="regularRate">Regularization rate</label>
-        <div class="select">
-          <select id="regularRate">
-            <option value="0">0</option>
-            <option value="0.001">0.001</option>
-            <option value="0.003">0.003</option>
-            <option value="0.01">0.01</option>
-            <option value="0.03">0.03</option>
-            <option value="0.1">0.1</option>
-            <option value="0.3">0.3</option>
-            <option value="1">1</option>
-            <option value="3">3</option>
-            <option value="10">10</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-problem">
-        <label for="problem">Problem type</label>
-        <div class="select">
-          <select id="problem">
-            <option value="classification">Classification</option>
-            <option value="regression">Regression</option>
           </select>
         </div>
       </div>
@@ -212,6 +182,11 @@ limitations under the License.
         <div id="hovercard">
           <div style="font-size:10px">Click anywhere to edit.</div>
           <div><span class="type">Weight/Bias</span> is <span class="value">0.2</span><span><input type="number"/></span>.</div>
+        </div>
+        <div id="trace-overlay">
+          <div id="trace-overlay-status"></div>
+          <div id="trace-overlay-sample"></div>
+          <div id="trace-overlay-detail"></div>
         </div>
         <div class="callout thumbnail">
           <svg viewBox="0 0 30 30">
@@ -305,23 +280,6 @@ limitations under the License.
             <span class="mdl-checkbox__label label">Discretize output</span>
           </label>
         </div>
-      </div>
-      <div id="trace-panel">
-        <div class="trace-panel-header">
-          <h5>Single-example trace</h5>
-          <button class="basic-button" id="trace-step-button" title="Animate one forward/backward pass and apply one update">
-            Trace 1 Example
-          </button>
-        </div>
-        <div class="trace-speed">
-          <label for="trace-speed">Animation speed</label>
-          <input type="range" id="trace-speed" min="120" max="1000" step="20" value="280">
-          <span id="trace-speed-value">280 ms/step</span>
-        </div>
-        <div id="trace-summary">
-          Pause the simulation and click "Trace 1 Example" to walk one sample through forward pass, loss, backprop, and parameter updates.
-        </div>
-        <ol id="trace-events"></ol>
       </div>
     </div>
 
