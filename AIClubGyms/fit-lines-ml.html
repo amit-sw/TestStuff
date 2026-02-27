@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schovia | Use ML to fit lines</title>
+    <style>
+      :root {
+        --bg: #08101d;
+        --panel: #101a2e;
+        --panel2: #15233d;
+        --line: #2a3f68;
+        --text: #e8f0ff;
+        --muted: #9db2d8;
+        --accent: #74c7ff;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 20% 10%, #172a4b, var(--bg) 45%), #08101d;
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .app {
+        width: min(1040px, 94vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .brand-lockup { margin-right: auto; }
+      .brand-logo { height: 52px; }
+      .topbar h1 { margin: 0; font-size: 1.35rem; }
+
+      .badge {
+        font-size: 0.86rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+      }
+
+      .section {
+        background: linear-gradient(165deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        color: var(--muted);
+      }
+
+      .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+
+      button {
+        border-radius: 10px;
+        border: 1px solid #2d4d82;
+        background: #132746;
+        color: var(--text);
+        padding: 8px 12px;
+        font-size: 0.94rem;
+        cursor: pointer;
+      }
+
+      .stage {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0b1529;
+      }
+
+      .plot-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      canvas {
+        width: 100%;
+        height: min(62vh, 520px);
+        display: block;
+        cursor: crosshair;
+      }
+
+      .history-panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0b1529;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        height: min(62vh, 520px);
+      }
+
+      .history-title {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      .history-scroll {
+        overflow-y: auto;
+      }
+
+      .history-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .history-table th,
+      .history-table td {
+        border: 1px solid #233a63;
+        padding: 6px 8px;
+        text-align: right;
+        font-size: 0.9rem;
+      }
+
+      .history-table th {
+        color: var(--muted);
+        background: #101d34;
+        position: sticky;
+        top: 0;
+      }
+
+      .history-empty-row td {
+        color: var(--muted);
+        padding: 10px;
+        text-align: center;
+      }
+
+      .meta {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .ml-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .slider-control {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .slider-control input {
+        width: 100%;
+      }
+
+      code {
+        color: #d6eaff;
+        background: #0b1529;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+
+      @media (max-width: 860px) {
+        .plot-row { grid-template-columns: 1fr; }
+        .ml-controls { grid-template-columns: 1fr; }
+        .history-panel { height: auto; max-height: 260px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
+        </div>
+        <h1>Use ML to fit lines</h1>
+        <span class="badge">Client-side linear regression</span>
+      </div>
+
+      <section class="section">
+        <div class="ml-controls">
+          <label class="slider-control" for="mSlider">
+            m: <code id="mVal">0.80</code>
+            <input id="mSlider" type="range" min="-2" max="2" step="0.01" value="0.8" />
+          </label>
+          <label class="slider-control" for="cSlider">
+            c: <code id="cVal">12.00</code>
+            <input id="cSlider" type="range" min="-20" max="120" step="0.1" value="12" />
+          </label>
+        </div>
+        <div class="meta">
+          <span id="mlEqn">ML line: <code>y = 0.800x + 12.000</code></span>
+          <span id="rmse">RMSE: <code>?</code></span>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="plot-row">
+          <div class="stage">
+            <canvas id="plot" width="980" height="560"></canvas>
+          </div>
+          <aside class="history-panel">
+            <p class="history-title">ML History</p>
+            <div class="history-scroll">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>m</th>
+                    <th>c</th>
+                    <th>RMSE</th>
+                  </tr>
+                </thead>
+                <tbody id="historyBody">
+                  <tr class="history-empty-row">
+                    <td colspan="3">No history yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="meta">
+          <span id="eqn">Line: <code>y = ?x + ?</code></span>
+          <span id="r2">R²: <code>?</code></span>
+          <button id="resetBtn" type="button">Reset</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const canvas = document.getElementById("plot");
+      const ctx = canvas.getContext("2d");
+      const eqn = document.getElementById("eqn");
+      const r2El = document.getElementById("r2");
+      const resetBtn = document.getElementById("resetBtn");
+      const mSlider = document.getElementById("mSlider");
+      const cSlider = document.getElementById("cSlider");
+      const mVal = document.getElementById("mVal");
+      const cVal = document.getElementById("cVal");
+      const mlEqn = document.getElementById("mlEqn");
+      const rmseEl = document.getElementById("rmse");
+      const historyBody = document.getElementById("historyBody");
+
+      const PAD = 40;
+      let points = [];
+      let line = null;
+      let mlLine = { m: 0.8, c: 12 };
+      let mlHistory = [];
+
+      function toData(xPx, yPx) {
+        const x = (xPx - PAD) / (canvas.width - PAD * 2) * 100;
+        const y = (canvas.height - PAD - yPx) / (canvas.height - PAD * 2) * 100;
+        return { x, y };
+      }
+
+      function toPx(pt) {
+        return {
+          x: PAD + (pt.x / 100) * (canvas.width - PAD * 2),
+          y: canvas.height - PAD - (pt.y / 100) * (canvas.height - PAD * 2),
+        };
+      }
+
+      function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0b1529";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#233a63";
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i <= 10; i += 1) {
+          const x = PAD + (i / 10) * (canvas.width - PAD * 2);
+          const y = PAD + (i / 10) * (canvas.height - PAD * 2);
+          ctx.beginPath();
+          ctx.moveTo(x, PAD);
+          ctx.lineTo(x, canvas.height - PAD);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(PAD, y);
+          ctx.lineTo(canvas.width - PAD, y);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "#74c7ff";
+        ctx.lineWidth = 1.7;
+        ctx.strokeRect(PAD, PAD, canvas.width - PAD * 2, canvas.height - PAD * 2);
+      }
+
+      function drawPoints() {
+        ctx.fillStyle = "#d8ecff";
+        points.forEach((pt) => {
+          const p = toPx(pt);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawLine() {
+        if (!line) return;
+        const p1 = toPx({ x: 0, y: line.m * 0 + line.b });
+        const p2 = toPx({ x: 100, y: line.m * 100 + line.b });
+        ctx.strokeStyle = "#ffd28f";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      function drawMlLine() {
+        const p1 = toPx({ x: 0, y: mlLine.m * 0 + mlLine.c });
+        const p2 = toPx({ x: 100, y: mlLine.m * 100 + mlLine.c });
+        ctx.strokeStyle = "#58d68d";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      function renderHistory() {
+        if (mlHistory.length === 0) {
+          historyBody.innerHTML = `
+            <tr class="history-empty-row">
+              <td colspan="3">No history yet.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        historyBody.innerHTML = mlHistory.map((entry) => `
+          <tr>
+            <td>${entry.m.toFixed(3)}</td>
+            <td>${entry.c.toFixed(3)}</td>
+            <td>${entry.rmse.toFixed(4)}</td>
+          </tr>
+        `).join("");
+      }
+
+      function pushHistoryEntry(rmse) {
+        const entry = {
+          m: Number(mlLine.m.toFixed(3)),
+          c: Number(mlLine.c.toFixed(3)),
+          rmse: Number(rmse.toFixed(4)),
+        };
+
+        const latest = mlHistory[0];
+        if (latest && latest.m === entry.m && latest.c === entry.c && latest.rmse === entry.rmse) {
+          return;
+        }
+
+        mlHistory.unshift(entry);
+        if (mlHistory.length > 100) {
+          mlHistory = mlHistory.slice(0, 100);
+        }
+        renderHistory();
+      }
+
+      function updateMlPanel({ recordHistory = false } = {}) {
+        mlLine = { m: Number(mSlider.value), c: Number(cSlider.value) };
+        mVal.textContent = mlLine.m.toFixed(2);
+        cVal.textContent = mlLine.c.toFixed(2);
+        mlEqn.innerHTML = `ML line: <code>y = ${mlLine.m.toFixed(3)}x + ${mlLine.c.toFixed(3)}</code>`;
+
+        if (points.length === 0) {
+          rmseEl.innerHTML = "RMSE: <code>?</code>";
+          return;
+        }
+
+        const mse = points.reduce((sum, p) => {
+          const err = p.y - (mlLine.m * p.x + mlLine.c);
+          return sum + err * err;
+        }, 0) / points.length;
+        const rmse = Math.sqrt(mse);
+        rmseEl.innerHTML = `RMSE: <code>${rmse.toFixed(4)}</code>`;
+        if (recordHistory) {
+          pushHistoryEntry(rmse);
+        }
+      }
+
+      function render() {
+        drawGrid();
+        drawPoints();
+        drawLine();
+        drawMlLine();
+      }
+
+      function fitLine() {
+        if (points.length < 2) {
+          line = null;
+          eqn.innerHTML = "Line: <code>y = ?x + ?</code>";
+          r2El.innerHTML = "R²: <code>?</code>";
+          updateMlPanel({ recordHistory: points.length > 0 });
+          render();
+          return;
+        }
+
+        const n = points.length;
+        const sx = points.reduce((s, p) => s + p.x, 0);
+        const sy = points.reduce((s, p) => s + p.y, 0);
+        const sxy = points.reduce((s, p) => s + p.x * p.y, 0);
+        const sx2 = points.reduce((s, p) => s + p.x * p.x, 0);
+
+        const m = (n * sxy - sx * sy) / (n * sx2 - sx * sx || 1e-9);
+        const b = (sy - m * sx) / n;
+        line = { m, b };
+
+        const yMean = sy / n;
+        const ssRes = points.reduce((s, p) => s + (p.y - (m * p.x + b)) ** 2, 0);
+        const ssTot = points.reduce((s, p) => s + (p.y - yMean) ** 2, 0);
+        const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+
+        eqn.innerHTML = `Line: <code>y = ${m.toFixed(3)}x + ${b.toFixed(3)}</code>`;
+        r2El.innerHTML = `R²: <code>${r2.toFixed(4)}</code>`;
+        updateMlPanel({ recordHistory: points.length > 0 });
+        render();
+      }
+
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+        if (x < PAD || x > canvas.width - PAD || y < PAD || y > canvas.height - PAD) return;
+        points.push(toData(x, y));
+        fitLine();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        points = [];
+        fitLine();
+      });
+
+      mSlider.addEventListener("input", () => {
+        updateMlPanel({ recordHistory: true });
+        render();
+      });
+
+      cSlider.addEventListener("input", () => {
+        updateMlPanel({ recordHistory: true });
+        render();
+      });
+
+      renderHistory();
+      updateMlPanel();
+      render();
+    </script>
+  </body>
+</html>
