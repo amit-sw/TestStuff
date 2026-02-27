@@ -152,10 +152,25 @@
 
       .ml-controls {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 220px 1fr 1fr;
         gap: 12px;
-        align-items: center;
+        align-items: stretch;
         margin-bottom: 10px;
+      }
+
+      .mode-panel {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #0b1529;
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .mode-panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
       }
 
       .slider-control {
@@ -165,8 +180,18 @@
         font-size: 0.92rem;
       }
 
-      .slider-control input {
+      .slider-control input[type="range"] {
         width: 100%;
+      }
+
+      .value-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #2d4d82;
+        background: #0b1529;
+        color: var(--text);
+        padding: 7px 8px;
+        font-size: 0.92rem;
       }
 
       code {
@@ -196,17 +221,23 @@
 
       <section class="section">
         <div class="ml-controls">
+          <div class="mode-panel">
+            <p>Display Mode</p>
+            <button id="modeBtn" type="button">Show ML Line</button>
+          </div>
           <label class="slider-control" for="mSlider">
-            m: <code id="mVal">0.80</code>
-            <input id="mSlider" type="range" min="-2" max="2" step="0.01" value="0.8" />
+            m: <code id="mVal">0.00</code>
+            <input id="mSlider" type="range" min="-2" max="2" step="0.01" value="0" />
+            <input id="mInput" class="value-input" type="number" min="-2" max="2" step="0.01" value="0" />
           </label>
           <label class="slider-control" for="cSlider">
-            c: <code id="cVal">12.00</code>
-            <input id="cSlider" type="range" min="-20" max="120" step="0.1" value="12" />
+            c: <code id="cVal">0.00</code>
+            <input id="cSlider" type="range" min="-20" max="120" step="0.1" value="0" />
+            <input id="cInput" class="value-input" type="number" min="-20" max="120" step="0.1" value="0" />
           </label>
         </div>
         <div class="meta">
-          <span id="mlEqn">ML line: <code>y = 0.800x + 12.000</code></span>
+          <span id="mlEqn">ML line: <code>y = 0.000x + 0.000</code></span>
           <span id="rmse">RMSE: <code>?</code></span>
         </div>
       </section>
@@ -241,8 +272,7 @@
       <section class="section">
         <div class="meta">
           <span id="eqn">Line: <code>y = ?x + ?</code></span>
-          <span id="r2">R²: <code>?</code></span>
-          <button id="resetBtn" type="button">Reset</button>
+          <span id="regRmse">RMSE: <code>?</code></span>
         </div>
       </section>
     </main>
@@ -251,10 +281,12 @@
       const canvas = document.getElementById("plot");
       const ctx = canvas.getContext("2d");
       const eqn = document.getElementById("eqn");
-      const r2El = document.getElementById("r2");
-      const resetBtn = document.getElementById("resetBtn");
+      const regRmseEl = document.getElementById("regRmse");
+      const modeBtn = document.getElementById("modeBtn");
       const mSlider = document.getElementById("mSlider");
       const cSlider = document.getElementById("cSlider");
+      const mInput = document.getElementById("mInput");
+      const cInput = document.getElementById("cInput");
       const mVal = document.getElementById("mVal");
       const cVal = document.getElementById("cVal");
       const mlEqn = document.getElementById("mlEqn");
@@ -264,8 +296,9 @@
       const PAD = 40;
       let points = [];
       let line = null;
-      let mlLine = { m: 0.8, c: 12 };
+      let mlLine = { m: 0, c: 0 };
       let mlHistory = [];
+      let displayMode = "regression";
 
       function toData(xPx, yPx) {
         const x = (xPx - PAD) / (canvas.width - PAD * 2) * 100;
@@ -319,23 +352,33 @@
         if (!line) return;
         const p1 = toPx({ x: 0, y: line.m * 0 + line.b });
         const p2 = toPx({ x: 100, y: line.m * 100 + line.b });
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(PAD, PAD, canvas.width - PAD * 2, canvas.height - PAD * 2);
+        ctx.clip();
         ctx.strokeStyle = "#ffd28f";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
         ctx.stroke();
+        ctx.restore();
       }
 
       function drawMlLine() {
         const p1 = toPx({ x: 0, y: mlLine.m * 0 + mlLine.c });
         const p2 = toPx({ x: 100, y: mlLine.m * 100 + mlLine.c });
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(PAD, PAD, canvas.width - PAD * 2, canvas.height - PAD * 2);
+        ctx.clip();
         ctx.strokeStyle = "#58d68d";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
         ctx.stroke();
+        ctx.restore();
       }
 
       function renderHistory() {
@@ -376,11 +419,20 @@
         renderHistory();
       }
 
+      function clampValue(value, min, max, fallback) {
+        const n = Number(value);
+        if (Number.isNaN(n)) return fallback;
+        return Math.max(min, Math.min(max, n));
+      }
+
       function updateMlPanel({ recordHistory = false } = {}) {
         mlLine = { m: Number(mSlider.value), c: Number(cSlider.value) };
         mVal.textContent = mlLine.m.toFixed(2);
         cVal.textContent = mlLine.c.toFixed(2);
+        mInput.value = mlLine.m.toFixed(2);
+        cInput.value = mlLine.c.toFixed(2);
         mlEqn.innerHTML = `ML line: <code>y = ${mlLine.m.toFixed(3)}x + ${mlLine.c.toFixed(3)}</code>`;
+        modeBtn.textContent = displayMode === "regression" ? "Show ML Line" : "Show Regression Line";
 
         if (points.length === 0) {
           rmseEl.innerHTML = "RMSE: <code>?</code>";
@@ -401,16 +453,19 @@
       function render() {
         drawGrid();
         drawPoints();
-        drawLine();
-        drawMlLine();
+        if (displayMode === "regression") {
+          drawLine();
+        } else {
+          drawMlLine();
+        }
       }
 
       function fitLine() {
         if (points.length < 2) {
           line = null;
           eqn.innerHTML = "Line: <code>y = ?x + ?</code>";
-          r2El.innerHTML = "R²: <code>?</code>";
-          updateMlPanel({ recordHistory: points.length > 0 });
+          regRmseEl.innerHTML = "RMSE: <code>?</code>";
+          updateMlPanel({ recordHistory: false });
           render();
           return;
         }
@@ -425,14 +480,12 @@
         const b = (sy - m * sx) / n;
         line = { m, b };
 
-        const yMean = sy / n;
         const ssRes = points.reduce((s, p) => s + (p.y - (m * p.x + b)) ** 2, 0);
-        const ssTot = points.reduce((s, p) => s + (p.y - yMean) ** 2, 0);
-        const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+        const rmse = Math.sqrt(ssRes / n);
 
         eqn.innerHTML = `Line: <code>y = ${m.toFixed(3)}x + ${b.toFixed(3)}</code>`;
-        r2El.innerHTML = `R²: <code>${r2.toFixed(4)}</code>`;
-        updateMlPanel({ recordHistory: points.length > 0 });
+        regRmseEl.innerHTML = `RMSE: <code>${rmse.toFixed(4)}</code>`;
+        updateMlPanel({ recordHistory: false });
         render();
       }
 
@@ -445,9 +498,10 @@
         fitLine();
       });
 
-      resetBtn.addEventListener("click", () => {
-        points = [];
-        fitLine();
+      modeBtn.addEventListener("click", () => {
+        displayMode = displayMode === "regression" ? "ml" : "regression";
+        updateMlPanel();
+        render();
       });
 
       mSlider.addEventListener("input", () => {
@@ -455,7 +509,21 @@
         render();
       });
 
+      mInput.addEventListener("change", () => {
+        const value = clampValue(mInput.value, -2, 2, mlLine.m);
+        mSlider.value = value.toFixed(2);
+        updateMlPanel({ recordHistory: true });
+        render();
+      });
+
       cSlider.addEventListener("input", () => {
+        updateMlPanel({ recordHistory: true });
+        render();
+      });
+
+      cInput.addEventListener("change", () => {
+        const value = clampValue(cInput.value, -20, 120, mlLine.c);
+        cSlider.value = value.toFixed(1);
         updateMlPanel({ recordHistory: true });
         render();
       });
