@@ -55,6 +55,7 @@ class Message:
 
 @dataclass
 class Row:
+    filepath: str
     timestamp: str
     user_says: str
     response_length: int
@@ -74,6 +75,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to exported Codex log file (default: '-' for STDIN)",
     )
     p.add_argument(
+        "-d",
+        "--dir",
+        default="",
+        help="Path to a directory tree containing exported log files",
+    )
+    p.add_argument(
         "-n",
         "--limit",
         type=int,
@@ -88,7 +95,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--preview-chars",
         type=int,
-        default=80,
+        default=3080,
         help="Max characters shown in 'User says' column",
     )
     p.add_argument(
@@ -265,7 +272,7 @@ def parse_log_file(path: Path) -> list[Message]:
     return parse_log_text(path.read_text(encoding="utf-8", errors="replace"))
 
 
-def pair_rows(messages: list[Message], include_unmatched: bool = False) -> list[Row]:
+def pair_rows(messages: list[Message], source_path: str, include_unmatched: bool = False) -> list[Row]:
     rows: list[Row] = []
     i = 0
     n = len(messages)
@@ -287,7 +294,14 @@ def pair_rows(messages: list[Message], include_unmatched: bool = False) -> list[
                 j += 1
 
             if include_unmatched or response_len > 0:
-                rows.append(Row(timestamp=ts, user_says=user_text, response_length=response_len))
+                rows.append(
+                    Row(
+                        filepath=source_path,
+                        timestamp=ts,
+                        user_says=user_text,
+                        response_length=response_len,
+                    )
+                )
         i += 1
     return rows
 
@@ -300,7 +314,7 @@ def shorten(s: str, max_chars: int) -> str:
 
 
 def write_csv(rows: list[Row], preview_chars: int, output_path: str) -> None:
-    header = ["timestamp", "user_says", "response_length"]
+    header = ["filepath", "timestamp", "user_says", "response_length"]
 
     if output_path == "-":
         import sys
@@ -308,38 +322,73 @@ def write_csv(rows: list[Row], preview_chars: int, output_path: str) -> None:
         writer = csv.writer(sys.stdout)
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.timestamp, shorten(r.user_says, preview_chars), r.response_length])
+            writer.writerow(
+                [r.filepath, r.timestamp, shorten(r.user_says, preview_chars), r.response_length]
+            )
         return
 
     with Path(output_path).open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(header)
         for r in rows:
-            writer.writerow([r.timestamp, shorten(r.user_says, preview_chars), r.response_length])
+            writer.writerow(
+                [r.filepath, r.timestamp, shorten(r.user_says, preview_chars), r.response_length]
+            )
+
+
+def collect_files_from_tree(root: Path) -> list[Path]:
+    return [p for p in root.rglob("*") if p.is_file()]
 
 
 def main() -> int:
     args = parse_args()
-    if args.file == "-":
-        import sys
+    all_rows: list[Row] = []
 
-        messages = parse_log_text(sys.stdin.read())
-    else:
-        path = Path(args.file)
-        if not path.exists() or not path.is_file():
-            print(f"Error: file not found: {path}")
+    if args.dir:
+        root = Path(args.dir)
+        if not root.exists() or not root.is_dir():
+            print(f"Error: directory not found: {root}")
             return 1
-        messages = parse_log_file(path)
-    if not messages:
-        print("No parseable messages found. Supported formats: JSON list/dict or JSONL with role/content/timestamp fields.")
+
+        files = collect_files_from_tree(root)
+        for file_path in files:
+            messages = parse_log_file(file_path)
+            if not messages:
+                continue
+            source = str(file_path.resolve())
+            rows = pair_rows(messages, source_path=source, include_unmatched=args.show_unmatched)
+            all_rows.extend(rows)
+    else:
+        if args.file == "-":
+            import sys
+
+            messages = parse_log_text(sys.stdin.read())
+            source = "<stdin>"
+        else:
+            path = Path(args.file)
+            if not path.exists() or not path.is_file():
+                print(f"Error: file not found: {path}")
+                return 1
+            messages = parse_log_file(path)
+            source = str(path.resolve())
+
+        if not messages:
+            print(
+                "No parseable messages found. Supported formats: JSON list/dict or JSONL with role/content/timestamp fields."
+            )
+            return 2
+        all_rows = pair_rows(messages, source_path=source, include_unmatched=args.show_unmatched)
+
+    if not all_rows:
+        print("No parseable messages found in the provided inputs.")
         return 2
 
-    rows = pair_rows(messages, include_unmatched=args.show_unmatched)
+    rows = all_rows
     if args.contains:
         needle = args.contains.lower()
         rows = [r for r in rows if needle in r.user_says.lower()]
 
-    rows.sort(key=lambda r: r.timestamp)
+    rows.sort(key=lambda r: (r.timestamp, r.filepath))
 
     if args.limit and args.limit > 0:
         rows = rows[: args.limit]
