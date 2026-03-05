@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MISC_APPS | App Index</title>
+  <style>
+    :root {
+      --bg: #f4f7fc;
+      --card: #fff;
+      --line: #d7e1ef;
+      --text: #172335;
+      --muted: #4d607b;
+      --link: #1e5db6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    main { width: min(980px, 94vw); margin: 28px auto 36px; }
+    h1 { margin: 0 0 8px; }
+    .lead { margin: 0 0 14px; color: var(--muted); }
+    a { color: var(--link); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+    .item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .item h2 { margin: 0 0 6px; font-size: 1rem; }
+    .path { margin: 0 0 6px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86rem; }
+    .cmd { margin: 0; color: #203a58; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.82rem; }
+    .section { margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MISC_APPS</h1>
+    <p class="lead">Python app scripts and utilities in this folder.</p>
+    <p><a href="../index.html">Back to main index</a></p>
+
+    <section class="section grid">
+      <article class="item"><h2><a href="./app_lr_streamlit.py">app_lr_streamlit.py</a></h2><p class="path">Learning rate Streamlit app</p><p class="cmd">streamlit run app_lr_streamlit.py</p></article>
+      <article class="item"><h2><a href="./app_count_tokens.py">app_count_tokens.py</a></h2><p class="path">Token counting app</p><p class="cmd">streamlit run app_count_tokens.py</p></article>
+      <article class="item"><h2><a href="./app_chat.py">app_chat.py</a></h2><p class="path">Chat app</p><p class="cmd">streamlit run app_chat.py</p></article>
+      <article class="item"><h2><a href="./app_file.py">app_file.py</a></h2><p class="path">File app</p><p class="cmd">streamlit run app_file.py</p></article>
+      <article class="item"><h2><a href="./app_gitcount.py">app_gitcount.py</a></h2><p class="path">Git count app</p><p class="cmd">streamlit run app_gitcount.py</p></article>
+      <article class="item"><h2><a href="./app_linked_scraper.py">app_linked_scraper.py</a></h2><p class="path">Linked scraper app</p><p class="cmd">streamlit run app_linked_scraper.py</p></article>
+      <article class="item"><h2><a href="./app_login.py">app_login.py</a></h2><p class="path">Login app</p><p class="cmd">streamlit run app_login.py</p></article>
+      <article class="item"><h2><a href="./app_lr.py">app_lr.py</a></h2><p class="path">Learning rate app</p><p class="cmd">streamlit run app_lr.py</p></article>
+      <article class="item"><h2><a href="./app_pose1.py">app_pose1.py</a></h2><p class="path">Pose app 1</p><p class="cmd">streamlit run app_pose1.py</p></article>
+      <article class="item"><h2><a href="./app_pose2.py">app_pose2.py</a></h2><p class="path">Pose app 2</p><p class="cmd">streamlit run app_pose2.py</p></article>
+      <article class="item"><h2><a href="./app_pose3.py">app_pose3.py</a></h2><p class="path">Pose app 3</p><p class="cmd">streamlit run app_pose3.py</p></article>
+      <article class="item"><h2><a href="./app_pose4.py">app_pose4.py</a></h2><p class="path">Pose app 4</p><p class="cmd">streamlit run app_pose4.py</p></article>
+      <article class="item"><h2><a href="./app_rag_upload.py">app_rag_upload.py</a></h2><p class="path">RAG upload app</p><p class="cmd">streamlit run app_rag_upload.py</p></article>
+      <article class="item"><h2><a href="./app_yt_transcript.py">app_yt_transcript.py</a></h2><p class="path">YouTube transcript app</p><p class="cmd">streamlit run app_yt_transcript.py</p></article>
+      <article class="item"><h2><a href="./app.py">app.py</a></h2><p class="path">General app entry</p><p class="cmd">python app.py</p></article>
+      <article class="item"><h2><a href="./batch_strip_ipynb.py">batch_strip_ipynb.py</a></h2><p class="path">Notebook utility</p><p class="cmd">python batch_strip_ipynb.py</p></article>
+      <article class="item"><h2><a href="./codex_log_viewer.py">codex_log_viewer.py</a></h2><p class="path">Log viewer utility</p><p class="cmd">python codex_log_viewer.py</p></article>
+      <article class="item"><h2><a href="./graph.py">graph.py</a></h2><p class="path">Graph utility</p><p class="cmd">python graph.py</p></article>
+      <article class="item"><h2><a href="./test_ipynb.py">test_ipynb.py</a></h2><p class="path">Notebook test helper</p><p class="cmd">python test_ipynb.py</p></article>
+      <article class="item"><h2><a href="./test_stripe.py">test_stripe.py</a></h2><p class="path">Stripe test helper</p><p class="cmd">python test_stripe.py</p></article>
+    </section>
+  </main>
+</body>
+</html>

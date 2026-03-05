@@ -1,179 +1,48 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schovia | Demo Index</title>
-    <style>
-      :root {
-        --bg: #f2f6fc;
-        --card: #ffffff;
-        --line: #d7e1ef;
-        --text: #172335;
-        --muted: #4c607d;
-        --accent: #1f5fbf;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChatGPTAnimation | Demo Index</title>
+  <style>
+    :root {
+      --bg: #f4f7fc;
+      --card: #fff;
+      --line: #d7e1ef;
+      --text: #172335;
+      --muted: #4d607b;
+      --link: #1e5db6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    main { width: min(960px, 94vw); margin: 28px auto 36px; }
+    h1 { margin: 0 0 8px; }
+    .lead { margin: 0 0 14px; color: var(--muted); }
+    a { color: var(--link); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .item h2 { margin: 0 0 6px; font-size: 1rem; }
+    .path { margin: 0; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86rem; }
+    .section { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ChatGPTAnimation</h1>
+    <p class="lead">Animation and tokenizer demos in this folder.</p>
+    <p><a href="../index.html">Back to main index</a></p>
 
-      * { box-sizing: border-box; }
+    <section class="list">
+      <article class="item"><h2><a href="./chatGptAnimation.html">Token Generation Pipeline</a></h2><p class="path">chatGptAnimation.html</p></article>
+      <article class="item"><h2><a href="./chatGptDynamic.html">Token Generation Pipeline (Dynamic)</a></h2><p class="path">chatGptDynamic.html</p></article>
+      <article class="item"><h2><a href="./tokenizerDemo.html">Tokenizer Demo</a></h2><p class="path">tokenizerDemo.html</p></article>
+    </section>
 
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        color: var(--text);
-        background: linear-gradient(180deg, #f8faff 0%, var(--bg) 100%);
-      }
-
-      .page {
-        width: min(960px, 92vw);
-        margin: 40px auto;
-      }
-
-      h1 {
-        margin: 0 0 10px;
-        font-size: 2rem;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-
-      .brand-logo {
-        height: 56px;
-        width: auto;
-        display: block;
-      }
-
-      .intro {
-        margin: 0 0 24px;
-        color: var(--muted);
-        line-height: 1.55;
-        font-size: 1.04rem;
-      }
-
-      .grid {
-        display: grid;
-        gap: 14px;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: 0 8px 24px rgba(16, 34, 64, 0.06);
-      }
-
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 1.2rem;
-      }
-
-      .card p {
-        margin: 0 0 14px;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
-      .meta {
-        margin: 0 0 14px;
-        font-size: 0.92rem;
-        color: #5f6f86;
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .btn {
-        display: inline-block;
-        text-decoration: none;
-        border: 1px solid #b9c8df;
-        background: #eaf1ff;
-        color: var(--accent);
-        font-weight: 600;
-        border-radius: 10px;
-        padding: 9px 12px;
-      }
-
-      .btn.secondary {
-        background: #f3f6fb;
-        color: #2e3f59;
-        border-color: #cdd8e7;
-      }
-
-      .beta-pill {
-        display: inline-block;
-        font-size: 0.78rem;
-        color: #8a5b00;
-        border: 1px solid #e5c67a;
-        border-radius: 999px;
-        padding: 2px 8px;
-        background: #fff5df;
-        vertical-align: middle;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="page">
-      <div class="brand">
-        <img class="brand-logo" src="https://schovia.com/wp-content/uploads/2025/09/backConcept-2-Color-copy-2.svg" alt="Schovia logo" />
-        <h1>Concept visualization</h1>
-      </div>
-
-      <section class="grid">
-        <article class="card">
-          <h2>1. Token Generation Pipeline</h2>
-          <p>
-            Visual walkthrough of token generation across prompt encoding, LLM machinery, candidate probabilities,
-            and final answer construction. Includes an interactive sampling modal for comparing decoding strategies.
-          </p>
-          <p class="meta"><strong>File:</strong> <code>chatGptAnimation.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./chatGptAnimation.html">Open Demo</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>2. Tokenizer</h2>
-          <p>
-            Live tokenizer view with three vertically stacked sections: input text, token stream, and token IDs.
-            The token and ID panels update dynamically as text is typed.
-          </p>
-          <p class="meta"><strong>File:</strong> <code>tokenizerDemo.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./tokenizerDemo.html">Open Demo</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>3. Token Generation Pipeline (Dynamic) <span class="beta-pill">BETA</span></h2>
-          <p>
-            Dynamic version of the token generation pipeline. You enter a prompt, then the page fetches token-level
-            logprob data from the Lambda API and animates the same generation flow using that live response.
-          </p>
-          <p class="meta"><strong>File:</strong> <code>chatGptDynamic.html</code></p>
-          <div class="actions">
-            <a class="btn" href="./chatGptDynamic.html">Open Demo</a>
-          </div>
-        </article>
-
-        <article class="card">
-          <h2>4. Byte-Pair Encoding (BPE) Demo</h2>
-          <p>
-            Interactive BPE walkthrough starting from character tokens. Run 1/5/10/20/50/100 merge rounds,
-            inspect created tokens and top next merge candidates, and track vocabulary size vs context size.
-          </p>
-          <p class="meta"><strong>File:</strong> <code>../BPE/index.html</code></p>
-          <div class="actions">
-            <a class="btn" href="../BPE/index.html">Open Demo</a>
-          </div>
-        </article>
-      </section>
-    </main>
-  </body>
+    <section class="section list">
+      <article class="item"><h2><a href="./archive/index.html">Archive Index</a></h2><p class="path">archive/index.html</p></article>
+      <article class="item"><h2><a href="./archive/chatGptAnimations.html">Archive: ChatGPT Animations</a></h2><p class="path">archive/chatGptAnimations.html</p></article>
+    </section>
+  </main>
+</body>
 </html>

@@ -1,169 +1,76 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schovia | AIClub Gym</title>
-    <style>
-      :root {
-        --bg: #e9edf3;
-        --panel: #ffffff;
-        --text: #1f2f47;
-        --muted: #5f6f86;
-        --line: #d9e1ec;
-        --shadow: 0 8px 22px rgba(22, 43, 74, 0.1);
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-      .page {
-        width: min(1120px, 94vw);
-        margin: 26px auto 34px;
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .brand-logo { height: 52px; width: auto; }
-      h1 {
-        margin: 14px 0 2px;
-        font-size: clamp(1.7rem, 2.4vw, 2.2rem);
-        color: #2f95e8;
-      }
-      .subtitle {
-        margin: 0 0 18px;
-        color: var(--muted);
-        font-size: 1.02rem;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
-      }
-      .card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 4px;
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        text-decoration: none;
-        color: inherit;
-        display: block;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-      .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 26px rgba(22, 43, 74, 0.14);
-      }
-      .thumb {
-        height: 330px;
-        background: #f5f8fd center / cover no-repeat;
-        border-bottom: 1px solid var(--line);
-      }
-      .thumb.auto {
-        background-size: auto;
-        background-position: center center;
-      }
-      .title {
-        margin: 0;
-        padding: 16px 14px 17px;
-        text-align: center;
-        font-size: 1.35rem;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      @media (max-width: 840px) {
-        .grid { grid-template-columns: 1fr; }
-        .thumb { height: 260px; }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="page">
-      <div class="brand">
-        <img class="brand-logo" src="./assets/schovia-logo.svg" alt="Schovia logo" />
-      </div>
-      <h1>AIClub Gym - For Kids, Parents and Teachers</h1>
-      <p class="subtitle">Try out AI and learn how it works</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AIClubGyms | Demo Index</title>
+  <style>
+    :root {
+      --bg: #f4f7fc;
+      --card: #fff;
+      --line: #d7e1ef;
+      --text: #172335;
+      --muted: #4d607b;
+      --link: #1e5db6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main { width: min(960px, 94vw); margin: 28px auto 36px; }
+    h1 { margin: 0 0 8px; }
+    .lead { margin: 0 0 14px; color: var(--muted); }
+    .top-links { margin-bottom: 16px; }
+    a { color: var(--link); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .item h2 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+    .path {
+      margin: 0;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>AIClubGyms</h1>
+    <p class="lead">All demo pages in this folder.</p>
+    <p class="top-links"><a href="../index.html">Back to main index</a></p>
 
-      <section class="grid" aria-label="AI gyms">
-        <a class="card" href="./ai-literacy-bot.html">
-          <div class="thumb auto" style="background-image: url('./assets/ai-gym/7e0987215f4b13ef8ee40a387aab2c2c.png')"></div>
-          <h2 class="title">Ask Sage - the AI Literacy Bot</h2>
-        </a>
-
-        <a class="card" href="./object-detect.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/e533a1020b4dc2402aa3a84b4d4433e4.jpg')"></div>
-          <h2 class="title">Can an AI recognize objects?</h2>
-        </a>
-
-        <a class="card" href="./fit-lines.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/3003bfbade1c22b534fcdf3dd847b75a.jpg')"></div>
-          <h2 class="title">Can an AI fit lines?</h2>
-        </a>
-
-        <a class="card" href="./question-answer.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/d38800ff91b11a2bfac40a162f50bd03.jpg')"></div>
-          <h2 class="title">Can an AI do your homework?</h2>
-        </a>
-
-        <a class="card" href="./clustering-visualization.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/b63c30205893072c50adbbea2f27ca07.jpg')"></div>
-          <h2 class="title">Can an AI detect clusters of points?</h2>
-        </a>
-
-        <a class="card" href="./handpose-detect.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/1a42ad3aa40e6daf58eef5ad2a241a4b.jpg')"></div>
-          <h2 class="title">Can an AI detect Hand poses?</h2>
-        </a>
-
-        <a class="card" href="./emotion-detect.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/d4d775d2f19cbe812c485333b4b89dbf.jpg')"></div>
-          <h2 class="title">Emotion Detection</h2>
-        </a>
-
-        <a class="card" href="./style-transfer.html?tab=stylize">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/b3c69b2a3b71fd5e7cce307c2ea56b21.jpg')"></div>
-          <h2 class="title">Style Transfer</h2>
-        </a>
-
-        <a class="card" href="./telephone-game-gym.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/2ff85552952782dc05f96355bb4486d1.jpg')"></div>
-          <h2 class="title">Telephone Game</h2>
-        </a>
-
-        <a class="card" href="./chai-bot.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/bfb4d07e7c052b11d6f1e2fc05188d0a.png')"></div>
-          <h2 class="title">Chai the AI Bot</h2>
-        </a>
-
-        <a class="card" href="./tensorflow-images-gym.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/43dfc14f2241316e9d91a066e4e4c556.png')"></div>
-          <h2 class="title">Image Classification</h2>
-        </a>
-
-        <a class="card" href="./label-and-classify-images.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/d303b2e674fff5f8557c9c953262198b.jpg')"></div>
-          <h2 class="title">Labeling with Image Classification</h2>
-        </a>
-
-        <a class="card" href="./toonify.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/2788df3c46658baf39e3d5586a4ecc67.jpg')"></div>
-          <h2 class="title">Find out your cartoon avatar</h2>
-        </a>
-
-        <a class="card" href="./fit-lines-ml.html">
-          <div class="thumb" style="background-image: url('./assets/ai-gym/3003bfbade1c22b534fcdf3dd847b75a.jpg')"></div>
-          <h2 class="title">Use ML to fit lines</h2>
-        </a>
-      </section>
-    </main>
-  </body>
+    <section class="list">
+      <article class="item"><h2><a href="./ai-literacy-bot.html">AI Literacy Bot</a></h2><p class="path">ai-literacy-bot.html</p></article>
+      <article class="item"><h2><a href="./chai-bot.html">Chai Bot</a></h2><p class="path">chai-bot.html</p></article>
+      <article class="item"><h2><a href="./clustering-visualization.html">Clustering Visualization</a></h2><p class="path">clustering-visualization.html</p></article>
+      <article class="item"><h2><a href="./emotion-detect.html">Emotion Detect</a></h2><p class="path">emotion-detect.html</p></article>
+      <article class="item"><h2><a href="./fit-lines.html">Fit Lines</a></h2><p class="path">fit-lines.html</p></article>
+      <article class="item"><h2><a href="./fit-lines-ml.html">Fit Lines (ML)</a></h2><p class="path">fit-lines-ml.html</p></article>
+      <article class="item"><h2><a href="./handpose-detect.html">Handpose Detect</a></h2><p class="path">handpose-detect.html</p></article>
+      <article class="item"><h2><a href="./label-and-classify-images.html">Label and Classify Images</a></h2><p class="path">label-and-classify-images.html</p></article>
+      <article class="item"><h2><a href="./object-detect.html">Object Detect</a></h2><p class="path">object-detect.html</p></article>
+      <article class="item"><h2><a href="./question-answer.html">Question Answer</a></h2><p class="path">question-answer.html</p></article>
+      <article class="item"><h2><a href="./style-transfer.html">Style Transfer</a></h2><p class="path">style-transfer.html</p></article>
+      <article class="item"><h2><a href="./telephone-game-gym.html">Telephone Game Gym</a></h2><p class="path">telephone-game-gym.html</p></article>
+      <article class="item"><h2><a href="./tensorflow-images-gym.html">Tensorflow Images Gym</a></h2><p class="path">tensorflow-images-gym.html</p></article>
+      <article class="item"><h2><a href="./toonify.html">Toonify</a></h2><p class="path">toonify.html</p></article>
+    </section>
+  </main>
+</body>
 </html>

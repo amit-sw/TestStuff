@@ -3,38 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TestStuff | Directory Index</title>
+  <title>TestStuff | Main Index</title>
   <style>
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
       --text: #1f2937;
-      --muted: #52607a;
-      --line: #d9e0ee;
-      --link: #1f6feb;
+      --muted: #4f5d75;
+      --line: #d9e1ee;
+      --link: #1d4ed8;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
+      background: linear-gradient(180deg, #f9fbff 0%, var(--bg) 100%);
       color: var(--text);
     }
     main {
-      width: min(900px, 94vw);
-      margin: 36px auto;
+      width: min(1100px, 94vw);
+      margin: 28px auto 40px;
     }
     h1 {
       margin: 0 0 8px;
-      font-size: 2rem;
+      font-size: clamp(1.6rem, 2.4vw, 2.2rem);
     }
     .lead {
       margin: 0 0 20px;
       color: var(--muted);
+      line-height: 1.5;
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 14px;
     }
     .card {
@@ -45,12 +46,21 @@
     }
     .card h2 {
       margin: 0 0 8px;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
     }
     .card p {
-      margin: 0 0 12px;
+      margin: 0 0 10px;
       color: var(--muted);
       line-height: 1.45;
+    }
+    .actions, .key-links {
+      display: grid;
+      gap: 6px;
+    }
+    .key-links {
+      margin: 10px 0;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
     }
     a {
       color: var(--link);
@@ -58,34 +68,103 @@
       font-weight: 600;
     }
     a:hover { text-decoration: underline; }
-    .links { display: grid; gap: 6px; }
+    .note {
+      margin-top: 16px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    code {
+      background: #eef3fb;
+      border: 1px solid #d7e2f2;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 0.88em;
+    }
   </style>
 </head>
 <body>
   <main>
     <h1>TestStuff</h1>
-    <p class="lead">This root index links to the two available subdirectories and their primary entry points.</p>
+    <p class="lead">Central index for all top-level demo folders after the directory reorganization.</p>
 
     <section class="grid">
       <article class="card">
         <h2>AIClubGyms</h2>
-        <p>Collection of AI demo/gym apps (bots, clustering, fit-lines, object detection, style transfer, toonify, and related interactive pages).</p>
-        <div class="links">
-          <a href="./AIClubGyms/">Open folder</a>
-          <a href="./AIClubGyms/index.html">Open AIClubGyms index</a>
+        <p>Interactive AI learning demos for students, parents, and teachers.</p>
+        <div class="actions">
+          <a href="./AIClubGyms/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./AIClubGyms/ai-literacy-bot.html">Key demo: AI Literacy Bot</a>
+          <a href="./AIClubGyms/object-detect.html">Key demo: Object Detection</a>
+          <a href="./AIClubGyms/fit-lines.html">Key demo: Fit Lines</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>BPE</h2>
+        <p>Byte Pair Encoding walkthrough and merge visualizer.</p>
+        <div class="actions">
+          <a href="./BPE/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./BPE/bpe-demo.html">Key demo: BPE Visual Demo</a>
         </div>
       </article>
 
       <article class="card">
         <h2>ChatGPTAnimation</h2>
-        <p>Animation and tokenizer demo pages, including ChatGPT animation examples and the tokenizer demo used as a reference style.</p>
-        <div class="links">
-          <a href="./ChatGPTAnimation/">Open folder</a>
-          <a href="./ChatGPTAnimation/index.html">Open ChatGPTAnimation index</a>
-          <a href="./ChatGPTAnimation/tokenizerDemo.html">Open tokenizer demo</a>
+        <p>Token generation animations and tokenizer demos.</p>
+        <div class="actions">
+          <a href="./ChatGPTAnimation/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./ChatGPTAnimation/chatGptAnimation.html">Key demo: Token Generation Pipeline</a>
+          <a href="./ChatGPTAnimation/tokenizerDemo.html">Key demo: Tokenizer Demo</a>
+          <a href="./ChatGPTAnimation/chatGptDynamic.html">Key demo: Dynamic Pipeline</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>MISC_DEMOS</h2>
+        <p>Standalone teaching demos and concept visualizations.</p>
+        <div class="actions">
+          <a href="./MISC_DEMOS/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./MISC_DEMOS/transformer-lifecycle-demo.html">Key demo: Transformer Lifecycle</a>
+          <a href="./MISC_DEMOS/lr_visualization.html">Key demo: Linear Regression Visualization</a>
+          <a href="./MISC_DEMOS/mae-rmse-demos.html">Key demo: MAE vs RMSE</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>MISC_APPS</h2>
+        <p>Python/Streamlit utility apps and experiments.</p>
+        <div class="actions">
+          <a href="./MISC_APPS/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./MISC_APPS/app_lr_streamlit.py">Key app: LR Streamlit App</a>
+          <a href="./MISC_APPS/app_count_tokens.py">Key app: Token Counter</a>
+          <a href="./MISC_APPS/app_yt_transcript.py">Key app: YouTube Transcript</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>nntraining</h2>
+        <p>Neural network simulator and training playground builds.</p>
+        <div class="actions">
+          <a href="./nntraining/index.html">Open folder index</a>
+        </div>
+        <div class="key-links">
+          <a href="./nntraining/neural-network-simulator.html">Key demo: Simulator (source)</a>
+          <a href="./nntraining/dist/index.html">Key demo: Simulator (dist build)</a>
         </div>
       </article>
     </section>
+
+    <p class="note">Tip: open any folder index first, then launch demos from there. Script-based apps in <code>MISC_APPS</code> may require <code>python</code> or <code>streamlit run</code>.</p>
   </main>
 </body>
 </html>
