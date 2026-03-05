@@ -195,7 +195,8 @@
     body.params-off .attn-eqn-pill,
     body.params-off .mix-eqn-pill,
     body.params-off .pred-eqn-pill,
-    body.params-off .unembed-eqn-bar {
+    body.params-off .unembed-eqn-bar,
+    body.params-off .stage-metrics {
       display: none;
     }
 
@@ -327,6 +328,21 @@
       font-weight: 700;
       text-anchor: middle;
       dominant-baseline: middle;
+    }
+
+    .metrics-row-label {
+      font-family: var(--sans);
+      font-size: 13px;
+      fill: #35506c;
+      font-weight: 700;
+      text-anchor: end;
+    }
+
+    .metrics-value {
+      font-family: var(--mono);
+      font-size: 13px;
+      fill: #223a52;
+      text-anchor: middle;
     }
 
     .stage-hit {
@@ -1377,6 +1393,22 @@
             <rect class="prediction-token-box" x="1300" y="156" width="120" height="58" rx="8" ry="8"></rect>
             <text class="prediction-token-text" id="predictedTokenId" x="1360" y="185">1347</text>
           </g>
+          <g class="stage-metrics" aria-label="Per-stage parameter and FLOP counts">
+            <text class="metrics-row-label" x="118" y="342">Params</text>
+            <text class="metrics-row-label" x="118" y="366">FLOPs</text>
+            <text class="metrics-value" id="embeddingParams" x="170" y="342">-</text>
+            <text class="metrics-value" id="positionalParams" x="360" y="342">-</text>
+            <text class="metrics-value" id="attentionParams" x="550" y="342">-</text>
+            <text class="metrics-value" id="mixingParams" x="740" y="342">-</text>
+            <text class="metrics-value" id="outputParams" x="930" y="342">-</text>
+            <text class="metrics-value" id="predictionParams" x="1120" y="342">-</text>
+            <text class="metrics-value" id="embeddingFlops" x="170" y="366">-</text>
+            <text class="metrics-value" id="positionalFlops" x="360" y="366">-</text>
+            <text class="metrics-value" id="attentionFlops" x="550" y="366">-</text>
+            <text class="metrics-value" id="mixingFlops" x="740" y="366">-</text>
+            <text class="metrics-value" id="outputFlops" x="930" y="366">-</text>
+            <text class="metrics-value" id="predictionFlops" x="1120" y="366">-</text>
+          </g>
         </svg>
       </div>
 
@@ -1427,6 +1459,18 @@
       mixingBlock: $("mixingBlock"),
       outputBlock: $("outputBlock"),
       predictionStage: $("predictionStage"),
+      embeddingParams: $("embeddingParams"),
+      positionalParams: $("positionalParams"),
+      attentionParams: $("attentionParams"),
+      mixingParams: $("mixingParams"),
+      outputParams: $("outputParams"),
+      predictionParams: $("predictionParams"),
+      embeddingFlops: $("embeddingFlops"),
+      positionalFlops: $("positionalFlops"),
+      attentionFlops: $("attentionFlops"),
+      mixingFlops: $("mixingFlops"),
+      outputFlops: $("outputFlops"),
+      predictionFlops: $("predictionFlops"),
       detailsPanel: $("detailsPanel"),
       detailsTitle: $("detailsTitle"),
       detailGrid: $("detailGrid"),
@@ -1449,6 +1493,15 @@
 
     function shape(r, c) {
       return `${fmtDim(r)} x ${fmtDim(c)}`;
+    }
+
+    function fmtCompact(value) {
+      const abs = Math.abs(value);
+      if (abs >= 1e12) return `${(value / 1e12).toFixed(2).replace(/\.00$/, "")}T`;
+      if (abs >= 1e9) return `${(value / 1e9).toFixed(2).replace(/\.00$/, "")}B`;
+      if (abs >= 1e6) return `${(value / 1e6).toFixed(2).replace(/\.00$/, "")}M`;
+      if (abs >= 1e3) return `${(value / 1e3).toFixed(2).replace(/\.00$/, "")}K`;
+      return fmtInt(value);
     }
 
     function readConfig() {
@@ -1490,6 +1543,44 @@
       [ui.embeddingBlock, ui.positionalBlock, ui.attentionBlock, ui.mixingBlock, ui.outputBlock, ui.predictionStage].forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.stage === state.selectedStage);
       });
+    }
+
+    function renderStageMetrics(config, vm) {
+      const embeddingParams = config.vocabSize * vm.d;
+      const embeddingFlops = vm.n * vm.d;
+
+      const positionalParams = 0;
+      const positionalFlops = vm.n * vm.d;
+
+      const attnParamsPerLayer = 4 * vm.d * vm.d;
+      const attnFlopsPerLayer = (4 * vm.n * vm.d * vm.d) + (2 * vm.n * vm.n * vm.d);
+      const attentionParams = vm.layers * attnParamsPerLayer;
+      const attentionFlops = vm.layers * attnFlopsPerLayer;
+
+      const mixingParamsPerLayer = (vm.d * vm.d) + (2 * vm.d * vm.dff);
+      const mixingFlopsPerLayer = (vm.n * vm.d * vm.d) + (2 * vm.n * vm.d * vm.dff);
+      const mixingParams = vm.layers * mixingParamsPerLayer;
+      const mixingFlops = vm.layers * mixingFlopsPerLayer;
+
+      const outputParams = vm.d * config.vocabSize;
+      const outputFlops = vm.d * config.vocabSize;
+
+      const predictionParams = 0;
+      const predictionFlops = 3 * config.vocabSize;
+
+      ui.embeddingParams.textContent = fmtCompact(embeddingParams);
+      ui.positionalParams.textContent = fmtCompact(positionalParams);
+      ui.attentionParams.textContent = fmtCompact(attentionParams);
+      ui.mixingParams.textContent = fmtCompact(mixingParams);
+      ui.outputParams.textContent = fmtCompact(outputParams);
+      ui.predictionParams.textContent = fmtCompact(predictionParams);
+
+      ui.embeddingFlops.textContent = fmtCompact(embeddingFlops);
+      ui.positionalFlops.textContent = fmtCompact(positionalFlops);
+      ui.attentionFlops.textContent = fmtCompact(attentionFlops);
+      ui.mixingFlops.textContent = fmtCompact(mixingFlops);
+      ui.outputFlops.textContent = fmtCompact(outputFlops);
+      ui.predictionFlops.textContent = fmtCompact(predictionFlops);
     }
 
     function renderDetails(config, vm) {
@@ -1885,6 +1976,7 @@
       ui.tokensLength.textContent = fmtInt(vm.n);
       ui.repeatTimes.textContent = `${fmtInt(vm.layers)} TIMES`;
       ui.predictedTokenId.textContent = fmtInt(vm.predictedToken);
+      renderStageMetrics(config, vm);
 
       setActiveBlock();
       renderDetails(config, vm);
