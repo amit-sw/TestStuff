@@ -299,6 +299,13 @@
       text-anchor: middle;
     }
 
+    .token-label {
+      font-size: 12px;
+      fill: #35506c;
+      font-family: var(--sans);
+      text-anchor: middle;
+    }
+
     .prediction-title {
       font-size: 20px;
       fill: #1a324a;
@@ -444,6 +451,49 @@
       color: #23364a;
       font-size: 0.9rem;
       line-height: 1.3;
+    }
+
+    .math-eq {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      color: #1f3550;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .math-lhs {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .math-frac {
+      display: inline-flex;
+      flex-direction: column;
+      justify-items: center;
+      align-items: center;
+      line-height: 1;
+      vertical-align: middle;
+      min-width: max-content;
+    }
+
+    .math-frac .frac-line {
+      width: 100%;
+      min-width: 78px;
+      border-top: 1.5px solid #35506f;
+      margin: 2px 0;
+    }
+
+    .math-frac .num,
+    .math-frac .den {
+      white-space: nowrap;
+      display: block;
+      padding: 0 2px;
     }
 
     .input-visual-pane {
@@ -890,21 +940,18 @@
         linear-gradient(120deg, #6ba7eb 0%, #679cd7 42%, #8a67c5 100%);
     }
 
-    .ffn-card {
-      width: 236px;
-      height: 246px;
+    .ffn-lane {
+      min-width: 200px;
       border: 2px solid #567d56;
       border-radius: 16px;
       background: radial-gradient(120% 120% at 20% 20%, #dff5d9 0%, #bfe3b3 58%, #b2dba5 100%);
-      padding: 12px;
+      padding: 10px 10px 8px;
       display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: 8px;
-      align-items: center;
+      gap: 6px;
       justify-items: center;
     }
 
-    .ffn-card h5 {
+    .ffn-lane h5 {
       margin: 0;
       font-size: 0.82rem;
       color: #1e441f;
@@ -913,24 +960,68 @@
       letter-spacing: 0.02em;
     }
 
-    .ffn-core {
-      width: 172px;
-      height: 88px;
-      border: 2px solid #395f37;
-      border-radius: 4px;
-      background: linear-gradient(140deg, #83c66f 0%, #75ba62 100%);
+    .ffn-track {
       position: relative;
+      display: grid;
+      grid-template-columns: 36px 60px 36px;
+      column-gap: 18px;
+      align-items: start;
+      justify-items: center;
+      width: 168px;
+      min-height: 134px;
     }
 
-    .ffn-arrows {
-      width: 100%;
+    .ffn-col {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    .ffn-bar-wrap {
+      width: 36px;
+      height: 112px;
       display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      color: #1f411f;
-      font-size: 1.6rem;
-      line-height: 1;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ffn-bar {
+      width: 18px;
+      border: 2px solid #395f37;
+      border-radius: 5px;
+      background: linear-gradient(140deg, #83c66f 0%, #75ba62 100%);
+    }
+
+    .ffn-bar.x {
+      height: 36px;
+    }
+
+    .ffn-bar.mid {
+      height: 112px;
+    }
+
+    .ffn-size {
+      color: #123214;
       font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .ffn-links {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 112px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .ffn-links line {
+      stroke: rgba(26, 63, 29, 0.6);
+      stroke-width: 1.2;
     }
 
     .ffn-foot {
@@ -1002,13 +1093,14 @@
 
     .slice-strip {
       width: 190px;
-      height: 22px;
-      border: 2px dashed #556e89;
-      border-radius: 3px;
+      height: 26px;
+      border: 2px solid #35526f;
+      border-radius: 5px;
       background:
         linear-gradient(90deg, rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 20px 20px,
         linear-gradient(90deg, #67a9ed 0 78%, #f0a230 78% 100%);
       margin-top: 6px;
+      box-shadow: 0 0 0 2px rgba(240, 162, 48, 0.25);
     }
 
     .matrix-grid.last-slice {
@@ -1080,7 +1172,7 @@
 
     .pred-flow {
       display: grid;
-      grid-template-columns: auto auto auto auto auto auto auto auto;
+      grid-template-columns: repeat(6, auto);
       align-items: end;
       gap: 10px;
     }
@@ -1229,6 +1321,7 @@
             <rect class="token-cell-blue" x="20" y="196" width="34" height="30"></rect>
             <rect class="token-cell-orange" x="20" y="226" width="34" height="28"></rect>
             <text class="token-count" id="tokensLength" x="37" y="292">70,000</text>
+            <text class="token-label" x="37" y="308">tokens</text>
           </g>
 
           <g id="embeddingBlock" class="stage-group" data-stage="embedding" aria-label="Embedding">
@@ -1420,6 +1513,7 @@
               <div class="copy-row">
                 <span class="copy-tag">Action</span>
                 <p>Each token id indexes the learned embedding table and retrieves a ${fmtInt(vm.d)}-dimensional vector.</p>
+                <p>Tokens are often subword pieces (not always full words), so one word may map to multiple token ids.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Math</span>
@@ -1471,6 +1565,7 @@
               <div class="copy-row">
                 <span class="copy-tag">Action</span>
                 <p>Because tokens are processed in parallel, positional coordinates are injected so order information is preserved.</p>
+                <p>Modern decoder LLMs often apply RoPE during attention instead of adding fixed positional vectors directly.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Math</span>
@@ -1518,19 +1613,21 @@
         const hiddenHeadCount = Math.max(vm.h - headPreview, 0);
         const headCards = Array.from({ length: headPreview }, () => '<div class="head-card"></div>').join("")
           + (hiddenHeadCount > 0 ? `<div class="head-card more">+${fmtInt(hiddenHeadCount)}</div>` : "");
-        title = "Transformer Block (Attention)";
+        title = "Multi-Head Self-Attention";
         ui.detailsTitle.textContent = title;
         ui.detailGrid.innerHTML = `
           <div class="input-detail-layout">
             <section class="input-copy-pane">
               <div class="copy-row">
                 <span class="copy-tag">Action</span>
-                <p>The token matrix is projected into parallel heads so each head can score contextual relationships independently.</p>
+                <p>Learned linear projections produce Q, K, and V, then parallel heads score contextual relationships between token positions.</p>
+                <p>This is where token-to-token communication happens.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Math</span>
                 <p>Input ${shape(vm.n, vm.d)} multiplies with learned Wq, Wk, Wv (${shape(vm.d, vm.dh)} each per head), producing Q/K/V matrices of ${shape(vm.n, vm.dh)} per head.</p>
                 <p>Attention scores are Q · K^T -> ${shape(vm.n, vm.n)}, scaled by 1/sqrt(${fmtDim(vm.dh)}) and normalized with Softmax before multiplying by V.</p>
+                <p>Residual connection + normalization (Add &amp; Norm) wrap this sublayer to stabilize deep training.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Result</span>
@@ -1539,7 +1636,7 @@
             </section>
             <section class="input-visual-pane attn-visual-pane">
               <div class="attn-header-row">
-                <h4 class="input-visual-title"><span class="stage-dot">3</span> Transformer Block (Attention)</h4>
+                <h4 class="input-visual-title"><span class="stage-dot">3</span> Multi-Head Self-Attention</h4>
                 <div class="attn-eqn-pill">${shape(vm.n, vm.d)} MATRIX -> ${fmtInt(vm.h)} ${shape(vm.n, vm.dh)} MATRICES</div>
               </div>
               <div class="attn-projection-row">
@@ -1600,12 +1697,14 @@
             <section class="input-copy-pane">
               <div class="copy-row">
                 <span class="copy-tag">Action</span>
-                <p>Parallel head outputs are concatenated and mixed before entering the feed-forward network for deeper transformation.</p>
+                <p>Parallel head outputs are concatenated and mixed before entering a position-wise feed-forward network for deeper transformation.</p>
+                <p>The FFN processes each token position independently; token-to-token interaction occurs in attention, not in FFN.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Math</span>
                 <p>${fmtInt(vm.h)} heads (${shape(vm.n, vm.dh)} each) concatenate to ${shape(vm.n, vm.concatDim)}. This is multiplied by a learned mixing matrix ${shape(vm.concatDim, vm.d)} to return to ${shape(vm.n, vm.d)}.</p>
                 <p>The FFN expands to ${shape(vm.n, vm.dff)} and projects back down to ${shape(vm.n, vm.d)}.</p>
+                <p>Residual connection + normalization (Add &amp; Norm) wrap this sublayer as well.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Result</span>
@@ -1620,7 +1719,7 @@
               <div class="mix-flow">
                 <div class="head-column">
                   <div class="head-list">${headStack}</div>
-                  <div class="matrix-name">${fmtInt(vm.h)} × ${shape(vm.n, vm.dh)}</div>
+                  <div class="matrix-name">${fmtInt(vm.h)} (${fmtInt(vm.n)} x ${fmtDim(vm.dh)})<br>${fmtInt(vm.n)} x ${fmtInt(vm.concatDim)}</div>
                 </div>
                 <div class="flow-arrow-mini">→</div>
                 <div class="matrix-wrap">
@@ -1628,11 +1727,36 @@
                   <div class="matrix-name">${shape(vm.concatDim, vm.d)} mixing matrix</div>
                 </div>
                 <div class="flow-arrow-mini">→</div>
-                <div class="ffn-card">
+                <div class="ffn-lane">
                   <h5>FFN Block</h5>
-                  <div class="ffn-arrows"><span>↑</span><span>↓</span></div>
-                  <div class="ffn-core"></div>
-                  <p class="ffn-foot">UP: ${shape(vm.n, vm.dff)}<br>DOWN: ${shape(vm.n, vm.d)}</p>
+                  <div class="ffn-track">
+                    <svg class="ffn-links" viewBox="0 0 168 112" preserveAspectRatio="none" aria-hidden="true">
+                      <line x1="16" y1="38" x2="82" y2="0"></line>
+                      <line x1="18" y1="38" x2="84" y2="0"></line>
+                      <line x1="20" y1="38" x2="86" y2="0"></line>
+                      <line x1="82" y1="0" x2="148" y2="38"></line>
+                      <line x1="84" y1="0" x2="150" y2="38"></line>
+                      <line x1="86" y1="0" x2="152" y2="38"></line>
+                      <line x1="16" y1="74" x2="82" y2="112"></line>
+                      <line x1="18" y1="74" x2="84" y2="112"></line>
+                      <line x1="20" y1="74" x2="86" y2="112"></line>
+                      <line x1="82" y1="112" x2="148" y2="74"></line>
+                      <line x1="84" y1="112" x2="150" y2="74"></line>
+                      <line x1="86" y1="112" x2="152" y2="74"></line>
+                    </svg>
+                    <div class="ffn-col">
+                      <div class="ffn-bar-wrap"><div class="ffn-bar x" aria-hidden="true"></div></div>
+                      <div class="ffn-size">x</div>
+                    </div>
+                    <div class="ffn-col">
+                      <div class="ffn-bar-wrap"><div class="ffn-bar mid" aria-hidden="true"></div></div>
+                      <div class="ffn-size">4x</div>
+                    </div>
+                    <div class="ffn-col">
+                      <div class="ffn-bar-wrap"><div class="ffn-bar x" aria-hidden="true"></div></div>
+                      <div class="ffn-size">x</div>
+                    </div>
+                  </div>
                 </div>
                 <div class="flow-arrow-mini">→</div>
                 <div class="matrix-wrap">
@@ -1673,7 +1797,7 @@
                   <div class="slice-strip"></div>
                   <div class="matrix-name">Final ${shape(vm.n, vm.d)} matrix (Layer ${fmtInt(vm.layers)})</div>
                 </div>
-                <div class="isolate-note">Isolate<br>last slice</div>
+                <div class="isolate-note">Select<br>bottom row</div>
                 <div class="matrix-wrap">
                   <div class="matrix-grid last-slice"></div>
                   <span class="dim-pill">${shape(1, vm.d)}</span>
@@ -1689,7 +1813,6 @@
                     <div class="logit-vector-bar"></div>
                     <div class="matrix-name">${shape(1, config.vocabSize)} logit vector</div>
                   </div>
-                  <div class="matrix-name">Total: ${fmtInt(config.vocabSize)} raw scores</div>
                 </div>
               </div>
             </section>
@@ -1704,31 +1827,30 @@
             <section class="input-copy-pane">
               <div class="copy-row">
                 <span class="copy-tag">Action</span>
-                <p>The model ignores earlier rows and focuses only on the final row to generate exactly one next token.</p>
+                <p>Prediction starts from the final logits vector for the next position: ${shape(1, config.vocabSize)}.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Math</span>
-                <p>From logit matrix ${shape(vm.n, config.vocabSize)}, isolate the last row ${shape(1, config.vocabSize)} (position ${fmtInt(vm.n)}). Softmax converts logits to probabilities, then sampling selects one token id.</p>
+                <p>Given logits z in ${shape(1, config.vocabSize)}, Softmax maps each logit to probability:</p>
+                <p class="math-eq"><span class="math-lhs"><span>p<sub>i</sub></span><span>=</span></span><span class="math-frac"><span class="num">exp(z<sub>i</sub>)</span><span class="frac-line" aria-hidden="true"></span><span class="den">&Sigma;<sub>j</sub> exp(z<sub>j</sub>)</span></span></p>
+                <p>Sampling then draws one token id from that probability distribution.</p>
+                <p>Decoding settings like temperature, top-p, and top-k change how sampling is performed.</p>
               </div>
               <div class="copy-row">
                 <span class="copy-tag">Result</span>
                 <p>One token is emitted from the distribution: token ${fmtInt(vm.predictedToken)}.</p>
+                <p>That token is appended to the context, and the same lifecycle repeats autoregressively for the next token.</p>
               </div>
             </section>
             <section class="input-visual-pane pred-visual-pane">
               <div class="pred-header-row">
-                <h4 class="input-visual-title"><span class="stage-dot">6</span> Isolating the Final Probability</h4>
+                <h4 class="input-visual-title"><span class="stage-dot">6</span> Final Token Sampling</h4>
                 <div class="pred-eqn-pill">${shape(1, config.vocabSize)} VECTOR -> 1 NEW TOKEN</div>
               </div>
               <div class="pred-flow">
                 <div class="matrix-wrap">
-                  <div class="logit-tower"></div>
-                  <div class="matrix-name">${shape(vm.n, config.vocabSize)} logit matrix</div>
-                </div>
-                <div class="isolate-note">Isolate<br>last row</div>
-                <div class="matrix-wrap">
                   <div class="pred-vector"></div>
-                  <span class="dim-pill">${shape(1, config.vocabSize)}</span>
+                  <span class="dim-pill">${shape(1, config.vocabSize)} logits array</span>
                 </div>
                 <div class="flow-arrow-mini">→</div>
                 <div class="matrix-wrap">
