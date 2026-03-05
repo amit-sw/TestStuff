@@ -1,0 +1,1766 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformer models</title>
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --panel: #ffffff;
+      --line: #c7d2e0;
+      --muted: #586a7f;
+      --text: #151b23;
+      --accent: #1e5d91;
+      --accent-soft: #eaf4ff;
+      --good: #2f7f63;
+      --good-soft: #ebf8f2;
+      --warn: #9a5a1f;
+      --warn-soft: #fff3e8;
+      --shadow: 0 12px 28px rgba(17, 35, 56, 0.12);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(72rem 32rem at 10% -20%, #dcecff 0%, transparent 52%),
+        radial-gradient(58rem 30rem at 96% 0%, #f7dfce 0%, transparent 48%),
+        linear-gradient(180deg, #f8fbff 0%, #edf3f8 100%);
+    }
+
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: linear-gradient(120deg, rgba(255,255,255,0.95), rgba(235,246,255,0.9));
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+      letter-spacing: 0.02em;
+      text-transform: none;
+    }
+
+    .toggle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #b7c8da;
+      background: #fff;
+      color: #26425f;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .controls {
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .controls.collapsed {
+      display: none;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    input,
+    button {
+      font: inherit;
+    }
+
+    input {
+      width: 100%;
+      min-height: 30px;
+      padding: 5px 7px;
+      border: 1px solid #c0cddd;
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+    }
+
+    input[readonly] {
+      background: #f6f9fc;
+    }
+
+    .pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #b8cada;
+      background: #f4f9ff;
+      color: #2d4d6a;
+    }
+
+    .pill.warn {
+      border-color: #e5bfa4;
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .diagram {
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+      background: linear-gradient(180deg, #fcfdff 0%, #f4f9fd 100%);
+    }
+
+    .pipeline-shell {
+      min-width: 1420px;
+      border: 1px solid #c7d2e0;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #fdfefe 0%, #f3f8fc 100%);
+      padding: 10px;
+    }
+
+    .pipeline-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .main-line {
+      stroke: #4e7094;
+      stroke-width: 18;
+      stroke-linecap: round;
+      opacity: 0.95;
+    }
+
+    .node {
+      fill: #fff;
+      stroke: #4e7094;
+      stroke-width: 10;
+    }
+
+    .node-num {
+      font-size: 56px;
+      fill: #183453;
+      font-family: var(--mono);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .stage-label {
+      font-size: 15px;
+      fill: #1a3046;
+      font-family: var(--sans);
+      text-anchor: middle;
+    }
+
+    .flow-arrow {
+      font-size: 46px;
+      fill: #dce7f3;
+      font-family: var(--mono);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .repeat-box {
+      fill: none;
+      stroke: #4e7094;
+      stroke-width: 4;
+    }
+
+    .repeat-title {
+      font-size: 22px;
+      fill: #1d3d61;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-family: var(--sans);
+      text-anchor: middle;
+    }
+
+    .loop-arrow {
+      fill: none;
+      stroke: #4e7094;
+      stroke-width: 8;
+      stroke-linecap: round;
+    }
+
+    .token-shell {
+      fill: #ffffff;
+      stroke: #203549;
+      stroke-width: 2.3;
+    }
+
+    .token-cell-blue {
+      fill: #60a7e5;
+      stroke: #203549;
+      stroke-width: 1.1;
+    }
+
+    .token-cell-orange {
+      fill: #f4a431;
+      stroke: #203549;
+      stroke-width: 1.1;
+    }
+
+    .token-count {
+      font-size: 15px;
+      fill: #1a324a;
+      font-family: var(--mono);
+      text-anchor: middle;
+    }
+
+    .prediction-title {
+      font-size: 20px;
+      fill: #1a324a;
+      font-family: var(--sans);
+      font-weight: 600;
+      text-anchor: middle;
+    }
+
+    .prediction-token-box {
+      fill: #ebf6ff;
+      stroke: #4e7094;
+      stroke-width: 2;
+    }
+
+    .prediction-token-text {
+      font-size: 30px;
+      fill: #12395a;
+      font-family: var(--mono);
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .stage-hit {
+      fill: transparent;
+      stroke: transparent;
+      stroke-width: 2;
+      cursor: pointer;
+      transition: stroke 0.2s ease;
+    }
+
+    .stage-group:hover .stage-hit {
+      stroke: #a8c1da;
+    }
+
+    .stage-group {
+      cursor: pointer;
+    }
+
+    .stage-group.active .stage-hit {
+      stroke: #1e5d91;
+    }
+
+    .stage-group.active .node {
+      fill: #eef7ff;
+      stroke: #1e5d91;
+    }
+
+    .stage-group.active .repeat-box,
+    .stage-group.active .loop-arrow {
+      stroke: #1e5d91;
+    }
+
+    .details {
+      min-width: 1420px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .details[hidden] {
+      display: none;
+    }
+
+    .details h3 {
+      margin: 0;
+      font-size: 0.94rem;
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+    }
+
+    .detail-item {
+      border: 1px solid #c9d6e4;
+      border-radius: 8px;
+      background: #f8fbff;
+      padding: 8px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .detail-item h4 {
+      margin: 0;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+      color: #1a2f45;
+    }
+
+    .detail-item p {
+      margin: 0;
+      font-size: 0.71rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      line-height: 1.3;
+      white-space: pre-line;
+    }
+
+    .input-detail-layout {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(280px, 0.85fr) minmax(760px, 2fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .input-copy-pane {
+      border: 1px solid #c6d4e1;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .copy-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .copy-tag {
+      width: fit-content;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #54779a;
+      color: #fff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .copy-row p {
+      margin: 0;
+      color: #23364a;
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .input-visual-pane {
+      border: 1px solid #b8cadd;
+      border-radius: 10px;
+      background: radial-gradient(120% 140% at 0% 0%, #ffffff 0%, #f6f9fe 48%, #eef4fb 100%);
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .input-visual-title {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+      color: #162f49;
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+    }
+
+    .stage-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4e7094;
+      color: #fff;
+      display: inline-grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .pos-visual-pane {
+      background: radial-gradient(130% 150% at 0% 0%, #ffffff 0%, #f8f7ff 52%, #eef0fb 100%);
+    }
+
+    .pos-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pos-eqn-pill {
+      padding: 8px 12px;
+      border: 3px solid #4d6e93;
+      border-radius: 999px;
+      background: #f6faff;
+      color: #203c58;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .embed-equation {
+      border: 1px dashed #b8cadc;
+      border-radius: 8px;
+      background: #f8fbff;
+      padding: 6px 8px;
+      color: #214161;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    .embed-flow {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pos-flow {
+      gap: 18px;
+    }
+
+    .token-vector {
+      display: grid;
+      justify-items: center;
+      gap: 7px;
+    }
+
+    .token-vector-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      color: #203f5f;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+
+    .token-stack {
+      width: 54px;
+      height: 214px;
+      border: 2px solid #203549;
+      border-radius: 4px;
+      background: #fff;
+      padding: 4px 5px;
+      display: grid;
+      grid-template-rows: repeat(5, 1fr) 24px;
+      gap: 3px;
+    }
+
+    .stack-cell {
+      border: 1px solid #2b4f71;
+      border-radius: 2px;
+      background: #6aa7df;
+      color: #0f2a44;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+    }
+
+    .stack-cell.ellipsis {
+      background: #e8f1fb;
+      color: #496987;
+      letter-spacing: 0.2em;
+    }
+
+    .stack-cell.tail {
+      background: #f4ab3a;
+    }
+
+    .dim-pill {
+      padding: 2px 6px;
+      border: 1px solid #b4c7da;
+      border-radius: 999px;
+      background: #f4f9ff;
+      color: #22435f;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .math-op {
+      font-size: 2rem;
+      color: #2f5274;
+      font-family: var(--mono);
+      font-weight: 700;
+      line-height: 1;
+      margin-top: -18px;
+    }
+
+    .matrix-wrap {
+      display: grid;
+      gap: 7px;
+      justify-items: center;
+    }
+
+    .matrix-grid {
+      border: 2px solid #2b4b6b;
+      border-radius: 3px;
+      background:
+        linear-gradient(90deg, rgba(28, 48, 70, 0.42) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(rgba(28, 48, 70, 0.42) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(140deg, #7fa4ca 0%, #608ab4 55%, #5d84b1 100%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+
+    .matrix-grid.lookup {
+      width: 260px;
+      height: 210px;
+    }
+
+    .matrix-grid.output {
+      width: 250px;
+      height: 210px;
+      background:
+        linear-gradient(90deg, rgba(28, 48, 70, 0.4) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(rgba(28, 48, 70, 0.4) 1px, transparent 1px) 0 0 / 34px 34px,
+        linear-gradient(140deg, #86afd8 0%, #7098c4 58%, #5f88b4 100%);
+    }
+
+    .matrix-grid.purple {
+      width: 210px;
+      height: 210px;
+      background:
+        linear-gradient(90deg, rgba(29, 17, 57, 0.45) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(rgba(29, 17, 57, 0.45) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(140deg, #4e2690 0%, #3d1f76 55%, #2e155f 100%);
+      border-color: #4a2d88;
+    }
+
+    .matrix-grid.output-purple {
+      background:
+        linear-gradient(90deg, rgba(24, 14, 45, 0.45) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(rgba(24, 14, 45, 0.45) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(140deg, #592ca2 0%, #4a248a 55%, #3a1b70 100%);
+      border-color: #5a38a3;
+    }
+
+    .formula-card {
+      width: 180px;
+      height: 210px;
+      border: 2px solid #3f5978;
+      border-radius: 3px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .formula-wave {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .matrix-name {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #1d3953;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .matrix-dim {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: #264866;
+    }
+
+    .attn-visual-pane {
+      background: radial-gradient(130% 150% at 0% 0%, #ffffff 0%, #f8f9fe 52%, #eef3fb 100%);
+    }
+
+    .attn-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .attn-eqn-pill {
+      padding: 8px 12px;
+      border: 3px solid #4d6e93;
+      border-radius: 999px;
+      background: #f6faff;
+      color: #203c58;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .attn-projection-row {
+      display: grid;
+      grid-template-columns: auto auto minmax(300px, 1fr);
+      align-items: center;
+      gap: 16px;
+    }
+
+    .matrix-grid.warm {
+      width: 170px;
+      height: 220px;
+      background:
+        linear-gradient(90deg, rgba(57, 30, 15, 0.42) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(rgba(57, 30, 15, 0.42) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(140deg, #db8a77 0%, #d07d69 55%, #bf6b58 100%);
+      border-color: #6f4750;
+    }
+
+    .head-bank {
+      border: 1px solid #c4d2e3;
+      border-radius: 10px;
+      background: #f7fbff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .head-stack-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+      gap: 6px;
+      align-items: end;
+    }
+
+    .head-card {
+      height: 68px;
+      border: 1.5px solid #3c4f73;
+      border-radius: 4px;
+      background:
+        linear-gradient(90deg, rgba(15, 12, 40, 0.34) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(rgba(15, 12, 40, 0.34) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(125deg, #6a4bb6 0%, #5639a6 52%, #df8f78 52%, #cf7b66 100%);
+    }
+
+    .head-card.more {
+      display: grid;
+      place-items: center;
+      background: #edf3fb;
+      color: #37516d;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .attn-subtitle {
+      font-size: 0.76rem;
+      color: #2a4562;
+      font-family: var(--mono);
+      text-align: center;
+    }
+
+    .attn-scale-box {
+      border: 1px solid #bccde0;
+      border-radius: 10px;
+      background: #fdfefe;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .attn-scale-title {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #243f5c;
+    }
+
+    .attn-scale-flow {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto auto auto auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matrix-grid.attn-small {
+      width: 78px;
+      height: 116px;
+      background:
+        linear-gradient(90deg, rgba(16, 10, 37, 0.36) 1px, transparent 1px) 0 0 / 11px 11px,
+        linear-gradient(rgba(16, 10, 37, 0.36) 1px, transparent 1px) 0 0 / 11px 11px,
+        linear-gradient(130deg, #6a4ab7 0%, #5a3aa9 56%, #d88874 56%, #c77260 100%);
+      border-color: #4b366f;
+    }
+
+    .matrix-grid.score {
+      width: 96px;
+      height: 96px;
+      background:
+        linear-gradient(90deg, rgba(16, 10, 37, 0.3) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(rgba(16, 10, 37, 0.3) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(135deg, #ece5ff 0%, #b79ee8 48%, #da8c78 48%, #cd7763 100%);
+      border-color: #6c5b8d;
+    }
+
+    .softmax-chip {
+      border: 1px solid #9bb1c8;
+      border-radius: 7px;
+      background: #f8fbff;
+      color: #284563;
+      font-family: var(--mono);
+      font-size: 0.77rem;
+      padding: 6px 8px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .flow-arrow-mini {
+      font-size: 1.4rem;
+      color: #4b6887;
+      font-family: var(--mono);
+      line-height: 1;
+      text-align: center;
+    }
+
+    .mix-visual-pane {
+      background: radial-gradient(140% 150% at 0% 0%, #ffffff 0%, #f8fbff 52%, #edf5ff 100%);
+    }
+
+    .mix-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mix-eqn-pill {
+      padding: 8px 12px;
+      border: 3px solid #4d6e93;
+      border-radius: 999px;
+      background: #f6faff;
+      color: #203c58;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .mix-flow {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .head-column {
+      display: grid;
+      gap: 7px;
+      justify-items: center;
+    }
+
+    .head-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .head-mini {
+      width: 118px;
+      height: 34px;
+      border: 1.8px solid #2b4b6b;
+      border-radius: 4px;
+      background:
+        linear-gradient(90deg, rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 14px 14px,
+        linear-gradient(rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 14px 14px,
+        linear-gradient(90deg, #5a9ce0 0 70%, #f2a12f 70% 100%);
+    }
+
+    .head-mini.more {
+      display: grid;
+      place-items: center;
+      background: #edf3fb;
+      color: #37516d;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .matrix-grid.mix-mid {
+      width: 188px;
+      height: 188px;
+      background:
+        linear-gradient(90deg, rgba(24, 35, 55, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(rgba(24, 35, 55, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(120deg, #6ba7eb 0%, #679cd7 42%, #8a67c5 100%);
+    }
+
+    .ffn-card {
+      width: 236px;
+      height: 246px;
+      border: 2px solid #567d56;
+      border-radius: 16px;
+      background: radial-gradient(120% 120% at 20% 20%, #dff5d9 0%, #bfe3b3 58%, #b2dba5 100%);
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .ffn-card h5 {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #1e441f;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .ffn-core {
+      width: 172px;
+      height: 88px;
+      border: 2px solid #395f37;
+      border-radius: 4px;
+      background: linear-gradient(140deg, #83c66f 0%, #75ba62 100%);
+      position: relative;
+    }
+
+    .ffn-arrows {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: #1f411f;
+      font-size: 1.6rem;
+      line-height: 1;
+      font-family: var(--mono);
+    }
+
+    .ffn-foot {
+      margin: 0;
+      color: #214621;
+      font-size: 0.78rem;
+      text-align: center;
+      font-family: var(--mono);
+      line-height: 1.25;
+    }
+
+    .matrix-grid.mix-final {
+      width: 172px;
+      height: 172px;
+      background:
+        linear-gradient(90deg, rgba(24, 35, 55, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(rgba(24, 35, 55, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(120deg, #66a8ef 0%, #6a9fdc 52%, #8c69cb 100%);
+    }
+
+    .mix-repeat-note {
+      border-top: 1px dashed #bfd0e1;
+      padding-top: 8px;
+      font-family: var(--mono);
+      color: #2b4764;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .unembed-visual-pane {
+      background: radial-gradient(140% 150% at 0% 0%, #ffffff 0%, #f9f8ff 52%, #edf2fb 100%);
+      overflow: hidden;
+    }
+
+    .unembed-eqn-bar {
+      margin: -12px -12px 4px;
+      background: #0f141a;
+      color: #f7fbff;
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      padding: 8px 12px;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .unembed-title {
+      margin: 0;
+      font-size: 1.18rem;
+      color: #162f49;
+      letter-spacing: 0.01em;
+    }
+
+    .unembed-flow {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .matrix-grid.final-blue {
+      width: 190px;
+      height: 170px;
+      background:
+        linear-gradient(90deg, rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(140deg, #6caef0 0%, #63a1df 55%, #5890c9 100%);
+    }
+
+    .slice-strip {
+      width: 190px;
+      height: 22px;
+      border: 2px dashed #556e89;
+      border-radius: 3px;
+      background:
+        linear-gradient(90deg, rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(90deg, #67a9ed 0 78%, #f0a230 78% 100%);
+      margin-top: 6px;
+    }
+
+    .matrix-grid.last-slice {
+      width: 30px;
+      height: 170px;
+      background:
+        linear-gradient(180deg, rgba(17, 28, 42, 0.34) 1px, transparent 1px) 0 0 / 100% 19px,
+        linear-gradient(180deg, #67a9ed 0 78%, #f0a230 78% 100%);
+    }
+
+    .matrix-grid.unembed-purple {
+      width: 210px;
+      height: 210px;
+      background:
+        linear-gradient(90deg, rgba(31, 16, 57, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(rgba(31, 16, 57, 0.38) 1px, transparent 1px) 0 0 / 22px 22px,
+        linear-gradient(130deg, #be81e9 0%, #b577df 58%, #a868d0 100%);
+      border-color: #6c4f92;
+    }
+
+    .logit-vector-box {
+      width: 360px;
+      border: 2px solid #8f85a9;
+      border-radius: 4px;
+      background: #f8f5ff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .logit-vector-bar {
+      height: 34px;
+      border: 2px solid #6f5a8f;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #bc79e4 0%, #a76ed9 52%, #b27adf 100%);
+    }
+
+    .isolate-note {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: #2b4662;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .pred-visual-pane {
+      background: radial-gradient(140% 150% at 0% 0%, #ffffff 0%, #f8f9ff 52%, #edf2fb 100%);
+    }
+
+    .pred-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pred-eqn-pill {
+      padding: 8px 12px;
+      border: 3px solid #4d6e93;
+      border-radius: 999px;
+      background: #f6faff;
+      color: #203c58;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .pred-flow {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto auto auto;
+      align-items: end;
+      gap: 10px;
+    }
+
+    .logit-tower {
+      width: 108px;
+      height: 300px;
+      border: 2px solid #3d3569;
+      border-radius: 3px;
+      background:
+        linear-gradient(180deg, rgba(230, 222, 255, 0.85) 1px, transparent 1px) 0 0 / 100% 22px,
+        linear-gradient(160deg, #6f4cd0 0%, #5a3ab3 56%, #412a88 100%);
+      position: relative;
+    }
+
+    .logit-tower::after {
+      content: "";
+      position: absolute;
+      left: -2px;
+      right: -2px;
+      bottom: 38px;
+      border-bottom: 2px dotted #d2def0;
+    }
+
+    .pred-vector {
+      width: 220px;
+      height: 28px;
+      border: 2px solid #4d3a8a;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #5f40b6 0%, #6d48c8 54%, #7f54d8 100%);
+    }
+
+    .softmax-card {
+      width: 74px;
+      height: 76px;
+      border: 2px solid #6f88a4;
+      border-radius: 3px;
+      background: #edf5ff;
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      color: #2d4e70;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .sampling-mark {
+      font-family: var(--mono);
+      color: #2d4e70;
+      font-size: 1.7rem;
+      line-height: 1;
+    }
+
+    .token-out {
+      font-family: var(--mono);
+      font-size: 2rem;
+      color: #5a2f90;
+      font-weight: 800;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    @media (max-width: 1200px) {
+      .controls-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+    }
+
+    @media (max-width: 900px) {
+      .controls-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .input-detail-layout { grid-template-columns: 1fr; }
+      .embed-flow { grid-template-columns: 1fr; justify-items: center; }
+      .math-op { margin-top: 0; }
+      .pos-header-row { align-items: flex-start; }
+      .pos-eqn-pill { white-space: normal; }
+      .attn-header-row { align-items: flex-start; }
+      .attn-eqn-pill { white-space: normal; }
+      .attn-projection-row { grid-template-columns: 1fr; justify-items: center; }
+      .attn-scale-flow { grid-template-columns: 1fr; justify-items: center; }
+      .mix-header-row { align-items: flex-start; }
+      .mix-eqn-pill { white-space: normal; }
+      .mix-flow { grid-template-columns: 1fr; justify-items: center; }
+      .unembed-flow { grid-template-columns: 1fr; justify-items: center; }
+      .logit-vector-box { width: 100%; max-width: 360px; }
+      .pred-header-row { align-items: flex-start; }
+      .pred-eqn-pill { white-space: normal; }
+      .pred-flow { grid-template-columns: 1fr; justify-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header card">
+      <h1>Transformer models</h1>
+      <button class="toggle-btn" id="toggleSidebar" type="button" aria-label="Toggle controls" title="Toggle controls">☰</button>
+    </header>
+
+    <section class="controls card collapsed" id="sidebar">
+      <div class="controls-grid">
+        <label>Input token length (n)
+          <input id="tokenLength" type="number" min="1" step="1" value="70000">
+        </label>
+        <label>Vocab size
+          <input id="vocabSize" type="number" min="2" step="1" value="250000">
+        </label>
+        <label>Embedding dim (d)
+          <input id="embeddingDim" type="number" min="1" step="1" value="900">
+        </label>
+        <label>Heads (h)
+          <input id="headCount" type="number" min="1" step="1" value="9">
+        </label>
+        <label>Head dim (derived d/h)
+          <input id="headDimDisplay" type="text" readonly value="100">
+        </label>
+        <label>Layers
+          <input id="layerCount" type="number" min="1" step="1" value="40">
+        </label>
+      </div>
+      <div class="pills">
+        <span class="pill" id="tokenCountPill">Tokens: 70,000</span>
+        <span class="pill" id="headDimRule">Head dim is computed as embeddingDim / heads</span>
+      </div>
+      <div class="pills">
+        <button class="btn" id="resetDefaults" type="button">Reset defaults</button>
+      </div>
+    </section>
+
+    <section class="diagram card">
+      <div class="pipeline-shell" id="topRow">
+        <svg class="pipeline-svg" viewBox="0 0 1560 430" role="img" aria-label="Transformer base pipeline">
+          <defs>
+            <marker id="loopArrowhead" viewBox="0 0 12 10" refX="11" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L12,5 L0,10 z" fill="#4e7094"></path>
+            </marker>
+          </defs>
+
+          <line class="main-line" x1="88" y1="155" x2="1212" y2="155"></line>
+
+          <g aria-label="Token array">
+            <rect class="token-shell" x="18" y="58" width="38" height="198"></rect>
+            <rect class="token-cell-blue" x="20" y="76" width="34" height="30"></rect>
+            <rect class="token-cell-blue" x="20" y="106" width="34" height="30"></rect>
+            <rect class="token-cell-blue" x="20" y="136" width="34" height="30"></rect>
+            <rect class="token-cell-blue" x="20" y="166" width="34" height="30"></rect>
+            <rect class="token-cell-blue" x="20" y="196" width="34" height="30"></rect>
+            <rect class="token-cell-orange" x="20" y="226" width="34" height="28"></rect>
+            <text class="token-count" id="tokensLength" x="37" y="292">70,000 tokens</text>
+          </g>
+
+          <g id="embeddingBlock" class="stage-group" data-stage="embedding" aria-label="Embedding">
+            <circle class="node" cx="170" cy="155" r="58"></circle>
+            <text class="node-num" x="170" y="155">1</text>
+            <text class="stage-label" x="170" y="292">Embedding</text>
+            <rect class="stage-hit" x="102" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <g id="positionalBlock" class="stage-group" data-stage="positional" aria-label="Positional encoding">
+            <circle class="node" cx="360" cy="155" r="58"></circle>
+            <text class="node-num" x="360" y="155">2</text>
+            <text class="stage-label" x="360" y="286">Positional</text>
+            <text class="stage-label" x="360" y="308">Encoding</text>
+            <rect class="stage-hit" x="292" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <g id="attentionBlock" class="stage-group" data-stage="attention" aria-label="Attention block">
+            <rect class="repeat-box" x="468" y="28" width="354" height="324" rx="36"></rect>
+            <text class="repeat-title" id="repeatTimes" x="645" y="20">REPEATED 40 TIMES</text>
+            <path class="loop-arrow" d="M736 84 C700 26, 586 26, 550 84" marker-end="url(#loopArrowhead)"></path>
+            <path class="loop-arrow" d="M550 214 C586 272, 700 272, 736 214" marker-end="url(#loopArrowhead)"></path>
+
+            <circle class="node" cx="550" cy="155" r="58"></circle>
+            <text class="node-num" x="550" y="155">3</text>
+            <text class="stage-label" x="550" y="282">Transformer</text>
+            <text class="stage-label" x="550" y="304">Block</text>
+            <text class="stage-label" x="550" y="326">(Attention)</text>
+            <rect class="stage-hit" x="482" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <g id="mixingBlock" class="stage-group" data-stage="mixing" aria-label="Mixing and FFN block">
+            <circle class="node" cx="740" cy="155" r="58"></circle>
+            <text class="node-num" x="740" y="155">4</text>
+            <text class="stage-label" x="740" y="292">Mixing &amp; FFN</text>
+            <rect class="stage-hit" x="672" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <g id="outputBlock" class="stage-group" data-stage="output" aria-label="Output processing">
+            <circle class="node" cx="930" cy="155" r="58"></circle>
+            <text class="node-num" x="930" y="155">5</text>
+            <text class="stage-label" x="930" y="292">Unembedding</text>
+            <rect class="stage-hit" x="862" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <g id="predictionStage" class="stage-group" data-stage="prediction" aria-label="Prediction stage">
+            <circle class="node" cx="1120" cy="155" r="58"></circle>
+            <text class="node-num" x="1120" y="155">6</text>
+            <text class="stage-label" x="1120" y="292">Prediction</text>
+            <rect class="stage-hit" x="1052" y="82" width="136" height="250" rx="26"></rect>
+          </g>
+
+          <text class="flow-arrow" x="265" y="155">→</text>
+          <text class="flow-arrow" x="455" y="155">→</text>
+          <text class="flow-arrow" x="645" y="155">→</text>
+          <text class="flow-arrow" x="835" y="155">→</text>
+          <text class="flow-arrow" x="1025" y="155">→</text>
+
+          <g aria-label="Predicted token output">
+            <text class="prediction-title" x="1360" y="132">Prediction</text>
+            <rect class="prediction-token-box" x="1300" y="156" width="120" height="58" rx="8" ry="8"></rect>
+            <text class="prediction-token-text" id="predictedTokenId" x="1360" y="185">1347</text>
+          </g>
+        </svg>
+      </div>
+
+      <section class="details" id="detailsPanel" hidden>
+        <h3 id="detailsTitle">Details</h3>
+        <div class="detail-grid" id="detailGrid"></div>
+      </section>
+    </section>
+  </div>
+
+  <script>
+    const defaults = {
+      tokenLength: 70000,
+      vocabSize: 250000,
+      embeddingDim: 900,
+      headCount: 9,
+      layerCount: 40,
+    };
+
+    const FIXED_FFN_EXPANSION = 4;
+    const EXAMPLE_PREDICTED_TOKEN = 1347;
+
+    const state = {
+      controlsCollapsed: true,
+      selectedStage: null,
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const ui = {
+      toggleSidebar: $("toggleSidebar"),
+      sidebar: $("sidebar"),
+      tokenLength: $("tokenLength"),
+      vocabSize: $("vocabSize"),
+      embeddingDim: $("embeddingDim"),
+      headCount: $("headCount"),
+      headDimDisplay: $("headDimDisplay"),
+      layerCount: $("layerCount"),
+      tokenCountPill: $("tokenCountPill"),
+      headDimRule: $("headDimRule"),
+      resetDefaults: $("resetDefaults"),
+      tokensLength: $("tokensLength"),
+      repeatTimes: $("repeatTimes"),
+      predictedTokenId: $("predictedTokenId"),
+      embeddingBlock: $("embeddingBlock"),
+      positionalBlock: $("positionalBlock"),
+      attentionBlock: $("attentionBlock"),
+      mixingBlock: $("mixingBlock"),
+      outputBlock: $("outputBlock"),
+      predictionStage: $("predictionStage"),
+      detailsPanel: $("detailsPanel"),
+      detailsTitle: $("detailsTitle"),
+      detailGrid: $("detailGrid"),
+    };
+
+    function toInt(value, fallback, min = 1) {
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.max(min, parsed);
+    }
+
+    function fmtInt(value) {
+      return Math.round(value).toLocaleString("en-US");
+    }
+
+    function fmtDim(value) {
+      if (Math.abs(value - Math.round(value)) < 1e-9) return fmtInt(value);
+      return value.toFixed(2).replace(/\.00$/, "");
+    }
+
+    function shape(r, c) {
+      return `${fmtDim(r)} x ${fmtDim(c)}`;
+    }
+
+    function readConfig() {
+      return {
+        tokenLength: toInt(ui.tokenLength.value, defaults.tokenLength, 1),
+        vocabSize: toInt(ui.vocabSize.value, defaults.vocabSize, 2),
+        embeddingDim: toInt(ui.embeddingDim.value, defaults.embeddingDim, 1),
+        headCount: toInt(ui.headCount.value, defaults.headCount, 1),
+        layerCount: toInt(ui.layerCount.value, defaults.layerCount, 1),
+      };
+    }
+
+    function compute(config) {
+      const n = config.tokenLength;
+      const d = config.embeddingDim;
+      const h = config.headCount;
+      const dh = d / h;
+      const layers = config.layerCount;
+      const dff = d * FIXED_FFN_EXPANSION;
+      const concatDim = h * dh;
+      const logits = n * config.vocabSize;
+      const predictedToken = EXAMPLE_PREDICTED_TOKEN;
+
+      return {
+        n,
+        d,
+        h,
+        dh,
+        layers,
+        dff,
+        concatDim,
+        logits,
+        predictedToken,
+        integerHeadDim: Number.isInteger(dh),
+      };
+    }
+
+    function setActiveBlock() {
+      [ui.embeddingBlock, ui.positionalBlock, ui.attentionBlock, ui.mixingBlock, ui.outputBlock, ui.predictionStage].forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.stage === state.selectedStage);
+      });
+    }
+
+    function renderDetails(config, vm) {
+      if (!state.selectedStage) {
+        ui.detailsPanel.hidden = true;
+        ui.detailGrid.innerHTML = "";
+        return;
+      }
+
+      ui.detailsPanel.hidden = false;
+
+      let title = "";
+      let cards = [];
+
+      if (state.selectedStage === "embedding") {
+        title = "Embedding Tokens (Input)";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>Each token id indexes the learned embedding table and retrieves a ${fmtInt(vm.d)}-dimensional vector.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>Token ID array ${shape(vm.n, 1)} is mapped through embedding weights ${shape(config.vocabSize, vm.d)} to produce ${shape(vm.n, vm.d)}.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>Stage output is ${shape(vm.n, vm.d)} with ${fmtInt(vm.n * vm.d)} continuous values.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane">
+              <h4 class="input-visual-title"><span class="stage-dot">1</span> Embedding (Input)</h4>
+              <div class="embed-flow">
+                <div class="token-vector">
+                  <div class="token-vector-title">Token ID Array</div>
+                  <div class="token-stack">
+                    <div class="stack-cell">1001</div>
+                    <div class="stack-cell">3847</div>
+                    <div class="stack-cell ellipsis">...</div>
+                    <div class="stack-cell">128</div>
+                    <div class="stack-cell">9124</div>
+                    <div class="stack-cell tail">42</div>
+                  </div>
+                  <span class="dim-pill">${shape(vm.n, 1)}</span>
+                </div>
+                <div class="math-op">×</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid lookup"></div>
+                  <div class="matrix-name">Embedding Matrix</div>
+                  <span class="dim-pill">${shape(config.vocabSize, vm.d)}</span>
+                </div>
+                <div class="math-op">=</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid output"></div>
+                  <div class="matrix-name">Embedded Output</div>
+                  <span class="dim-pill">${shape(vm.n, vm.d)}</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        `;
+        return;
+      } else if (state.selectedStage === "positional") {
+        title = "Positional Encoding";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>Because tokens are processed in parallel, positional coordinates are injected so order information is preserved.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>A precomputed positional array of matching size is added element-wise: ${shape(vm.n, vm.d)} + ${shape(vm.n, vm.d)} -> ${shape(vm.n, vm.d)}.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>Sequence order is stamped into the matrix while keeping dimensions fixed at ${shape(vm.n, vm.d)}.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane pos-visual-pane">
+              <div class="pos-header-row">
+                <h4 class="input-visual-title"><span class="stage-dot">2</span> Positional Encoding</h4>
+                <div class="pos-eqn-pill">${shape(vm.n, vm.d)} + ${shape(vm.n, vm.d)} 2D ARRAY -> ${shape(vm.n, vm.d)}</div>
+              </div>
+              <div class="embed-flow pos-flow">
+                <div class="matrix-wrap">
+                  <div class="matrix-grid purple"></div>
+                  <div class="matrix-name">${shape(vm.n, vm.d)} matrix</div>
+                </div>
+                <div class="math-op">+</div>
+                <div class="matrix-wrap">
+                  <div class="formula-card">
+                    <svg class="formula-wave" viewBox="0 0 180 210" aria-hidden="true">
+                      <rect x="1" y="1" width="178" height="208" fill="#ffffff" stroke="#3f5978" stroke-width="2"></rect>
+                      <rect x="1" y="86" width="178" height="40" fill="#eaf2fb" stroke="#3f5978" stroke-width="1"></rect>
+                      <path d="M10 106 C 35 30, 55 30, 80 106 S 125 182, 150 106 S 170 30, 170 106" fill="none" stroke="#5c3f8a" stroke-width="4"></path>
+                    </svg>
+                  </div>
+                  <div class="matrix-name">Fixed trigonometric formula, not learned</div>
+                  <span class="dim-pill">${shape(vm.n, vm.d)} 2D array</span>
+                </div>
+                <div class="math-op">=</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid purple output-purple"></div>
+                  <div class="matrix-name">${shape(vm.n, vm.d)} matrix</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        `;
+        return;
+      } else if (state.selectedStage === "attention") {
+        const headPreview = Math.min(vm.h, 12);
+        const hiddenHeadCount = Math.max(vm.h - headPreview, 0);
+        const headCards = Array.from({ length: headPreview }, () => '<div class="head-card"></div>').join("")
+          + (hiddenHeadCount > 0 ? `<div class="head-card more">+${fmtInt(hiddenHeadCount)}</div>` : "");
+        title = "Transformer Block (Attention)";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>The token matrix is projected into parallel heads so each head can score contextual relationships independently.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>Input ${shape(vm.n, vm.d)} multiplies with learned Wq, Wk, Wv (${shape(vm.d, vm.dh)} each per head), producing Q/K/V matrices of ${shape(vm.n, vm.dh)} per head.</p>
+                <p>Attention scores are Q · K^T -> ${shape(vm.n, vm.n)}, scaled by 1/sqrt(${fmtDim(vm.dh)}) and normalized with Softmax before multiplying by V.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>${fmtInt(vm.h)} parallel contextualized outputs are produced, each ${shape(vm.n, vm.dh)}.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane attn-visual-pane">
+              <div class="attn-header-row">
+                <h4 class="input-visual-title"><span class="stage-dot">3</span> Transformer Block (Attention)</h4>
+                <div class="attn-eqn-pill">${shape(vm.n, vm.d)} MATRIX -> ${fmtInt(vm.h)} ${shape(vm.n, vm.dh)} MATRICES</div>
+              </div>
+              <div class="attn-projection-row">
+                <div class="matrix-wrap">
+                  <div class="matrix-grid warm"></div>
+                  <div class="matrix-name">${shape(vm.n, vm.d)} matrix</div>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="head-bank">
+                  <div class="head-stack-grid">${headCards}</div>
+                  <div class="matrix-name">${fmtInt(vm.h)} parallel heads</div>
+                  <div class="attn-subtitle">K, Q, V per head: ${shape(vm.n, vm.dh)}</div>
+                </div>
+              </div>
+              <div class="attn-scale-box">
+                <h5 class="attn-scale-title">Scaled Dot-Product Attention</h5>
+                <div class="attn-scale-flow">
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid attn-small"></div>
+                    <span class="dim-pill">Q ${shape(vm.n, vm.dh)}</span>
+                  </div>
+                  <div class="math-op">×</div>
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid attn-small"></div>
+                    <span class="dim-pill">K^T ${shape(vm.dh, vm.n)}</span>
+                  </div>
+                  <div class="flow-arrow-mini">→</div>
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid score"></div>
+                    <span class="dim-pill">${shape(vm.n, vm.n)}</span>
+                  </div>
+                  <div class="softmax-chip">SCALE 1/sqrt(${fmtDim(vm.dh)}) + SOFTMAX</div>
+                  <div class="flow-arrow-mini">→</div>
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid attn-small"></div>
+                    <span class="dim-pill">V ${shape(vm.n, vm.dh)}</span>
+                  </div>
+                  <div class="flow-arrow-mini">→</div>
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid attn-small"></div>
+                    <span class="dim-pill">${shape(vm.n, vm.dh)}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        `;
+        return;
+      } else if (state.selectedStage === "mixing") {
+        const stackPreview = Math.min(vm.h, 8);
+        const hiddenStack = Math.max(vm.h - stackPreview, 0);
+        const headStack = Array.from({ length: stackPreview }, () => '<div class="head-mini"></div>').join("")
+          + (hiddenStack > 0 ? `<div class="head-mini more">+${fmtInt(hiddenStack)}</div>` : "");
+        title = "Mixing & Feed-Forward (FFN)";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>Parallel head outputs are concatenated and mixed before entering the feed-forward network for deeper transformation.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>${fmtInt(vm.h)} heads (${shape(vm.n, vm.dh)} each) concatenate to ${shape(vm.n, vm.concatDim)}. This is multiplied by a learned mixing matrix ${shape(vm.concatDim, vm.d)} to return to ${shape(vm.n, vm.d)}.</p>
+                <p>The FFN expands to ${shape(vm.n, vm.dff)} and projects back down to ${shape(vm.n, vm.d)}.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>A fully processed ${shape(vm.n, vm.d)} matrix exits the layer, and this attention/mixing/FFN block repeats ${fmtInt(vm.layers)} times with different learned weights.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane mix-visual-pane">
+              <div class="mix-header-row">
+                <h4 class="input-visual-title"><span class="stage-dot">4</span> Mixing &amp; FFN</h4>
+                <div class="mix-eqn-pill">${fmtInt(vm.h)} ${shape(vm.n, vm.dh)} MATRICES -> ${shape(vm.concatDim, vm.d)} MIXING MATRIX -> FFN BLOCK -> ${shape(vm.n, vm.d)} MATRIX</div>
+              </div>
+              <div class="mix-flow">
+                <div class="head-column">
+                  <div class="head-list">${headStack}</div>
+                  <div class="matrix-name">${fmtInt(vm.h)} × ${shape(vm.n, vm.dh)}</div>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid mix-mid"></div>
+                  <div class="matrix-name">${shape(vm.concatDim, vm.d)} mixing matrix</div>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="ffn-card">
+                  <h5>FFN Block</h5>
+                  <div class="ffn-arrows"><span>↑</span><span>↓</span></div>
+                  <div class="ffn-core"></div>
+                  <p class="ffn-foot">UP: ${shape(vm.n, vm.dff)}<br>DOWN: ${shape(vm.n, vm.d)}</p>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid mix-final"></div>
+                  <div class="matrix-name">Final ${shape(vm.n, vm.d)} matrix</div>
+                </div>
+              </div>
+              <div class="mix-repeat-note">Repeat ${fmtInt(vm.layers)} times</div>
+            </section>
+          </div>
+        `;
+        return;
+      } else if (state.selectedStage === "output") {
+        title = "Unembedding (Logits)";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>The final layer output is sliced to the last position and scored against every word in the vocabulary.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>Take the last slice ${shape(1, vm.d)} from the final ${shape(vm.n, vm.d)} matrix (Layer ${fmtInt(vm.layers)}), then multiply by the unembedding matrix ${shape(vm.d, config.vocabSize)}.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>A single long ${shape(1, config.vocabSize)} logit vector is produced with ${fmtInt(config.vocabSize)} raw scores for possible next tokens.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane unembed-visual-pane">
+              <div class="unembed-eqn-bar">${shape(1, vm.d)} VECTOR * ${shape(vm.d, config.vocabSize)} MATRIX -> ${shape(1, config.vocabSize)} LOGIT VECTOR</div>
+              <h4 class="unembed-title">Translating Internal Math (Last Slice) Back to Human Vocabulary</h4>
+              <div class="unembed-flow">
+                <div class="matrix-wrap">
+                  <div class="matrix-grid final-blue"></div>
+                  <div class="slice-strip"></div>
+                  <div class="matrix-name">Final ${shape(vm.n, vm.d)} matrix (Layer ${fmtInt(vm.layers)})</div>
+                </div>
+                <div class="isolate-note">Isolate<br>last slice</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid last-slice"></div>
+                  <span class="dim-pill">${shape(1, vm.d)}</span>
+                </div>
+                <div class="math-op">×</div>
+                <div class="matrix-wrap">
+                  <div class="matrix-grid unembed-purple"></div>
+                  <div class="matrix-name">Unembedding ${shape(vm.d, config.vocabSize)}</div>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="matrix-wrap">
+                  <div class="logit-vector-box">
+                    <div class="logit-vector-bar"></div>
+                    <div class="matrix-name">${shape(1, config.vocabSize)} logit vector</div>
+                  </div>
+                  <div class="matrix-name">Total: ${fmtInt(config.vocabSize)} raw scores</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        `;
+        return;
+      } else if (state.selectedStage === "prediction") {
+        title = "Prediction";
+        ui.detailsTitle.textContent = title;
+        ui.detailGrid.innerHTML = `
+          <div class="input-detail-layout">
+            <section class="input-copy-pane">
+              <div class="copy-row">
+                <span class="copy-tag">Action</span>
+                <p>The model ignores earlier rows and focuses only on the final row to generate exactly one next token.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Math</span>
+                <p>From logit matrix ${shape(vm.n, config.vocabSize)}, isolate the last row ${shape(1, config.vocabSize)} (position ${fmtInt(vm.n)}). Softmax converts logits to probabilities, then sampling selects one token id.</p>
+              </div>
+              <div class="copy-row">
+                <span class="copy-tag">Result</span>
+                <p>One token is emitted from the distribution: token ${fmtInt(vm.predictedToken)}.</p>
+              </div>
+            </section>
+            <section class="input-visual-pane pred-visual-pane">
+              <div class="pred-header-row">
+                <h4 class="input-visual-title"><span class="stage-dot">6</span> Isolating the Final Probability</h4>
+                <div class="pred-eqn-pill">${shape(1, config.vocabSize)} VECTOR -> 1 NEW TOKEN</div>
+              </div>
+              <div class="pred-flow">
+                <div class="matrix-wrap">
+                  <div class="logit-tower"></div>
+                  <div class="matrix-name">${shape(vm.n, config.vocabSize)} logit matrix</div>
+                </div>
+                <div class="isolate-note">Isolate<br>last row</div>
+                <div class="matrix-wrap">
+                  <div class="pred-vector"></div>
+                  <span class="dim-pill">${shape(1, config.vocabSize)}</span>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="matrix-wrap">
+                  <div class="softmax-card">SOFTMAX</div>
+                </div>
+                <div class="flow-arrow-mini">→</div>
+                <div class="matrix-wrap">
+                  <div class="sampling-mark">~&gt;</div>
+                  <div class="matrix-name">sampling</div>
+                </div>
+                <div class="token-out">TOKEN ${fmtInt(vm.predictedToken)}</div>
+              </div>
+            </section>
+          </div>
+        `;
+        return;
+      }
+
+      ui.detailsTitle.textContent = title;
+      ui.detailGrid.innerHTML = cards.map((card) => {
+        return `<article class="detail-item"><h4>${card.t}</h4><p>${card.b}</p></article>`;
+      }).join("");
+    }
+
+    function render(config = readConfig()) {
+      const vm = compute(config);
+
+      ui.tokenCountPill.textContent = `Tokens: ${fmtInt(vm.n)}`;
+      ui.headDimDisplay.value = fmtDim(vm.dh);
+      ui.headDimRule.textContent = vm.integerHeadDim
+        ? "Head dim is computed as embeddingDim / heads"
+        : "Head dim is computed as embeddingDim / heads (non-integer; adjust d or h)";
+      ui.headDimRule.classList.toggle("warn", !vm.integerHeadDim);
+
+      ui.tokensLength.textContent = `${fmtInt(vm.n)} tokens`;
+      ui.repeatTimes.textContent = `REPEATED ${fmtInt(vm.layers)} TIMES`;
+      ui.predictedTokenId.textContent = fmtInt(vm.predictedToken);
+
+      setActiveBlock();
+      renderDetails(config, vm);
+    }
+
+    function applyDefaults() {
+      Object.entries(defaults).forEach(([k, v]) => {
+        ui[k].value = v;
+      });
+      state.selectedStage = null;
+      render();
+    }
+
+    function bindEvents() {
+      [ui.tokenLength, ui.vocabSize, ui.embeddingDim, ui.headCount, ui.layerCount].forEach((node) => {
+        node.addEventListener("input", () => render());
+      });
+
+      [ui.embeddingBlock, ui.positionalBlock, ui.attentionBlock, ui.mixingBlock, ui.outputBlock, ui.predictionStage].forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.selectedStage = state.selectedStage === btn.dataset.stage ? null : btn.dataset.stage;
+          render();
+        });
+      });
+
+      ui.resetDefaults.addEventListener("click", applyDefaults);
+
+      ui.toggleSidebar.addEventListener("click", () => {
+        state.controlsCollapsed = !state.controlsCollapsed;
+        ui.sidebar.classList.toggle("collapsed", state.controlsCollapsed);
+      });
+    }
+
+    bindEvents();
+    applyDefaults();
+  </script>
+</body>
+</html>
