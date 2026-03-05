@@ -1,0 +1,62 @@
+{
+  "brand": {
+    "name": "AIClub Student Research Symposium",
+    "shortName": "AISRS",
+    "tagline": "AI Research and Innovations by Middle and High Schoolers",
+    "logoPath": "./assets/brand/aiclub-logo.png",
+    "heroImage": "./assets/symposia/hero-students.jpg",
+    "colors": {
+      "primary": "#0D5EBA",
+      "primaryDark": "#093F7C",
+      "accent": "#3FA152",
+      "highlight": "#FFCB05",
+      "surface": "#FFFFFF",
+      "ink": "#000000",
+      "muted": "#606060",
+      "line": "#D4D4D4"
+    },
+    "fonts": {
+      "display": "Barlow",
+      "body": "Nunito Sans",
+      "fallback": "Helvetica, Arial, sans-serif"
+    }
+  },
+  "nav": [
+    {
+      "label": "2026 Symposium",
+      "href": "./index.html"
+    },
+    {
+      "label": "2025",
+      "href": "./symposium-2025.html"
+    },
+    {
+      "label": "2024",
+      "href": "./symposium-2024.html"
+    },
+    {
+      "label": "2023",
+      "href": "./symposium-2023.html"
+    },
+    {
+      "label": "2022",
+      "href": "./symposium-2022.html"
+    },
+    {
+      "label": "2021",
+      "href": "./symposium-2021.html"
+    },
+    {
+      "label": "Research Program",
+      "href": "https://corp.aiclub.world/research-institute"
+    }
+  ],
+  "cta": {
+    "register": "https://corp.aiclub.world/event-details/aiclub-student-research-symposium-2026",
+    "rsvp": "https://corp.aiclub.world/event-details/aiclub-student-research-symposium-2026",
+    "submitInquiry": "mailto:info@aiclub.world?subject=2026%20Symposium%20Inquiry"
+  },
+  "policies": {
+    "externalNewTab": true
+  }
+}

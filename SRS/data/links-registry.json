@@ -1,0 +1,61 @@
+{
+  "symposium2026": [
+    "https://corp.aiclub.world/2026-student-research-symposium",
+    "https://corp.aiclub.world/event-details/aiclub-student-research-symposium-2026",
+    "mailto:info@aiclub.world?subject=2026%20Symposium%20Inquiry"
+  ],
+  "pastSymposia": [
+    "./symposium-2025.html",
+    "./symposium-2024.html",
+    "./symposium-2023.html",
+    "./symposium-2022.html",
+    "./symposium-2021.html",
+    "https://corp.aiclub.world/symposium21/bharath",
+    "https://corp.aiclub.world/bharath-talk-title",
+    "https://corp.aiclub.world/symposium21/custom-nutrition-via-ai-recommendations",
+    "https://corp.aiclub.world/symposium21/diabetic-retinopathy-detecting-ai",
+    "https://corp.aiclub.world/symposium21/forecasting-alzheimers-ai-multi-modal-data",
+    "https://corp.aiclub.world/symposium21/ai-chatbot-for-elders",
+    "https://corp.aiclub.world/symposium21/sign-language-using-ai-neural-networks",
+    "https://corp.aiclub.world/symposium21/shakespeare-novel-authenticating-ai",
+    "https://corp.aiclub.world/symposium21/detecting-diseases-on-plant-leaves-using-ai",
+    "https://corp.aiclub.world/symposium21/disaster-predictor-through-twitter-ai",
+    "https://corp.aiclub.world/symposium21/ai-app-to-reuse-waste",
+    "https://bertmathmodel.streamlit.app/",
+    "https://mathbert.streamlit.app/",
+    "https://mathbertopenai-sj8vxi5nuwvfcfgebf6skx.streamlit.app/"
+  ],
+  "aiclubOfferings": [
+    "https://corp.aiclub.world",
+    "https://corp.aiclub.world/about-us",
+    "https://corp.aiclub.world/research-institute",
+    "https://corp.aiclub.world/courses",
+    "https://corp.aiclub.world/summer-camp",
+    "https://corp.aiclub.world/ai-bootcamps",
+    "https://corp.aiclub.world/resources",
+    "https://corp.aiclub.world/educators",
+    "https://www.corp.aiclub.world/partner-schools",
+    "https://my.aiclub.world/ai_gym",
+    "https://corp.aiclub.world/ai-book-middle-school-high-school",
+    "https://corp.aiclub.world/ai-books-elementary-primary-school-kids",
+    "https://corp.aiclub.world/blog",
+    "https://corp.aiclub.world/student-successes",
+    "https://corp.aiclub.world/articles-for-k12-and-parents",
+    "https://corp.aiclub.world/webinars",
+    "https://corp.aiclub.world/high-school",
+    "https://corp.aiclub.world/middle-school",
+    "https://my.aiclub.world/login"
+  ],
+  "social": [
+    "https://www.facebook.com/AIClubWorld/",
+    "https://www.instagram.com/aiclubworld/",
+    "https://twitter.com/AIClubWorld",
+    "https://www.youtube.com/c/AIClubWorld",
+    "https://www.linkedin.com/company/aiclubworld/"
+  ],
+  "contact": [
+    "mailto:info@aiclub.world?subject=Question about AIClub!",
+    "https://my.aiclub.world/privacy",
+    "https://my.aiclub.world/terms"
+  ]
+}
