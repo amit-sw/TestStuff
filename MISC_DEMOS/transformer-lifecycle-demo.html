@@ -56,7 +56,7 @@
       padding: 10px 12px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 10px;
       background: linear-gradient(120deg, rgba(255,255,255,0.95), rgba(235,246,255,0.9));
     }
@@ -82,9 +82,9 @@
     }
 
     .controls {
-      padding: 8px;
+      padding: 6px;
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     .controls.collapsed {
@@ -93,14 +93,16 @@
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(130px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(7, minmax(80px, 1fr));
+      column-gap: 6px;
+      row-gap: 4px;
+      align-items: end;
     }
 
     label {
       display: grid;
-      gap: 4px;
-      font-size: 0.74rem;
+      gap: 2px;
+      font-size: 0.7rem;
       color: var(--muted);
     }
 
@@ -125,6 +127,24 @@
       background: #f6f9fc;
     }
 
+    .controls-grid input[type="number"],
+    .controls-grid input[type="text"] {
+      width: 48%;
+      min-width: 72px;
+      max-width: 108px;
+      min-height: 26px;
+      padding: 3px 5px;
+      font-size: 0.7rem;
+    }
+
+    .toggle-cell {
+      display: grid;
+      gap: 2px;
+      align-content: end;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
     .pills {
       display: flex;
       gap: 6px;
@@ -145,6 +165,38 @@
       border-color: #e5bfa4;
       background: var(--warn-soft);
       color: var(--warn);
+    }
+
+    .pill-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #b8cada;
+      background: #f4f9ff;
+      color: #2d4d6a;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      user-select: none;
+    }
+
+    .pill-toggle input[type="checkbox"] {
+      width: 14px;
+      min-width: 14px;
+      max-width: 14px;
+      min-height: 14px;
+      margin: 0;
+      accent-color: #2d5f92;
+    }
+
+    body.params-off .dim-pill,
+    body.params-off .pos-eqn-pill,
+    body.params-off .attn-eqn-pill,
+    body.params-off .mix-eqn-pill,
+    body.params-off .pred-eqn-pill,
+    body.params-off .unembed-eqn-bar {
+      display: none;
     }
 
     .diagram {
@@ -182,19 +234,13 @@
       stroke-width: 10;
     }
 
-    .node-num {
-      font-size: 56px;
-      fill: #183453;
-      font-family: var(--mono);
+    .node-title {
+      font-size: 15px;
+      fill: #1c3551;
+      font-family: var(--sans);
+      font-weight: 700;
       text-anchor: middle;
       dominant-baseline: middle;
-    }
-
-    .stage-label {
-      font-size: 15px;
-      fill: #1a3046;
-      font-family: var(--sans);
-      text-anchor: middle;
     }
 
     .flow-arrow {
@@ -223,8 +269,9 @@
     .loop-arrow {
       fill: none;
       stroke: #4e7094;
-      stroke-width: 8;
+      stroke-width: 6;
       stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .token-shell {
@@ -1098,11 +1145,11 @@
       line-height: 1;
     }
 
-    @media (max-width: 1200px) {
-      .controls-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+    @media (max-width: 1020px) {
+      .controls-grid { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 760px) {
       .controls-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       .input-detail-layout { grid-template-columns: 1fr; }
       .embed-flow { grid-template-columns: 1fr; justify-items: center; }
@@ -1127,8 +1174,8 @@
 <body>
   <div class="app">
     <header class="header card">
-      <h1>Transformer models</h1>
       <button class="toggle-btn" id="toggleSidebar" type="button" aria-label="Toggle controls" title="Toggle controls">☰</button>
+      <h1>Transformer models</h1>
     </header>
 
     <section class="controls card collapsed" id="sidebar">
@@ -1151,13 +1198,13 @@
         <label>Layers
           <input id="layerCount" type="number" min="1" step="1" value="40">
         </label>
-      </div>
-      <div class="pills">
-        <span class="pill" id="tokenCountPill">Tokens: 70,000</span>
-        <span class="pill" id="headDimRule">Head dim is computed as embeddingDim / heads</span>
-      </div>
-      <div class="pills">
-        <button class="btn" id="resetDefaults" type="button">Reset defaults</button>
+        <div class="toggle-cell">
+          <span>Parameters</span>
+          <label class="pill-toggle" for="parametersToggle">
+            <input id="parametersToggle" type="checkbox">
+            <span id="parametersState">OFF</span>
+          </label>
+        </div>
       </div>
     </section>
 
@@ -1165,14 +1212,15 @@
       <div class="pipeline-shell" id="topRow">
         <svg class="pipeline-svg" viewBox="0 0 1560 430" role="img" aria-label="Transformer base pipeline">
           <defs>
-            <marker id="loopArrowhead" viewBox="0 0 12 10" refX="11" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-              <path d="M0,0 L12,5 L0,10 z" fill="#4e7094"></path>
+            <marker id="loopArrowhead" viewBox="0 0 8 6" refX="7" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L8,3 L0,6 z" fill="#4e7094"></path>
             </marker>
           </defs>
 
           <line class="main-line" x1="88" y1="155" x2="1212" y2="155"></line>
 
           <g aria-label="Token array">
+            <text class="prediction-title" x="37" y="42">Input</text>
             <rect class="token-shell" x="18" y="58" width="38" height="198"></rect>
             <rect class="token-cell-blue" x="20" y="76" width="34" height="30"></rect>
             <rect class="token-cell-blue" x="20" y="106" width="34" height="30"></rect>
@@ -1180,56 +1228,48 @@
             <rect class="token-cell-blue" x="20" y="166" width="34" height="30"></rect>
             <rect class="token-cell-blue" x="20" y="196" width="34" height="30"></rect>
             <rect class="token-cell-orange" x="20" y="226" width="34" height="28"></rect>
-            <text class="token-count" id="tokensLength" x="37" y="292">70,000 tokens</text>
+            <text class="token-count" id="tokensLength" x="37" y="292">70,000</text>
           </g>
 
           <g id="embeddingBlock" class="stage-group" data-stage="embedding" aria-label="Embedding">
             <circle class="node" cx="170" cy="155" r="58"></circle>
-            <text class="node-num" x="170" y="155">1</text>
-            <text class="stage-label" x="170" y="292">Embedding</text>
+            <text class="node-title" x="170" y="160">Embedding</text>
             <rect class="stage-hit" x="102" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
           <g id="positionalBlock" class="stage-group" data-stage="positional" aria-label="Positional encoding">
             <circle class="node" cx="360" cy="155" r="58"></circle>
-            <text class="node-num" x="360" y="155">2</text>
-            <text class="stage-label" x="360" y="286">Positional</text>
-            <text class="stage-label" x="360" y="308">Encoding</text>
+            <text class="node-title" x="360" y="152">Positional</text>
+            <text class="node-title" x="360" y="174">Encoding</text>
             <rect class="stage-hit" x="292" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
           <g id="attentionBlock" class="stage-group" data-stage="attention" aria-label="Attention block">
-            <rect class="repeat-box" x="468" y="28" width="354" height="324" rx="36"></rect>
-            <text class="repeat-title" id="repeatTimes" x="645" y="20">REPEATED 40 TIMES</text>
-            <path class="loop-arrow" d="M736 84 C700 26, 586 26, 550 84" marker-end="url(#loopArrowhead)"></path>
-            <path class="loop-arrow" d="M550 214 C586 272, 700 272, 736 214" marker-end="url(#loopArrowhead)"></path>
+            <text class="repeat-title" id="repeatTimes" x="650" y="47">40 TIMES</text>
+            <path class="loop-arrow" d="M740 97 V76 Q740 62 726 62 H570 Q550 62 550 82 V95" marker-end="url(#loopArrowhead)"></path>
 
             <circle class="node" cx="550" cy="155" r="58"></circle>
-            <text class="node-num" x="550" y="155">3</text>
-            <text class="stage-label" x="550" y="282">Transformer</text>
-            <text class="stage-label" x="550" y="304">Block</text>
-            <text class="stage-label" x="550" y="326">(Attention)</text>
+            <text class="node-title" x="550" y="148">Transformer</text>
+            <text class="node-title" x="550" y="167">Block</text>
+            <text class="node-title" x="550" y="186">(Attention)</text>
             <rect class="stage-hit" x="482" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
           <g id="mixingBlock" class="stage-group" data-stage="mixing" aria-label="Mixing and FFN block">
             <circle class="node" cx="740" cy="155" r="58"></circle>
-            <text class="node-num" x="740" y="155">4</text>
-            <text class="stage-label" x="740" y="292">Mixing &amp; FFN</text>
+            <text class="node-title" x="740" y="160">Mixing &amp; FFN</text>
             <rect class="stage-hit" x="672" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
           <g id="outputBlock" class="stage-group" data-stage="output" aria-label="Output processing">
             <circle class="node" cx="930" cy="155" r="58"></circle>
-            <text class="node-num" x="930" y="155">5</text>
-            <text class="stage-label" x="930" y="292">Unembedding</text>
+            <text class="node-title" x="930" y="160">Unembedding</text>
             <rect class="stage-hit" x="862" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
           <g id="predictionStage" class="stage-group" data-stage="prediction" aria-label="Prediction stage">
             <circle class="node" cx="1120" cy="155" r="58"></circle>
-            <text class="node-num" x="1120" y="155">6</text>
-            <text class="stage-label" x="1120" y="292">Prediction</text>
+            <text class="node-title" x="1120" y="160">Prediction</text>
             <rect class="stage-hit" x="1052" y="82" width="136" height="250" rx="26"></rect>
           </g>
 
@@ -1269,6 +1309,7 @@
     const state = {
       controlsCollapsed: true,
       selectedStage: null,
+      showParameters: false,
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1282,9 +1323,8 @@
       headCount: $("headCount"),
       headDimDisplay: $("headDimDisplay"),
       layerCount: $("layerCount"),
-      tokenCountPill: $("tokenCountPill"),
-      headDimRule: $("headDimRule"),
-      resetDefaults: $("resetDefaults"),
+      parametersToggle: $("parametersToggle"),
+      parametersState: $("parametersState"),
       tokensLength: $("tokensLength"),
       repeatTimes: $("repeatTimes"),
       predictedTokenId: $("predictedTokenId"),
@@ -1716,15 +1756,12 @@
     function render(config = readConfig()) {
       const vm = compute(config);
 
-      ui.tokenCountPill.textContent = `Tokens: ${fmtInt(vm.n)}`;
+      document.body.classList.toggle("params-off", !state.showParameters);
       ui.headDimDisplay.value = fmtDim(vm.dh);
-      ui.headDimRule.textContent = vm.integerHeadDim
-        ? "Head dim is computed as embeddingDim / heads"
-        : "Head dim is computed as embeddingDim / heads (non-integer; adjust d or h)";
-      ui.headDimRule.classList.toggle("warn", !vm.integerHeadDim);
+      ui.parametersState.textContent = state.showParameters ? "ON" : "OFF";
 
-      ui.tokensLength.textContent = `${fmtInt(vm.n)} tokens`;
-      ui.repeatTimes.textContent = `REPEATED ${fmtInt(vm.layers)} TIMES`;
+      ui.tokensLength.textContent = fmtInt(vm.n);
+      ui.repeatTimes.textContent = `${fmtInt(vm.layers)} TIMES`;
       ui.predictedTokenId.textContent = fmtInt(vm.predictedToken);
 
       setActiveBlock();
@@ -1735,6 +1772,8 @@
       Object.entries(defaults).forEach(([k, v]) => {
         ui[k].value = v;
       });
+      ui.parametersToggle.checked = false;
+      state.showParameters = false;
       state.selectedStage = null;
       render();
     }
@@ -1751,7 +1790,10 @@
         });
       });
 
-      ui.resetDefaults.addEventListener("click", applyDefaults);
+      ui.parametersToggle.addEventListener("change", () => {
+        state.showParameters = ui.parametersToggle.checked;
+        render();
+      });
 
       ui.toggleSidebar.addEventListener("click", () => {
         state.controlsCollapsed = !state.controlsCollapsed;
