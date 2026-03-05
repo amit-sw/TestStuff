@@ -50,6 +50,9 @@
 
   function applyActiveNav() {
     var current = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+    if (current === "submit-abstract.html") {
+      current = "index.html";
+    }
     var navLinks = document.querySelectorAll("[data-primary-nav] a[data-page-link]");
     navLinks.forEach(function (anchor) {
       var target = (anchor.getAttribute("data-page-link") || "").toLowerCase();
@@ -165,6 +168,84 @@
     setExternalLinkPolicy();
   }
 
+  function countWords(text) {
+    var value = String(text || "").trim();
+    return value ? value.split(/\s+/).length : 0;
+  }
+
+  function initPaperForm() {
+    var form = document.querySelector("[data-paper-form]");
+    if (!form) return;
+
+    var statusNode = form.querySelector("[data-paper-form-status]");
+    var abstractNode = form.querySelector("textarea[name='abstract']");
+    var countNode = form.querySelector("[data-abstract-count]");
+
+    function updateCharCount() {
+      if (!abstractNode || !countNode) return;
+      countNode.textContent = String((abstractNode.value || "").length);
+    }
+
+    updateCharCount();
+    if (abstractNode) {
+      abstractNode.addEventListener("input", updateCharCount);
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        if (statusNode) {
+          statusNode.textContent = "Please complete all required fields.";
+        }
+        return;
+      }
+
+      var abstractText = abstractNode ? abstractNode.value : "";
+      var words = countWords(abstractText);
+      if (words > 250) {
+        if (statusNode) {
+          statusNode.textContent = "Abstract is too long (" + words + " words). Please keep it within 250 words.";
+        }
+        return;
+      }
+
+      var formData = new FormData(form);
+      var projectTitle = String(formData.get("projectTitle") || "Untitled Project").trim();
+      var subject = "AISRS 2026 Abstract Submission - " + projectTitle;
+
+      var lines = [
+        "AISRS 2026 Abstract Submission",
+        "",
+        "Student Name: " + String(formData.get("studentName") || "").trim(),
+        "Contact Email: " + String(formData.get("contactEmail") || "").trim(),
+        "School: " + String(formData.get("school") || "").trim(),
+        "Grade: " + String(formData.get("grade") || "").trim(),
+        "Project Title: " + projectTitle,
+        "Project Track: " + String(formData.get("track") || "").trim(),
+        "Project Demo/Video URL: " + String(formData.get("demoUrl") || "").trim(),
+        "",
+        "Abstract:",
+        abstractText,
+        "",
+        "Word Count: " + words
+      ];
+
+      var mailto =
+        "mailto:info@aiclub.world?subject=" +
+        encodeURIComponent(subject) +
+        "&body=" +
+        encodeURIComponent(lines.join("\n"));
+
+      if (statusNode) {
+        statusNode.textContent = "Opening your email app with your submission draft...";
+      }
+
+      window.location.href = mailto;
+    });
+  }
+
   function createYearCard(entry) {
     var linkItems = (entry.links || [])
       .map(function (lnk) {
@@ -259,6 +340,7 @@
     applyActiveNav();
     setFooterYear();
     setExternalLinkPolicy();
+    initPaperForm();
 
     Promise.allSettled([
       safeJsonFetch("./data/site-config.json"),

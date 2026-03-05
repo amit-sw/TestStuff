@@ -5,6 +5,7 @@ import path from "node:path";
 const root = path.resolve(process.cwd(), "SRS");
 const pageFiles = [
   "index.html",
+  "submit-abstract.html",
   "past-symposia.html",
   "about-aiclub.html",
   "symposium-2025.html",
@@ -97,6 +98,7 @@ const navIssues = [...htmlByFile.entries()].flatMap(([file, html]) => collectNav
 
 const requiredSections = [
   ["index.html", ["call-for-papers", "timeline", "program-highlights", "faq"]],
+  ["submit-abstract.html", ["abstract-form-section"]],
   ["past-symposia.html", ["year-index"]],
   ["about-aiclub.html", ["offerings", "complete-link-directory"]],
   ["symposium-2025.html", ["keynote-background", "year-videos"]],
