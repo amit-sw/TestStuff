@@ -430,7 +430,7 @@
       font-size: 11px;
       fill: #264763;
       font-family: var(--mono);
-      text-anchor: end;
+      text-anchor: start;
       dominant-baseline: middle;
     }
 
@@ -1444,9 +1444,9 @@
 
     <section class="controls card" id="sidebar">
       <div class="preset-row" id="presetRow">
-        <button class="preset-btn active" type="button" data-preset="attention">Attention</button>
+        <button class="preset-btn" type="button" data-preset="attention">Attention</button>
         <button class="preset-btn" type="button" data-preset="gpt2">GPT-2</button>
-        <button class="preset-btn" type="button" data-preset="gpt3">GPT-3</button>
+        <button class="preset-btn active" type="button" data-preset="gpt3">GPT-3</button>
         <button class="preset-btn" type="button" data-preset="llama8b">Llama-8B</button>
         <button class="preset-btn" type="button" data-preset="llama70b">Llama-70B</button>
         <button class="preset-btn" type="button" data-preset="llama405b">Llama-405B</button>
@@ -1489,102 +1489,102 @@
             </marker>
           </defs>
 
-          <line class="main-line" x1="88" y1="155" x2="1212" y2="155"></line>
+          <line class="main-line" x1="172" y1="155" x2="1296" y2="155"></line>
 
           <g aria-label="Token array">
-            <text class="prediction-title" x="55" y="42">Input</text>
-            <rect class="token-shell" x="18" y="58" width="74" height="198"></rect>
-            <rect class="token-cell-blue" x="21" y="76" width="68" height="30"></rect>
-            <rect class="token-cell-blue" x="21" y="106" width="68" height="30"></rect>
-            <rect class="token-cell-blue" x="21" y="136" width="68" height="30"></rect>
-            <rect class="token-cell-blue" x="21" y="166" width="68" height="30"></rect>
-            <rect class="token-cell-blue" x="21" y="196" width="68" height="30"></rect>
-            <rect class="token-cell-orange" x="21" y="226" width="68" height="28"></rect>
-            <text class="token-id-text" id="inputTokenId0" x="55" y="91">100001</text>
-            <text class="token-id-text" id="inputTokenId1" x="55" y="121">100317</text>
-            <text class="token-id-text" id="inputTokenId2" x="55" y="151">100946</text>
-            <text class="token-id-text" id="inputTokenId3" x="55" y="181">101312</text>
-            <text class="token-id-text" id="inputTokenId4" x="55" y="211">101888</text>
-            <text class="token-id-text" id="inputTokenId5" x="55" y="240">102224</text>
-            <text class="token-value-text" id="inputTokenValue0" x="13" y="91">&lt;Q&gt;</text>
-            <text class="token-value-text" id="inputTokenValue1" x="13" y="121">What</text>
-            <text class="token-value-text" id="inputTokenValue2" x="13" y="151">is</text>
-            <text class="token-value-text" id="inputTokenValue3" x="13" y="181">...</text>
-            <text class="token-value-text" id="inputTokenValue4" x="13" y="211">&lt;A&gt;</text>
-            <text class="token-value-text" id="inputTokenValue5" x="13" y="240">The</text>
-            <text class="token-count" id="tokensLength" x="55" y="292">70,000</text>
-            <text class="token-label" x="55" y="308">tokens</text>
+            <text class="prediction-title" x="139" y="42">Input</text>
+            <rect class="token-shell" x="102" y="58" width="74" height="198"></rect>
+            <rect class="token-cell-blue" x="105" y="76" width="68" height="30"></rect>
+            <rect class="token-cell-blue" x="105" y="106" width="68" height="30"></rect>
+            <rect class="token-cell-blue" x="105" y="136" width="68" height="30"></rect>
+            <rect class="token-cell-blue" x="105" y="166" width="68" height="30"></rect>
+            <rect class="token-cell-blue" x="105" y="196" width="68" height="30"></rect>
+            <rect class="token-cell-orange" x="105" y="226" width="68" height="28"></rect>
+            <text class="token-id-text" id="inputTokenId0" x="139" y="91">100001</text>
+            <text class="token-id-text" id="inputTokenId1" x="139" y="121">100317</text>
+            <text class="token-id-text" id="inputTokenId2" x="139" y="151">100946</text>
+            <text class="token-id-text" id="inputTokenId3" x="139" y="181">101312</text>
+            <text class="token-id-text" id="inputTokenId4" x="139" y="211">101888</text>
+            <text class="token-id-text" id="inputTokenId5" x="139" y="240">102224</text>
+            <text class="token-value-text" id="inputTokenValue0" x="26" y="91">&lt;Q&gt;</text>
+            <text class="token-value-text" id="inputTokenValue1" x="26" y="121">What</text>
+            <text class="token-value-text" id="inputTokenValue2" x="26" y="151">is</text>
+            <text class="token-value-text" id="inputTokenValue3" x="26" y="181">...</text>
+            <text class="token-value-text" id="inputTokenValue4" x="26" y="211">&lt;A&gt;</text>
+            <text class="token-value-text" id="inputTokenValue5" x="26" y="240">The</text>
+            <text class="token-count" id="tokensLength" x="139" y="292">70,000</text>
+            <text class="token-label" x="139" y="308">tokens</text>
           </g>
 
           <g id="embeddingBlock" class="stage-group" data-stage="embedding" aria-label="Embedding">
-            <circle class="node" cx="170" cy="155" r="58"></circle>
-            <text class="node-title" x="170" y="160">Embedding</text>
-            <rect class="stage-hit" x="102" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="254" cy="155" r="58"></circle>
+            <text class="node-title" x="254" y="160">Embedding</text>
+            <rect class="stage-hit" x="186" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
           <g id="positionalBlock" class="stage-group" data-stage="positional" aria-label="Positional encoding">
-            <circle class="node" cx="360" cy="155" r="58"></circle>
-            <text class="node-title" x="360" y="152">Positional</text>
-            <text class="node-title" x="360" y="174">Encoding</text>
-            <rect class="stage-hit" x="292" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="444" cy="155" r="58"></circle>
+            <text class="node-title" x="444" y="152">Positional</text>
+            <text class="node-title" x="444" y="174">Encoding</text>
+            <rect class="stage-hit" x="376" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
           <g id="attentionBlock" class="stage-group" data-stage="attention" aria-label="Attention block">
-            <text class="repeat-title" id="repeatTimes" x="650" y="47">40 TIMES</text>
-            <path class="loop-arrow" d="M740 97 V76 Q740 62 726 62 H570 Q550 62 550 82 V95" marker-end="url(#loopArrowhead)"></path>
+            <text class="repeat-title" id="repeatTimes" x="734" y="47">40 TIMES</text>
+            <path class="loop-arrow" d="M824 97 V76 Q824 62 810 62 H654 Q634 62 634 82 V95" marker-end="url(#loopArrowhead)"></path>
 
-            <circle class="node" cx="550" cy="155" r="58"></circle>
-            <text class="node-title" x="550" y="148">Transformer</text>
-            <text class="node-title" x="550" y="167">Block</text>
-            <text class="node-title" x="550" y="186">(Attention)</text>
-            <rect class="stage-hit" x="482" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="634" cy="155" r="58"></circle>
+            <text class="node-title" x="634" y="148">Transformer</text>
+            <text class="node-title" x="634" y="167">Block</text>
+            <text class="node-title" x="634" y="186">(Attention)</text>
+            <rect class="stage-hit" x="566" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
           <g id="mixingBlock" class="stage-group" data-stage="mixing" aria-label="Mixing and FFN block">
-            <circle class="node" cx="740" cy="155" r="58"></circle>
-            <text class="node-title" x="740" y="160">Mixing &amp; FFN</text>
-            <rect class="stage-hit" x="672" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="824" cy="155" r="58"></circle>
+            <text class="node-title" x="824" y="160">Mixing &amp; FFN</text>
+            <rect class="stage-hit" x="756" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
           <g id="outputBlock" class="stage-group" data-stage="output" aria-label="Output processing">
-            <circle class="node" cx="930" cy="155" r="58"></circle>
-            <text class="node-title" x="930" y="160">Unembedding</text>
-            <rect class="stage-hit" x="862" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="1014" cy="155" r="58"></circle>
+            <text class="node-title" x="1014" y="160">Unembedding</text>
+            <rect class="stage-hit" x="946" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
           <g id="predictionStage" class="stage-group" data-stage="prediction" aria-label="Prediction stage">
-            <circle class="node" cx="1120" cy="155" r="58"></circle>
-            <text class="node-title" x="1120" y="160">Prediction</text>
-            <rect class="stage-hit" x="1052" y="82" width="136" height="208" rx="26"></rect>
+            <circle class="node" cx="1204" cy="155" r="58"></circle>
+            <text class="node-title" x="1204" y="160">Prediction</text>
+            <rect class="stage-hit" x="1136" y="82" width="136" height="208" rx="26"></rect>
           </g>
 
-          <text class="flow-arrow" x="265" y="155">→</text>
-          <text class="flow-arrow" x="455" y="155">→</text>
-          <text class="flow-arrow" x="645" y="155">→</text>
-          <text class="flow-arrow" x="835" y="155">→</text>
-          <text class="flow-arrow" x="1025" y="155">→</text>
+          <text class="flow-arrow" x="349" y="155">→</text>
+          <text class="flow-arrow" x="539" y="155">→</text>
+          <text class="flow-arrow" x="729" y="155">→</text>
+          <text class="flow-arrow" x="919" y="155">→</text>
+          <text class="flow-arrow" x="1109" y="155">→</text>
 
           <g aria-label="Predicted token output">
-            <rect class="prediction-token-box" x="1316" y="126" width="88" height="58" rx="8" ry="8"></rect>
-            <text class="prediction-token-text" id="predictedTokenId" x="1360" y="155">1347</text>
-            <text class="prediction-metric" id="totalParamsText" x="1360" y="342">-</text>
-            <text class="prediction-metric" id="totalFlopsText" x="1360" y="366">-</text>
+            <rect class="prediction-token-box" x="1318" y="126" width="88" height="58" rx="8" ry="8"></rect>
+            <text class="prediction-token-text" id="predictedTokenId" x="1362" y="155">1347</text>
+            <text class="prediction-metric" id="totalParamsText" x="1362" y="342">-</text>
+            <text class="prediction-metric" id="totalFlopsText" x="1362" y="366">-</text>
           </g>
           <g class="stage-metrics" aria-label="Per-stage parameter and FLOP counts">
-            <text class="metrics-row-label" x="118" y="342">Params (B)</text>
-            <text class="metrics-row-label" x="118" y="366">FLOPs (TFLOPs)</text>
-            <text class="metrics-value" id="embeddingParams" x="170" y="342">-</text>
-            <text class="metrics-value" id="positionalParams" x="360" y="342">-</text>
-            <text class="metrics-value" id="attentionParams" x="550" y="342">-</text>
-            <text class="metrics-value" id="mixingParams" x="740" y="342">-</text>
-            <text class="metrics-value" id="outputParams" x="930" y="342">-</text>
-            <text class="metrics-value" id="predictionParams" x="1120" y="342">-</text>
-            <text class="metrics-value" id="embeddingFlops" x="170" y="366">-</text>
-            <text class="metrics-value" id="positionalFlops" x="360" y="366">-</text>
-            <text class="metrics-value" id="attentionFlops" x="550" y="366">-</text>
-            <text class="metrics-value" id="mixingFlops" x="740" y="366">-</text>
-            <text class="metrics-value" id="outputFlops" x="930" y="366">-</text>
-            <text class="metrics-value" id="predictionFlops" x="1120" y="366">-</text>
+            <text class="metrics-row-label" x="202" y="342">Params (B)</text>
+            <text class="metrics-row-label" x="202" y="366">FLOPs (TFLOPs)</text>
+            <text class="metrics-value" id="embeddingParams" x="254" y="342">-</text>
+            <text class="metrics-value" id="positionalParams" x="444" y="342">-</text>
+            <text class="metrics-value" id="attentionParams" x="634" y="342">-</text>
+            <text class="metrics-value" id="mixingParams" x="824" y="342">-</text>
+            <text class="metrics-value" id="outputParams" x="1014" y="342">-</text>
+            <text class="metrics-value" id="predictionParams" x="1204" y="342">-</text>
+            <text class="metrics-value" id="embeddingFlops" x="254" y="366">-</text>
+            <text class="metrics-value" id="positionalFlops" x="444" y="366">-</text>
+            <text class="metrics-value" id="attentionFlops" x="634" y="366">-</text>
+            <text class="metrics-value" id="mixingFlops" x="824" y="366">-</text>
+            <text class="metrics-value" id="outputFlops" x="1014" y="366">-</text>
+            <text class="metrics-value" id="predictionFlops" x="1204" y="366">-</text>
           </g>
         </svg>
       </div>
@@ -1610,7 +1610,7 @@
       llama405b: { tokenLength: 8192, vocabSize: 128256, embeddingDim: 16384, headCount: 128, layerCount: 126 },
     };
 
-    const defaults = { ...PRESETS.attention };
+    const defaults = { ...PRESETS.gpt3 };
 
     const FIXED_FFN_EXPANSION = 4;
 
@@ -2527,7 +2527,7 @@
       ui.parametersToggle.checked = true;
       state.showParameters = true;
       state.selectedStage = null;
-      state.selectedPreset = "attention";
+      state.selectedPreset = "gpt3";
       setPresetSelection(state.selectedPreset);
       render();
     }
