@@ -821,30 +821,30 @@
     }
 
     .head-stack-grid {
-      width: 100%;
+      width: 80%;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
-      gap: 6px;
-      align-items: end;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      align-items: center;
     }
 
-    .head-card {
-      height: 68px;
+    .head-slice {
+      height: 11px;
       border: 1.5px solid #3c4f73;
-      border-radius: 4px;
+      border-radius: 999px;
       background:
         linear-gradient(90deg, rgba(15, 12, 40, 0.34) 1px, transparent 1px) 0 0 / 12px 12px,
-        linear-gradient(rgba(15, 12, 40, 0.34) 1px, transparent 1px) 0 0 / 12px 12px,
         linear-gradient(125deg, #6a4bb6 0%, #5639a6 52%, #df8f78 52%, #cf7b66 100%);
     }
 
-    .head-card.more {
+    .head-slice.more {
       display: grid;
       place-items: center;
+      height: 18px;
       background: #edf3fb;
       color: #37516d;
       font-family: var(--mono);
-      font-size: 0.85rem;
+      font-size: 0.76rem;
       font-weight: 700;
     }
 
@@ -872,7 +872,7 @@
 
     .attn-scale-flow {
       display: grid;
-      grid-template-columns: auto auto auto auto auto auto auto auto auto;
+      grid-template-columns: repeat(11, auto);
       align-items: center;
       gap: 8px;
     }
@@ -907,6 +907,12 @@
       padding: 6px 8px;
       text-align: center;
       white-space: nowrap;
+    }
+
+    .attn-pill-stack {
+      display: grid;
+      gap: 4px;
+      justify-items: center;
     }
 
     .flow-arrow-mini {
@@ -1329,22 +1335,22 @@
       </div>
       <div class="controls-grid">
         <label>Input token length (n)
-          <input id="tokenLength" type="number" min="1" step="1" value="70000">
+          <input id="tokenLength" type="number" min="1" step="1" value="512">
         </label>
         <label>Vocab size
-          <input id="vocabSize" type="number" min="2" step="1" value="250000">
+          <input id="vocabSize" type="number" min="2" step="1" value="37000">
         </label>
         <label>Embedding dim (d)
-          <input id="embeddingDim" type="number" min="1" step="1" value="900">
+          <input id="embeddingDim" type="number" min="1" step="1" value="512">
         </label>
         <label>Heads (h)
-          <input id="headCount" type="number" min="1" step="1" value="9">
+          <input id="headCount" type="number" min="1" step="1" value="8">
         </label>
         <label>Head dim (derived d/h)
-          <input id="headDimDisplay" type="text" readonly value="100">
+          <input id="headDimDisplay" type="text" readonly value="64">
         </label>
         <label>Layers
-          <input id="layerCount" type="number" min="1" step="1" value="40">
+          <input id="layerCount" type="number" min="1" step="1" value="6">
         </label>
         <div class="toggle-cell">
           <span>Parameters</span>
@@ -1462,7 +1468,7 @@
 
   <script>
     const PRESETS = {
-      attention: { tokenLength: 70000, vocabSize: 250000, embeddingDim: 900, headCount: 9, layerCount: 40 },
+      attention: { tokenLength: 512, vocabSize: 37000, embeddingDim: 512, headCount: 8, layerCount: 6 },
       gpt2: { tokenLength: 1024, vocabSize: 50257, embeddingDim: 1600, headCount: 25, layerCount: 48 },
       gpt3: { tokenLength: 2048, vocabSize: 50257, embeddingDim: 12288, headCount: 96, layerCount: 96 },
       llama8b: { tokenLength: 8192, vocabSize: 128256, embeddingDim: 4096, headCount: 32, layerCount: 32 },
@@ -1774,10 +1780,10 @@
         `;
         return;
       } else if (state.selectedStage === "attention") {
-        const headPreview = Math.min(vm.h, 12);
+        const headPreview = Math.min(vm.h, 8);
         const hiddenHeadCount = Math.max(vm.h - headPreview, 0);
-        const headCards = Array.from({ length: headPreview }, () => '<div class="head-card"></div>').join("")
-          + (hiddenHeadCount > 0 ? `<div class="head-card more">+${fmtInt(hiddenHeadCount)}</div>` : "");
+        const headCards = Array.from({ length: headPreview }, () => '<div class="head-slice"></div>').join("")
+          + (hiddenHeadCount > 0 ? `<div class="head-slice more">+${fmtInt(hiddenHeadCount)}</div>` : "");
         title = "Multi-Head Self-Attention";
         ui.detailsTitle.textContent = title;
         ui.detailGrid.innerHTML = `
@@ -1821,28 +1827,49 @@
                 <div class="attn-scale-flow">
                   <div class="matrix-wrap">
                     <div class="matrix-grid attn-small"></div>
-                    <span class="dim-pill">Q ${shape(vm.n, vm.dh)}</span>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.n, vm.dh)}</span>
+                      <span class="dim-pill">Q</span>
+                    </div>
                   </div>
-                  <div class="math-op">×</div>
+                  <div class="math-op">*</div>
                   <div class="matrix-wrap">
                     <div class="matrix-grid attn-small"></div>
-                    <span class="dim-pill">K^T ${shape(vm.dh, vm.n)}</span>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.dh, vm.n)}</span>
+                      <span class="dim-pill">K^T</span>
+                    </div>
                   </div>
-                  <div class="flow-arrow-mini">→</div>
+                  <div class="flow-arrow-mini">=&gt;</div>
                   <div class="matrix-wrap">
                     <div class="matrix-grid score"></div>
-                    <span class="dim-pill">${shape(vm.n, vm.n)}</span>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.n, vm.n)}</span>
+                      <span class="dim-pill">Q.K^T</span>
+                    </div>
                   </div>
-                  <div class="softmax-chip">SCALE 1/sqrt(${fmtDim(vm.dh)}) + SOFTMAX</div>
-                  <div class="flow-arrow-mini">→</div>
+                  <div class="flow-arrow-mini">=&gt;</div>
                   <div class="matrix-wrap">
                     <div class="matrix-grid attn-small"></div>
-                    <span class="dim-pill">V ${shape(vm.n, vm.dh)}</span>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.n, vm.n)}</span>
+                      <span class="dim-pill">Scaled (Q.K^T)</span>
+                    </div>
                   </div>
-                  <div class="flow-arrow-mini">→</div>
+                  <div class="math-op">*</div>
                   <div class="matrix-wrap">
                     <div class="matrix-grid attn-small"></div>
-                    <span class="dim-pill">${shape(vm.n, vm.dh)}</span>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.n, vm.dh)}</span>
+                      <span class="dim-pill">V</span>
+                    </div>
+                  </div>
+                  <div class="flow-arrow-mini">=&gt;</div>
+                  <div class="matrix-wrap">
+                    <div class="matrix-grid attn-small"></div>
+                    <div class="attn-pill-stack">
+                      <span class="dim-pill">${shape(vm.n, vm.dh)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
