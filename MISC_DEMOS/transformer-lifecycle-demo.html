@@ -99,6 +99,30 @@
       align-items: end;
     }
 
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 2px 2px 4px;
+    }
+
+    .preset-btn {
+      border: 1px solid #b7c8da;
+      background: #f5f9ff;
+      color: #23425f;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.9rem;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+
+    .preset-btn.active {
+      background: #2d5f92;
+      color: #fff;
+      border-color: #224e79;
+    }
+
     label {
       display: grid;
       gap: 2px;
@@ -170,22 +194,22 @@
     .pill-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 2px 7px;
+      gap: 3px;
+      padding: 1px 4px;
       border-radius: 999px;
       border: 1px solid #b8cada;
       background: #f4f9ff;
       color: #2d4d6a;
       font-family: var(--mono);
-      font-size: 0.66rem;
+      font-size: 0.5rem;
       user-select: none;
     }
 
     .pill-toggle input[type="checkbox"] {
-      width: 14px;
-      min-width: 14px;
-      max-width: 14px;
-      min-height: 14px;
+      width: 8px;
+      min-width: 8px;
+      max-width: 8px;
+      min-height: 8px;
       margin: 0;
       accent-color: #2d5f92;
     }
@@ -342,6 +366,14 @@
       font-family: var(--mono);
       font-size: 13px;
       fill: #223a52;
+      text-anchor: middle;
+    }
+
+    .prediction-metric {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 800;
+      fill: #1f3a54;
       text-anchor: middle;
     }
 
@@ -1286,7 +1318,15 @@
       <h1>Transformer models</h1>
     </header>
 
-    <section class="controls card collapsed" id="sidebar">
+    <section class="controls card" id="sidebar">
+      <div class="preset-row" id="presetRow">
+        <button class="preset-btn active" type="button" data-preset="attention">Attention</button>
+        <button class="preset-btn" type="button" data-preset="gpt2">GPT-2</button>
+        <button class="preset-btn" type="button" data-preset="gpt3">GPT-3</button>
+        <button class="preset-btn" type="button" data-preset="llama8b">Llama-8B</button>
+        <button class="preset-btn" type="button" data-preset="llama70b">Llama-70B</button>
+        <button class="preset-btn" type="button" data-preset="llama405b">Llama-405B</button>
+      </div>
       <div class="controls-grid">
         <label>Input token length (n)
           <input id="tokenLength" type="number" min="1" step="1" value="70000">
@@ -1389,13 +1429,14 @@
           <text class="flow-arrow" x="1025" y="155">→</text>
 
           <g aria-label="Predicted token output">
-            <text class="prediction-title" x="1360" y="132">Prediction</text>
-            <rect class="prediction-token-box" x="1300" y="156" width="120" height="58" rx="8" ry="8"></rect>
-            <text class="prediction-token-text" id="predictedTokenId" x="1360" y="185">1347</text>
+            <rect class="prediction-token-box" x="1316" y="126" width="88" height="58" rx="8" ry="8"></rect>
+            <text class="prediction-token-text" id="predictedTokenId" x="1360" y="155">1347</text>
+            <text class="prediction-metric" id="totalParamsText" x="1360" y="342">-</text>
+            <text class="prediction-metric" id="totalFlopsText" x="1360" y="366">-</text>
           </g>
           <g class="stage-metrics" aria-label="Per-stage parameter and FLOP counts">
-            <text class="metrics-row-label" x="118" y="342">Params</text>
-            <text class="metrics-row-label" x="118" y="366">FLOPs</text>
+            <text class="metrics-row-label" x="118" y="342">Params (B)</text>
+            <text class="metrics-row-label" x="118" y="366">FLOPs (TFLOPs)</text>
             <text class="metrics-value" id="embeddingParams" x="170" y="342">-</text>
             <text class="metrics-value" id="positionalParams" x="360" y="342">-</text>
             <text class="metrics-value" id="attentionParams" x="550" y="342">-</text>
@@ -1420,21 +1461,29 @@
   </div>
 
   <script>
-    const defaults = {
-      tokenLength: 70000,
-      vocabSize: 250000,
-      embeddingDim: 900,
-      headCount: 9,
-      layerCount: 40,
+    const PRESETS = {
+      attention: { tokenLength: 70000, vocabSize: 250000, embeddingDim: 900, headCount: 9, layerCount: 40 },
+      gpt2: { tokenLength: 1024, vocabSize: 50257, embeddingDim: 1600, headCount: 25, layerCount: 48 },
+      gpt3: { tokenLength: 2048, vocabSize: 50257, embeddingDim: 12288, headCount: 96, layerCount: 96 },
+      llama8b: { tokenLength: 8192, vocabSize: 128256, embeddingDim: 4096, headCount: 32, layerCount: 32 },
+      llama70b: { tokenLength: 8192, vocabSize: 128256, embeddingDim: 8192, headCount: 64, layerCount: 80 },
+      llama405b: { tokenLength: 8192, vocabSize: 128256, embeddingDim: 16384, headCount: 128, layerCount: 126 },
     };
 
+    const defaults = { ...PRESETS.attention };
+
     const FIXED_FFN_EXPANSION = 4;
-    const EXAMPLE_PREDICTED_TOKEN = 1347;
+
+    function random4Digit() {
+      return 1000 + Math.floor(Math.random() * 9000);
+    }
 
     const state = {
-      controlsCollapsed: true,
+      controlsCollapsed: false,
       selectedStage: null,
-      showParameters: false,
+      showParameters: true,
+      predictedToken: random4Digit(),
+      selectedPreset: "attention",
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1442,6 +1491,7 @@
     const ui = {
       toggleSidebar: $("toggleSidebar"),
       sidebar: $("sidebar"),
+      presetButtons: Array.from(document.querySelectorAll(".preset-btn")),
       tokenLength: $("tokenLength"),
       vocabSize: $("vocabSize"),
       embeddingDim: $("embeddingDim"),
@@ -1453,6 +1503,8 @@
       tokensLength: $("tokensLength"),
       repeatTimes: $("repeatTimes"),
       predictedTokenId: $("predictedTokenId"),
+      totalParamsText: $("totalParamsText"),
+      totalFlopsText: $("totalFlopsText"),
       embeddingBlock: $("embeddingBlock"),
       positionalBlock: $("positionalBlock"),
       attentionBlock: $("attentionBlock"),
@@ -1495,13 +1547,12 @@
       return `${fmtDim(r)} x ${fmtDim(c)}`;
     }
 
-    function fmtCompact(value) {
-      const abs = Math.abs(value);
-      if (abs >= 1e12) return `${(value / 1e12).toFixed(2).replace(/\.00$/, "")}T`;
-      if (abs >= 1e9) return `${(value / 1e9).toFixed(2).replace(/\.00$/, "")}B`;
-      if (abs >= 1e6) return `${(value / 1e6).toFixed(2).replace(/\.00$/, "")}M`;
-      if (abs >= 1e3) return `${(value / 1e3).toFixed(2).replace(/\.00$/, "")}K`;
-      return fmtInt(value);
+    function fmtBillions(value) {
+      return (value / 1e9).toFixed(2);
+    }
+
+    function fmtTFLOPs(value) {
+      return (value / 1e12).toFixed(2);
     }
 
     function readConfig() {
@@ -1523,7 +1574,7 @@
       const dff = d * FIXED_FFN_EXPANSION;
       const concatDim = h * dh;
       const logits = n * config.vocabSize;
-      const predictedToken = EXAMPLE_PREDICTED_TOKEN;
+      const predictedToken = state.predictedToken;
 
       return {
         n,
@@ -1543,6 +1594,25 @@
       [ui.embeddingBlock, ui.positionalBlock, ui.attentionBlock, ui.mixingBlock, ui.outputBlock, ui.predictionStage].forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.stage === state.selectedStage);
       });
+    }
+
+    function setPresetSelection(name) {
+      ui.presetButtons.forEach((btn) => {
+        btn.classList.toggle("active", name && btn.dataset.preset === name);
+      });
+    }
+
+    function applyPreset(name) {
+      const preset = PRESETS[name];
+      if (!preset) return;
+      ui.tokenLength.value = preset.tokenLength;
+      ui.vocabSize.value = preset.vocabSize;
+      ui.embeddingDim.value = preset.embeddingDim;
+      ui.headCount.value = preset.headCount;
+      ui.layerCount.value = preset.layerCount;
+      state.selectedPreset = name;
+      setPresetSelection(name);
+      render();
     }
 
     function renderStageMetrics(config, vm) {
@@ -1567,20 +1637,24 @@
 
       const predictionParams = 0;
       const predictionFlops = 3 * config.vocabSize;
+      const totalParams = embeddingParams + positionalParams + attentionParams + mixingParams + predictionParams;
+      const totalFlops = embeddingFlops + positionalFlops + attentionFlops + mixingFlops + outputFlops + predictionFlops;
 
-      ui.embeddingParams.textContent = fmtCompact(embeddingParams);
-      ui.positionalParams.textContent = fmtCompact(positionalParams);
-      ui.attentionParams.textContent = fmtCompact(attentionParams);
-      ui.mixingParams.textContent = fmtCompact(mixingParams);
-      ui.outputParams.textContent = fmtCompact(outputParams);
-      ui.predictionParams.textContent = fmtCompact(predictionParams);
+      ui.embeddingParams.textContent = fmtBillions(embeddingParams);
+      ui.positionalParams.textContent = fmtBillions(positionalParams);
+      ui.attentionParams.textContent = fmtBillions(attentionParams);
+      ui.mixingParams.textContent = fmtBillions(mixingParams);
+      ui.outputParams.textContent = fmtBillions(outputParams);
+      ui.predictionParams.textContent = fmtBillions(predictionParams);
 
-      ui.embeddingFlops.textContent = fmtCompact(embeddingFlops);
-      ui.positionalFlops.textContent = fmtCompact(positionalFlops);
-      ui.attentionFlops.textContent = fmtCompact(attentionFlops);
-      ui.mixingFlops.textContent = fmtCompact(mixingFlops);
-      ui.outputFlops.textContent = fmtCompact(outputFlops);
-      ui.predictionFlops.textContent = fmtCompact(predictionFlops);
+      ui.embeddingFlops.textContent = fmtTFLOPs(embeddingFlops);
+      ui.positionalFlops.textContent = fmtTFLOPs(positionalFlops);
+      ui.attentionFlops.textContent = fmtTFLOPs(attentionFlops);
+      ui.mixingFlops.textContent = fmtTFLOPs(mixingFlops);
+      ui.outputFlops.textContent = fmtTFLOPs(outputFlops);
+      ui.predictionFlops.textContent = fmtTFLOPs(predictionFlops);
+      ui.totalParamsText.textContent = fmtBillions(totalParams);
+      ui.totalFlopsText.textContent = fmtTFLOPs(totalFlops);
     }
 
     function renderDetails(config, vm) {
@@ -1952,7 +2026,7 @@
                   <div class="sampling-mark">~&gt;</div>
                   <div class="matrix-name">sampling</div>
                 </div>
-                <div class="token-out">TOKEN ${fmtInt(vm.predictedToken)}</div>
+                <div class="token-out">TOKEN ${vm.predictedToken}</div>
               </div>
             </section>
           </div>
@@ -1975,7 +2049,7 @@
 
       ui.tokensLength.textContent = fmtInt(vm.n);
       ui.repeatTimes.textContent = `${fmtInt(vm.layers)} TIMES`;
-      ui.predictedTokenId.textContent = fmtInt(vm.predictedToken);
+      ui.predictedTokenId.textContent = `${vm.predictedToken}`;
       renderStageMetrics(config, vm);
 
       setActiveBlock();
@@ -1986,15 +2060,27 @@
       Object.entries(defaults).forEach(([k, v]) => {
         ui[k].value = v;
       });
-      ui.parametersToggle.checked = false;
-      state.showParameters = false;
+      ui.parametersToggle.checked = true;
+      state.showParameters = true;
       state.selectedStage = null;
+      state.selectedPreset = "attention";
+      setPresetSelection(state.selectedPreset);
       render();
     }
 
     function bindEvents() {
       [ui.tokenLength, ui.vocabSize, ui.embeddingDim, ui.headCount, ui.layerCount].forEach((node) => {
-        node.addEventListener("input", () => render());
+        node.addEventListener("input", () => {
+          if (state.selectedPreset) {
+            state.selectedPreset = null;
+            setPresetSelection(null);
+          }
+          render();
+        });
+      });
+
+      ui.presetButtons.forEach((btn) => {
+        btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
       });
 
       [ui.embeddingBlock, ui.positionalBlock, ui.attentionBlock, ui.mixingBlock, ui.outputBlock, ui.predictionStage].forEach((btn) => {
