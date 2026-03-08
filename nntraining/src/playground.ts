@@ -30,6 +30,9 @@ let mainWidth;
 const RECT_SIZE = 30;
 const BIAS_SIZE = 5;
 const NUM_SAMPLES_CLASSIFY = 500;
+const TRAIN_SPLIT_PERCENT = 80;
+const FIXED_NOISE_PERCENT = 0;
+const FIXED_BATCH_SIZE = 10;
 const DENSITY = 100;
 
 enum HoverType {
@@ -64,8 +67,8 @@ interface TraceSession {
   statusText: string;
   detailHtml: string;
   startIter: number;
-  startLossTrain: number;
-  startLossTest: number;
+  startAccuracyTrain: number;
+  startAccuracyTest: number;
   startBiasByNodeId: {[id: string]: number};
   startLinkById: {[id: string]: {weight: number, isDead: boolean}};
   applied: boolean;
@@ -90,17 +93,12 @@ let INPUTS: {[name: string]: InputFeature} = {
 };
 
 let HIDABLE_CONTROLS = [
-  ["Show test data", "showTestData"],
-  ["Discretize output", "discretize"],
   ["Play button", "playButton"],
   ["Step button", "stepButton"],
   ["Reset button", "resetButton"],
   ["Learning rate", "learningRate"],
   ["Activation", "activation"],
   ["Which dataset", "dataset"],
-  ["Ratio train data", "percTrainData"],
-  ["Noise level", "noise"],
-  ["Batch size", "batchSize"],
   ["# of hidden layers", "numHiddenLayers"],
 ];
 
@@ -158,6 +156,11 @@ class Player {
 let state = State.deserializeState();
 state.regularization = null;
 state.regularizationRate = 0;
+state.percTrainData = TRAIN_SPLIT_PERCENT;
+state.noise = FIXED_NOISE_PERCENT;
+state.batchSize = FIXED_BATCH_SIZE;
+state.showTestData = false;
+state.discretize = false;
 
 // Filter out inputs that are hidden.
 state.getHiddenProps().forEach(prop => {
@@ -185,8 +188,8 @@ let iter = 0;
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
 let network: nn.Node[][] = null;
-let lossTrain = 0;
-let lossTest = 0;
+let accuracyTrain = 0;
+let accuracyTest = 0;
 let player = new Player();
 let lineChart = new AppendingLineChart(d3.select("#linechart"),
     ["#777", "black"]);
@@ -195,6 +198,36 @@ let traceSession: TraceSession = null;
 let traceOverlayPosition = {left: 2, top: 2};
 let traceOverlayDragState: TraceOverlayDragState = null;
 let traceOverlayDragInitialized = false;
+let dataPreviewModal = d3.select("#data-preview-modal");
+let dataPreviewBody = d3.select("#data-preview-body");
+
+function labelName(label: number): string {
+  return label >= 0 ? "Blue" : "Orange";
+}
+
+function showDataPreview(data: Example2D[]) {
+  let sorted = data.slice().sort((a, b) => {
+    if (a.x !== b.x) {
+      return a.x - b.x;
+    }
+    if (a.y !== b.y) {
+      return a.y - b.y;
+    }
+    return labelName(a.label).localeCompare(labelName(b.label));
+  });
+  dataPreviewBody.html("");
+  sorted.forEach(point => {
+    let row = dataPreviewBody.append("tr");
+    row.append("td").text(point.x.toFixed(4));
+    row.append("td").text(point.y.toFixed(4));
+    row.append("td").text(labelName(point.label));
+  });
+  dataPreviewModal.classed("open", true).attr("aria-hidden", "false");
+}
+
+function hideDataPreview() {
+  dataPreviewModal.classed("open", false).attr("aria-hidden", "true");
+}
 
 function makeGUI() {
   d3.select("#reset-button").on("click", () => {
@@ -242,7 +275,7 @@ function makeGUI() {
   initializeTraceOverlayDragging();
 
   d3.select("#data-regen-button").on("click", () => {
-    generateData();
+    generateData(false, true);
     parametersChanged = true;
   });
 
@@ -255,7 +288,7 @@ function makeGUI() {
     state.dataset =  newDataset;
     dataThumbnails.classed("selected", false);
     d3.select(this).classed("selected", true);
-    generateData();
+    generateData(false, true);
     parametersChanged = true;
     reset();
   });
@@ -285,62 +318,18 @@ function makeGUI() {
     reset();
   });
 
-  let showTestData = d3.select("#show-test-data").on("change", function() {
-    state.showTestData = this.checked;
-    state.serialize();
-    userHasInteracted();
-    heatMap.updateTestPoints(state.showTestData ? testData : []);
-  });
-  // Check/uncheck the checkbox according to the current state.
-  showTestData.property("checked", state.showTestData);
-
-  let discretize = d3.select("#discretize").on("change", function() {
-    state.discretize = this.checked;
-    state.serialize();
-    userHasInteracted();
-    updateUI();
-  });
-  // Check/uncheck the checbox according to the current state.
-  discretize.property("checked", state.discretize);
-
-  let percTrain = d3.select("#percTrainData").on("input", function() {
-    state.percTrainData = this.value;
-    d3.select("label[for='percTrainData'] .value").text(this.value);
-    generateData();
-    parametersChanged = true;
-    reset();
-  });
-  percTrain.property("value", state.percTrainData);
-  d3.select("label[for='percTrainData'] .value").text(state.percTrainData);
-
-  let noise = d3.select("#noise").on("input", function() {
-    state.noise = this.value;
-    d3.select("label[for='noise'] .value").text(this.value);
-    generateData();
-    parametersChanged = true;
-    reset();
-  });
-  let currentMax = parseInt(noise.property("max"));
-  if (state.noise > currentMax) {
-    if (state.noise <= 80) {
-      noise.property("max", state.noise);
-    } else {
-      state.noise = 50;
+  d3.select("#data-preview-close").on("click", () => hideDataPreview());
+  dataPreviewModal.on("click", function() {
+    let clickEvent = d3.event as MouseEvent;
+    if (clickEvent.target === this) {
+      hideDataPreview();
     }
-  } else if (state.noise < 0) {
-    state.noise = 0;
-  }
-  noise.property("value", state.noise);
-  d3.select("label[for='noise'] .value").text(state.noise);
-
-  let batchSize = d3.select("#batchSize").on("input", function() {
-    state.batchSize = this.value;
-    d3.select("label[for='batchSize'] .value").text(this.value);
-    parametersChanged = true;
-    reset();
   });
-  batchSize.property("value", state.batchSize);
-  d3.select("label[for='batchSize'] .value").text(state.batchSize);
+  d3.select(document).on("keydown.dataPreview", () => {
+    if ((d3.event as KeyboardEvent).key === "Escape") {
+      hideDataPreview();
+    }
+  });
 
   let activationDropdown = d3.select("#activations").on("change", function() {
     state.activation = activations[this.value];
@@ -524,15 +513,14 @@ function drawNode(cx: number, cy: number, nodeId: string, isInput: boolean,
       div.classed("hovered", true);
       nodeGroup.classed("hovered", true);
       updateDecisionBoundary(network, false);
-      heatMap.updateBackground(boundary[nodeId], state.discretize);
+      heatMap.updateBackground(boundary[nodeId], false);
     })
     .on("mouseleave", function() {
       selectedNodeId = null;
       div.classed("hovered", false);
       nodeGroup.classed("hovered", false);
       updateDecisionBoundary(network, false);
-      heatMap.updateBackground(boundary[nn.getOutputNode(network).id],
-          state.discretize);
+      heatMap.updateBackground(boundary[nn.getOutputNode(network).id], false);
     });
   if (isInput) {
     div.on("click", function() {
@@ -855,15 +843,21 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
   }
 }
 
-function getLoss(network: nn.Node[][], dataPoints: Example2D[]): number {
-  let loss = 0;
+function getAccuracy(network: nn.Node[][], dataPoints: Example2D[]): number {
+  if (dataPoints.length === 0) {
+    return 0;
+  }
+  let correct = 0;
   for (let i = 0; i < dataPoints.length; i++) {
     let dataPoint = dataPoints[i];
     let input = constructInput(dataPoint.x, dataPoint.y);
     let output = nn.forwardProp(network, input);
-    loss += nn.Errors.SQUARE.error(output, dataPoint.label);
+    let predicted = output >= 0 ? 1 : -1;
+    if (predicted === dataPoint.label) {
+      correct++;
+    }
   }
-  return loss / dataPoints.length;
+  return 100 * correct / dataPoints.length;
 }
 
 function updateUI(firstStep = false, addChartPoint = true) {
@@ -875,13 +869,12 @@ function updateUI(firstStep = false, addChartPoint = true) {
   updateDecisionBoundary(network, firstStep);
   let selectedId = selectedNodeId != null ?
       selectedNodeId : nn.getOutputNode(network).id;
-  heatMap.updateBackground(boundary[selectedId], state.discretize);
+  heatMap.updateBackground(boundary[selectedId], false);
 
   // Update all decision boundaries.
   d3.select("#network").selectAll("div.canvas")
       .each(function(data: {heatmap: HeatMap, id: string}) {
-    data.heatmap.updateBackground(reduceMatrix(boundary[data.id], 10),
-        state.discretize);
+    data.heatmap.updateBackground(reduceMatrix(boundary[data.id], 10), false);
   });
 
   function zeroPad(n: number): string {
@@ -893,16 +886,16 @@ function updateUI(firstStep = false, addChartPoint = true) {
     return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 
-  function humanReadable(n: number): string {
-    return n.toFixed(3);
+  function formatPercent(n: number): string {
+    return `${n.toFixed(1)}%`;
   }
 
-  // Update loss and iteration number.
-  d3.select("#loss-train").text(humanReadable(lossTrain));
-  d3.select("#loss-test").text(humanReadable(lossTest));
+  // Update accuracy and iteration number.
+  d3.select("#accuracy-train").text(formatPercent(accuracyTrain));
+  d3.select("#accuracy-test").text(formatPercent(accuracyTest));
   d3.select("#iter-number").text(addCommas(zeroPad(iter)));
   if (addChartPoint) {
-    lineChart.addDataPoint([lossTrain, lossTest]);
+    lineChart.addDataPoint([accuracyTrain, accuracyTest]);
   }
   renderTraceView();
 }
@@ -1277,8 +1270,8 @@ function createTraceSession(): TraceSession {
     statusText: "Step mode",
     detailHtml: "Press Play to run the first forward computation.",
     startIter: iter,
-    startLossTrain: lossTrain,
-    startLossTest: lossTest,
+    startAccuracyTrain: accuracyTrain,
+    startAccuracyTest: accuracyTest,
     startBiasByNodeId,
     startLinkById,
     applied: false
@@ -1482,8 +1475,8 @@ function applyTraceSessionUpdate(session: TraceSession) {
   nn.applySingleExampleTrace(network, session.trace);
   nn.clearDerivatives(network);
   iter = session.startIter + 1;
-  lossTrain = getLoss(network, trainData);
-  lossTest = getLoss(network, testData);
+  accuracyTrain = getAccuracy(network, trainData);
+  accuracyTest = getAccuracy(network, testData);
   session.applied = true;
   session.completed = true;
   let sampleInput = constructInput(session.point.x, session.point.y);
@@ -1503,8 +1496,8 @@ function undoTraceSessionUpdate(session: TraceSession) {
   restoreTraceSessionStart(session);
   nn.clearDerivatives(network);
   iter = session.startIter;
-  lossTrain = session.startLossTrain;
-  lossTest = session.startLossTest;
+  accuracyTrain = session.startAccuracyTrain;
+  accuracyTest = session.startAccuracyTest;
   session.applied = false;
   session.completed = false;
   updateUI(false, false);
@@ -1626,13 +1619,13 @@ function oneStep(): void {
     let input = constructInput(point.x, point.y);
     nn.forwardProp(network, input);
     nn.backProp(network, point.label, nn.Errors.SQUARE);
-    if ((i + 1) % state.batchSize === 0) {
+    if ((i + 1) % FIXED_BATCH_SIZE === 0) {
       nn.updateWeights(network, state.learningRate, 0);
     }
   });
   // Compute the loss.
-  lossTrain = getLoss(network, trainData);
-  lossTest = getLoss(network, testData);
+  accuracyTrain = getAccuracy(network, trainData);
+  accuracyTest = getAccuracy(network, testData);
   updateUI();
 }
 
@@ -1671,8 +1664,8 @@ function reset(onStartup=false) {
   let outputActivation = nn.Activations.TANH;
   network = nn.buildNetwork(shape, state.activation, outputActivation,
       null, constructInputIds(), state.initZero);
-  lossTrain = getLoss(network, trainData);
-  lossTest = getLoss(network, testData);
+  accuracyTrain = getAccuracy(network, trainData);
+  accuracyTest = getAccuracy(network, testData);
   drawNetwork(network);
   updateUI(true);
   if (traceModeEnabled) {
@@ -1772,7 +1765,12 @@ function hideControls() {
     .attr("href", window.location.href);
 }
 
-function generateData(firstTime = false) {
+function generateData(firstTime = false, showPreview = false) {
+  state.percTrainData = TRAIN_SPLIT_PERCENT;
+  state.noise = FIXED_NOISE_PERCENT;
+  state.batchSize = FIXED_BATCH_SIZE;
+  state.showTestData = false;
+  state.discretize = false;
   if (!firstTime) {
     // Change the seed.
     state.seed = Math.random().toFixed(5);
@@ -1782,15 +1780,18 @@ function generateData(firstTime = false) {
   Math.seedrandom(state.seed);
   let numSamples = NUM_SAMPLES_CLASSIFY;
   let generator = state.dataset;
-  let data = generator(numSamples, state.noise / 100);
+  let data = generator(numSamples, FIXED_NOISE_PERCENT / 100);
   // Shuffle the data in-place.
   shuffle(data);
   // Split into train and test data.
-  let splitIndex = Math.floor(data.length * state.percTrainData / 100);
+  let splitIndex = Math.floor(data.length * TRAIN_SPLIT_PERCENT / 100);
   trainData = data.slice(0, splitIndex);
   testData = data.slice(splitIndex);
   heatMap.updatePoints(trainData);
-  heatMap.updateTestPoints(state.showTestData ? testData : []);
+  heatMap.updateTestPoints([]);
+  if (showPreview) {
+    showDataPreview(data);
+  }
 }
 
 let firstInteraction = true;

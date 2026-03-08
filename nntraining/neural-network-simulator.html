@@ -138,24 +138,6 @@ limitations under the License.
         </div>
       </div>
       <div>
-        <div class="ui-percTrainData">
-          <label for="percTrainData">Ratio of training to test data:&nbsp;&nbsp;<span class="value">XX</span>%</label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="10" max="90" step="10">
-          </p>
-        </div>
-        <div class="ui-noise">
-          <label for="noise">Noise:&nbsp;&nbsp;<span class="value">XX</span></label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
-          </p>
-        </div>
-        <div class="ui-batchSize">
-          <label for="batchSize">Batch size:&nbsp;&nbsp;<span class="value">XX</span></label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="batchSize" min="1" max="30" step="1">
-          </p>
-        </div>
           <button class="basic-button" id="data-regen-button" title="Regenerate data">
             Regenerate
           </button>
@@ -231,16 +213,16 @@ limitations under the License.
 
     <!-- Output Column -->
     <div class="column output">
-      <h4>Output</h4>
+      <h4>Accuracy</h4>
       <div id="trace-output-groundtruth"></div>
       <div class="metrics">
-        <div class="output-stats ui-percTrainData">
-          <span>Test loss</span>
-          <div class="value" id="loss-test"></div>
-        </div>
         <div class="output-stats train">
-          <span>Training loss</span>
-          <div class="value" id="loss-train"></div>
+          <span>Training</span>
+          <div class="value" id="accuracy-train"></div>
+        </div>
+        <div class="output-stats">
+          <span>Test</span>
+          <div class="value" id="accuracy-test"></div>
         </div>
         <div id="linechart"></div>
       </div>
@@ -265,20 +247,30 @@ limitations under the License.
             </g>
           </svg>
         </div>
-        <br/>
-        <div style="display:flex;">
-          <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
-            <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
-            <span class="mdl-checkbox__label label">Show test data</span>
-          </label>
-          <label class="ui-discretize mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="discretize">
-            <input type="checkbox" id="discretize" class="mdl-checkbox__input" checked>
-            <span class="mdl-checkbox__label label">Discretize output</span>
-          </label>
-        </div>
       </div>
     </div>
 
+  </div>
+
+  <div id="data-preview-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="data-preview-title">
+      <div class="modal-header">
+        <h3 id="data-preview-title">Generated Data Preview</h3>
+        <button id="data-preview-close" class="modal-close" aria-label="Close data preview">Close</button>
+      </div>
+      <div class="modal-table-wrap">
+        <table class="modal-table">
+          <thead>
+            <tr>
+              <th>Feature 1</th>
+              <th>Feature 2</th>
+              <th>Label</th>
+            </tr>
+          </thead>
+          <tbody id="data-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
