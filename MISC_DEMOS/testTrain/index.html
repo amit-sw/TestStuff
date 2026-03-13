@@ -837,18 +837,18 @@
         id: 'categories',
         label: '1. Categories',
         title: 'Start With Labeled Categories',
-        copy: 'We begin with a small, balanced sample from each class so the viewer can see the labeled examples before anything is shuffled.',
+        copy: '',
       },
       {
         id: 'mixed',
         label: '2. Shuffle',
         title: 'Shuffle Everything Together',
-        copy: 'The labels still exist, but visually the samples are now mixed into one pool. This is the dataset before splitting.',
+        copy: '',
       },
       {
         id: 'split',
         label: '3. Split',
-        title: 'Create Train And Test Piles',
+        title: 'Create Train And Test Datasets',
         copy: '',
       },
       {
@@ -861,7 +861,7 @@
         id: 'results',
         label: '5. Results',
         title: 'Summarize Accuracy And Errors',
-        copy: 'The final score and confusion matrix explain not just how often the model was right, but which classes it confused.',
+        copy: '',
       },
     ];
 
@@ -1208,7 +1208,7 @@
 
       refs.runningAccuracy.textContent = `${accuracy}%`;
       refs.runningDetails.textContent = forceFinal
-        ? `${state.metrics.correct} of ${state.metrics.totalTest} test predictions are correct.`
+        ? ''
         : total
           ? `${correct} of ${total} evaluated test images are correct so far.`
           : 'Waiting to evaluate test images.';
@@ -1302,8 +1302,7 @@
 
     function renderResults() {
       refs.accuracyValue.textContent = `${Math.round(state.metrics.accuracy * 100)}%`;
-      refs.accuracyCopy.textContent =
-        `${state.metrics.correct} out of ${state.metrics.totalTest} test images were predicted correctly in this simulated evaluation run.`;
+      refs.accuracyCopy.textContent = '';
       refs.correctCountValue.textContent = state.metrics.correct;
       refs.testTotalValue.textContent = state.metrics.totalTest;
       renderMatrix();
