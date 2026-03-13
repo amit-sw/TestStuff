@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train/Test Split Demo</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1c2430;
+      --muted: #6b7280;
+      --panel: rgba(255, 252, 246, 0.88);
+      --border: rgba(28, 36, 48, 0.12);
+      --cats: #f97316;
+      --dogs: #0f766e;
+      --train: #0f766e;
+      --test: #dc2626;
+      --shadow: 0 18px 48px rgba(28, 36, 48, 0.15);
+      --radius: 24px;
+      --card-w: 98px;
+      --card-h: 98px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.18), transparent 35%),
+        linear-gradient(135deg, #f9f4ea 0%, #edf3f5 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(28, 36, 48, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28, 36, 48, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at center, black 55%, transparent 100%);
+    }
+
+    .app-shell {
+      position: relative;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .app-header {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.1rem, 4vw, 3.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+      max-width: none;
+    }
+
+    .header-copy {
+      margin: 6px 0 0;
+      max-width: 70ch;
+      color: rgba(28, 36, 48, 0.76);
+      line-height: 1.5;
+    }
+
+    .top-panel {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .control-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stage-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stage-pill,
+    .button {
+      border: 1px solid rgba(28, 36, 48, 0.12);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 11px 16px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .stage-pill:hover,
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 18px rgba(28, 36, 48, 0.08);
+    }
+
+    .stage-pill.active {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(15, 118, 110, 0.18));
+      border-color: rgba(28, 36, 48, 0.2);
+    }
+
+    .stage-pill.ghost-pill {
+      background: rgba(28, 36, 48, 0.04);
+      color: rgba(28, 36, 48, 0.55);
+      border-style: dashed;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .stage-pill.ghost-pill:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex: none;
+    }
+
+    .icon-button {
+      font-size: 1.9rem;
+      line-height: 1;
+      min-width: 68px;
+      min-height: 58px;
+      padding: 12px 16px;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, rgba(28, 36, 48, 0.96), rgba(28, 36, 48, 0.86));
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .board-panel {
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .board-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .board-copy h2 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      letter-spacing: -0.03em;
+    }
+
+    .board-copy p {
+      margin: 0;
+      color: rgba(28, 36, 48, 0.78);
+      line-height: 1.55;
+    }
+
+    .running-score {
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(220, 38, 38, 0.12));
+      border: 1px solid rgba(28, 36, 48, 0.08);
+      min-width: 220px;
+    }
+
+    .running-score.hidden {
+      display: none;
+    }
+
+    .running-score strong {
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      letter-spacing: -0.05em;
+    }
+
+    .board {
+      display: grid;
+      gap: 18px;
+      min-height: 620px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .categories-layout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .group-panel,
+    .mixed-panel,
+    .pile-panel,
+    .results-shell,
+    .mistake-panel {
+      border-radius: 24px;
+      border: 1px solid rgba(28, 36, 48, 0.08);
+      background: rgba(255, 255, 255, 0.58);
+      padding: 16px;
+      min-height: 220px;
+    }
+
+    .group-panel[data-label="Cats"] {
+      background: linear-gradient(180deg, rgba(249, 115, 22, 0.12), rgba(255, 255, 255, 0.72));
+    }
+
+    .group-panel[data-label="Dogs"] {
+      background: linear-gradient(180deg, rgba(15, 118, 110, 0.12), rgba(255, 255, 255, 0.72));
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-kicker {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--card-w), var(--card-w)));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .mixed-panel .cards-grid {
+      grid-template-columns: repeat(auto-fit, minmax(90px, var(--card-w)));
+      min-height: 350px;
+      justify-content: center;
+    }
+
+    .split-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .pile-panel.train {
+      background: linear-gradient(180deg, rgba(15, 118, 110, 0.12), rgba(255, 255, 255, 0.72));
+    }
+
+    .pile-panel.test {
+      background: linear-gradient(180deg, rgba(220, 38, 38, 0.11), rgba(255, 255, 255, 0.72));
+    }
+
+    .sample-card {
+      position: relative;
+      width: var(--card-w);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(28, 36, 48, 0.1);
+      box-shadow: 0 12px 22px rgba(28, 36, 48, 0.1);
+      transition: transform 320ms ease, opacity 260ms ease, border-color 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+      transform-origin: center;
+      animation: cardEnter 420ms ease both;
+      isolation: isolate;
+    }
+
+    .sample-card img {
+      display: block;
+      width: 100%;
+      height: var(--card-h);
+      object-fit: cover;
+      background: rgba(28, 36, 48, 0.08);
+    }
+
+    .card-meta {
+      padding: 8px 8px 10px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(28, 36, 48, 0.08);
+      color: rgba(28, 36, 48, 0.75);
+    }
+
+    .sample-card[data-label="Cats"] .chip.label {
+      background: rgba(249, 115, 22, 0.14);
+      color: #9a3412;
+    }
+
+    .sample-card[data-label="Dogs"] .chip.label {
+      background: rgba(15, 118, 110, 0.14);
+      color: #115e59;
+    }
+
+    .sample-card .overlay {
+      position: absolute;
+      inset: 8px 8px auto 8px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: start;
+      gap: 6px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .sample-card .overlay .chip {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    .sample-card .overlay .chip.verdict {
+      min-width: 30px;
+      min-height: 30px;
+      padding: 4px 8px;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .sample-card .overlay .chip.verdict.good {
+      background: rgba(22, 163, 74, 0.18);
+      color: #166534;
+    }
+
+    .sample-card .overlay .chip.verdict.bad {
+      background: rgba(220, 38, 38, 0.18);
+      color: #991b1b;
+    }
+
+    .sample-card .overlay .spacer {
+      min-width: 1px;
+      min-height: 1px;
+    }
+
+    .sample-card .overlay .chip.split {
+      justify-self: end;
+    }
+
+    .sample-card .overlay .chip.split[data-split="Train"] {
+      background: rgba(15, 118, 110, 0.18);
+      color: #134e4a;
+    }
+
+    .sample-card .overlay .chip.split[data-split="Test"] {
+      background: rgba(220, 38, 38, 0.18);
+      color: #991b1b;
+    }
+
+    .sample-card.mixed {
+      transform: rotate(var(--twist, 0deg)) translateY(var(--lift, 0));
+    }
+
+    .sample-card.train-card {
+      border-color: rgba(15, 118, 110, 0.25);
+    }
+
+    .sample-card.test-card {
+      border-color: rgba(220, 38, 38, 0.22);
+    }
+
+    .sample-card.ghost {
+      opacity: 0.38;
+      filter: saturate(0.2);
+      transform: scale(0.96);
+    }
+
+    .sample-card.awaiting {
+      opacity: 0.72;
+      filter: grayscale(0.22);
+      border-style: dashed;
+    }
+
+    .sample-card.revealed.correct {
+      border-color: rgba(22, 163, 74, 0.58);
+      box-shadow: 0 14px 24px rgba(22, 163, 74, 0.18);
+    }
+
+    .sample-card.revealed.incorrect {
+      border-color: rgba(220, 38, 38, 0.58);
+      box-shadow: 0 14px 24px rgba(220, 38, 38, 0.18);
+    }
+
+    .sample-card.dim-label .card-meta {
+      opacity: 0.48;
+    }
+
+    .sample-card.hide-labels .card-meta {
+      display: none;
+    }
+
+    .results-shell {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      align-items: start;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.65)),
+        linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(249, 115, 22, 0.12));
+    }
+
+    .results-summary {
+      padding: 10px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(28, 36, 48, 0.08);
+      min-height: 100%;
+    }
+
+    .accuracy-value {
+      font-size: clamp(2.6rem, 5vw, 4.6rem);
+      line-height: 0.92;
+      letter-spacing: -0.08em;
+      margin: 6px 0 10px;
+    }
+
+    .result-copy {
+      color: rgba(28, 36, 48, 0.78);
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .result-kpis {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .result-kpi {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(28, 36, 48, 0.04);
+      border: 1px solid rgba(28, 36, 48, 0.08);
+    }
+
+    .result-kpi strong {
+      display: block;
+      font-size: 1.4rem;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 120px 96px repeat(2, minmax(110px, 1fr));
+      grid-template-rows: 68px 68px minmax(90px, auto) minmax(90px, auto);
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(28, 36, 48, 0.1);
+    }
+
+    .matrix-cell {
+      padding: 16px;
+      border-right: 1px solid rgba(28, 36, 48, 0.08);
+      border-bottom: 1px solid rgba(28, 36, 48, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .matrix-cell strong {
+      font-size: 2rem;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .matrix-cell.head {
+      background: rgba(28, 36, 48, 0.05);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .matrix-cell.axis {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(28, 36, 48, 0.62);
+      background: rgba(28, 36, 48, 0.05);
+      align-items: center;
+      text-align: center;
+    }
+
+    .matrix-cell.span-2-col {
+      grid-column: span 2;
+    }
+
+    .matrix-cell.span-2-row {
+      grid-row: span 2;
+    }
+
+    .matrix-cell.good {
+      background: rgba(22, 163, 74, 0.12);
+    }
+
+    .matrix-cell.bad {
+      background: rgba(220, 38, 38, 0.1);
+    }
+
+    .matrix-cell.end-row,
+    .matrix-cell.end-col {
+      border-right: none;
+    }
+
+    .matrix-cell.end-row {
+      border-bottom: none;
+    }
+
+    .mistake-panel {
+      margin-top: 18px;
+      background: rgba(255, 255, 255, 0.66);
+    }
+
+    .mistake-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .mistake-card {
+      width: 112px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(220, 38, 38, 0.18);
+    }
+
+    .mistake-card img {
+      width: 100%;
+      height: 88px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .mistake-card .copy {
+      padding: 8px 10px 10px;
+      display: grid;
+      gap: 4px;
+      font-size: 0.78rem;
+    }
+
+    .mistake-card .copy strong {
+      font-size: 0.88rem;
+    }
+
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .top-panel,
+      .board-header,
+      .results-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .split-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        padding: 20px 14px 36px;
+      }
+
+      .categories-layout,
+      .result-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(82px, 82px));
+      }
+
+      .sample-card {
+        width: 82px;
+      }
+
+      .sample-card img {
+        height: 82px;
+      }
+
+      .matrix {
+        grid-template-columns: 88px 72px repeat(2, minmax(86px, 1fr));
+        grid-template-rows: 58px 58px minmax(82px, auto) minmax(82px, auto);
+      }
+
+      .matrix-cell strong {
+        font-size: 1.55rem;
+      }
+    }
+  </style>
+</head>
+  <body>
+  <div class="app-shell">
+    <section class="app-header">
+      <div>
+        <h1>Evaluating goodness of AI models</h1>
+      </div>
+      <div class="panel top-panel">
+        <div class="control-panel">
+          <div class="button-row">
+            <button class="button icon-button" id="backButton" type="button" aria-label="Back" title="Back">⏪</button>
+            <button class="button primary icon-button" id="nextButton" type="button" aria-label="Next" title="Next">⏩</button>
+            <button class="button icon-button" id="restartButton" type="button" aria-label="Start Over" title="Start Over">🔄</button>
+          </div>
+          <div class="stage-pills" id="stagePills"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <main class="panel board-panel">
+        <div class="board-header">
+          <div class="board-copy">
+            <h2 id="stageName"></h2>
+            <p id="stageCopy"></p>
+          </div>
+          <div class="running-score hidden" id="runningScore">
+            <strong id="runningAccuracy">0%</strong>
+            <div id="runningDetails">Waiting to evaluate test images.</div>
+          </div>
+        </div>
+        <div class="board" id="board">
+          <section class="categories-layout" id="categoriesLayout">
+            <section class="group-panel" data-label="Cats">
+              <div class="panel-head">
+                <div class="panel-title">cat</div>
+                <div class="panel-kicker" id="catsCountLabel">0 examples</div>
+              </div>
+              <div class="cards-grid" id="catsGrid"></div>
+            </section>
+            <section class="group-panel" data-label="Dogs">
+              <div class="panel-head">
+                <div class="panel-title">dog</div>
+                <div class="panel-kicker" id="dogsCountLabel">0 examples</div>
+              </div>
+              <div class="cards-grid" id="dogsGrid"></div>
+            </section>
+          </section>
+
+          <section class="mixed-panel hidden" id="mixedPanel">
+            <div class="panel-head">
+              <div class="panel-title">Shuffled Pool</div>
+            </div>
+            <div class="cards-grid" id="mixedGrid"></div>
+          </section>
+
+          <section class="split-layout hidden" id="splitLayout">
+            <section class="pile-panel train">
+              <div class="panel-head">
+                <div class="panel-title">Train</div>
+                <div class="panel-kicker" id="trainPileLabel">0 cards</div>
+              </div>
+              <div class="cards-grid" id="trainGrid"></div>
+            </section>
+            <section class="pile-panel test">
+              <div class="panel-head">
+                <div class="panel-title">Test</div>
+                <div class="panel-kicker" id="testPileLabel">0 cards</div>
+              </div>
+              <div class="cards-grid" id="testGrid"></div>
+            </section>
+          </section>
+
+          <section class="results-area hidden" id="resultsArea">
+            <section class="results-shell">
+              <div class="results-summary">
+                <div class="eyebrow">Accuracy</div>
+                <div class="accuracy-value" id="accuracyValue">0%</div>
+                <div class="result-copy" id="accuracyCopy"></div>
+                <div class="result-kpis">
+                  <div class="result-kpi">
+                    <strong id="correctCountValue">0</strong>
+                    <span>Correct predictions</span>
+                  </div>
+                  <div class="result-kpi">
+                    <strong id="testTotalValue">0</strong>
+                    <span>Total test images</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="eyebrow">Confusion Matrix</div>
+                <div class="matrix" id="matrix"></div>
+              </div>
+            </section>
+            <section class="mistake-panel">
+              <div class="panel-head">
+                <div class="panel-title">Misclassified Test Images</div>
+                <div class="panel-kicker" id="mistakeCountLabel">0 mistakes</div>
+              </div>
+              <div class="mistake-strip" id="mistakeStrip"></div>
+            </section>
+          </section>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const DATASET_MANIFEST = {
+      Cats: [
+        'images/Cats/Cat_1.jpg', 'images/Cats/Cat_10.jpeg', 'images/Cats/Cat_100.jpg', 'images/Cats/Cat_12.jpg',
+        'images/Cats/Cat_13.jpg', 'images/Cats/Cat_15.jpeg', 'images/Cats/Cat_16.jpg', 'images/Cats/Cat_17.jpg',
+        'images/Cats/Cat_18.jpg', 'images/Cats/Cat_19.jpg', 'images/Cats/Cat_2.jpg', 'images/Cats/Cat_20.jpeg',
+        'images/Cats/Cat_22.jpg', 'images/Cats/Cat_23.jpeg', 'images/Cats/Cat_24.jpg', 'images/Cats/Cat_25.jpeg',
+        'images/Cats/Cat_26.jpg', 'images/Cats/Cat_28.jpeg', 'images/Cats/Cat_3.jpg', 'images/Cats/Cat_30.jpg',
+        'images/Cats/Cat_31.jpg', 'images/Cats/Cat_32.jpg', 'images/Cats/Cat_33.jpeg', 'images/Cats/Cat_34.jpg',
+        'images/Cats/Cat_35.jpg', 'images/Cats/Cat_37.jpg', 'images/Cats/Cat_38.jpg', 'images/Cats/Cat_39.jpg',
+        'images/Cats/Cat_4.jpg', 'images/Cats/Cat_40.jpg', 'images/Cats/Cat_41.jpg', 'images/Cats/Cat_43.jpeg',
+        'images/Cats/Cat_44.jpg', 'images/Cats/Cat_45.jpg', 'images/Cats/Cat_46.jpg', 'images/Cats/Cat_47.jpg',
+        'images/Cats/Cat_48.jpg', 'images/Cats/Cat_49.jpg', 'images/Cats/Cat_5.jpg', 'images/Cats/Cat_50.jpg',
+        'images/Cats/Cat_52.jpg', 'images/Cats/Cat_53.jpg', 'images/Cats/Cat_55.jpg', 'images/Cats/Cat_56.jpeg',
+        'images/Cats/Cat_57.jpeg', 'images/Cats/Cat_58.jpeg', 'images/Cats/Cat_59.jpg', 'images/Cats/Cat_6.jpg',
+        'images/Cats/Cat_60.jpg', 'images/Cats/Cat_61.jpg', 'images/Cats/Cat_62.jpg', 'images/Cats/Cat_63.jpg',
+        'images/Cats/Cat_64.jpg', 'images/Cats/Cat_65.jpg', 'images/Cats/Cat_66.jpg', 'images/Cats/Cat_67.jpg',
+        'images/Cats/Cat_68.jpg', 'images/Cats/Cat_69.jpg', 'images/Cats/Cat_70.jpg', 'images/Cats/Cat_71.jpg',
+        'images/Cats/Cat_72.jpg', 'images/Cats/Cat_73.jpg', 'images/Cats/Cat_75.jpg', 'images/Cats/Cat_76.jpg',
+        'images/Cats/Cat_78.jpg', 'images/Cats/Cat_79.jpeg', 'images/Cats/Cat_8.jpeg', 'images/Cats/Cat_80.jpg',
+        'images/Cats/Cat_81.jpg', 'images/Cats/Cat_82.jpg', 'images/Cats/Cat_83.jpg', 'images/Cats/Cat_84.jpeg',
+        'images/Cats/Cat_85.jpg', 'images/Cats/Cat_86.jpg', 'images/Cats/Cat_87.jpg', 'images/Cats/Cat_88.jpg',
+        'images/Cats/Cat_89.jpg', 'images/Cats/Cat_9.jpg', 'images/Cats/Cat_90.jpeg', 'images/Cats/Cat_91.jpg',
+        'images/Cats/Cat_92.jpg', 'images/Cats/Cat_93.jpg', 'images/Cats/Cat_94.jpg', 'images/Cats/Cat_95.jpeg',
+        'images/Cats/Cat_96.jpg', 'images/Cats/Cat_97.jpg', 'images/Cats/Cat_98.jpeg', 'images/Cats/cat_14.jpeg',
+        'images/Cats/cat_29.jpg', 'images/Cats/cat_36.jpeg',
+      ],
+      Dogs: [
+        'images/Dogs/Dog_1.jpg', 'images/Dogs/Dog_100.jpg', 'images/Dogs/Dog_11.jpg', 'images/Dogs/Dog_13.jpg',
+        'images/Dogs/Dog_14.jpg', 'images/Dogs/Dog_15.jpg', 'images/Dogs/Dog_16.jpg', 'images/Dogs/Dog_17.jpg',
+        'images/Dogs/Dog_18.jpg', 'images/Dogs/Dog_19.jpg', 'images/Dogs/Dog_2.jpg', 'images/Dogs/Dog_20.jpg',
+        'images/Dogs/Dog_21.jpg', 'images/Dogs/Dog_22.jpg', 'images/Dogs/Dog_23.jpg', 'images/Dogs/Dog_24.jpg',
+        'images/Dogs/Dog_25.jpg', 'images/Dogs/Dog_26.jpg', 'images/Dogs/Dog_27.jpg', 'images/Dogs/Dog_28.jpg',
+        'images/Dogs/Dog_29.jpg', 'images/Dogs/Dog_3.jpg', 'images/Dogs/Dog_30.jpg', 'images/Dogs/Dog_31.jpg',
+        'images/Dogs/Dog_32.jpg', 'images/Dogs/Dog_33.jpg', 'images/Dogs/Dog_34.jpg', 'images/Dogs/Dog_35.jpg',
+        'images/Dogs/Dog_36.jpg', 'images/Dogs/Dog_37.jpg', 'images/Dogs/Dog_39.jpg', 'images/Dogs/Dog_4.jpg',
+        'images/Dogs/Dog_41.jpg', 'images/Dogs/Dog_43.jpg', 'images/Dogs/Dog_44.jpg', 'images/Dogs/Dog_45.jpg',
+        'images/Dogs/Dog_46.jpg', 'images/Dogs/Dog_47.jpg', 'images/Dogs/Dog_48.jpg', 'images/Dogs/Dog_49.jpg',
+        'images/Dogs/Dog_5.jpg', 'images/Dogs/Dog_50.jpg', 'images/Dogs/Dog_51.jpg', 'images/Dogs/Dog_52.jpg',
+        'images/Dogs/Dog_53.jpg', 'images/Dogs/Dog_54.jpg', 'images/Dogs/Dog_55.jpg', 'images/Dogs/Dog_56.jpg',
+        'images/Dogs/Dog_57.jpg', 'images/Dogs/Dog_58.jpg', 'images/Dogs/Dog_59.jpg', 'images/Dogs/Dog_6.jpg',
+        'images/Dogs/Dog_62.jpg', 'images/Dogs/Dog_63.jpg', 'images/Dogs/Dog_65.jpg', 'images/Dogs/Dog_66.jpg',
+        'images/Dogs/Dog_67.jpg', 'images/Dogs/Dog_68.jpg', 'images/Dogs/Dog_69.jpg', 'images/Dogs/Dog_7.jpg',
+        'images/Dogs/Dog_71.jpg', 'images/Dogs/Dog_72.jpg', 'images/Dogs/Dog_73.jpg', 'images/Dogs/Dog_74.jpg',
+        'images/Dogs/Dog_76.jpg', 'images/Dogs/Dog_77.jpg', 'images/Dogs/Dog_78.jpg', 'images/Dogs/Dog_79.jpg',
+        'images/Dogs/Dog_8.jpg', 'images/Dogs/Dog_80.jpg', 'images/Dogs/Dog_81.jpg', 'images/Dogs/Dog_82.jpg',
+        'images/Dogs/Dog_83.jpg', 'images/Dogs/Dog_84.jpg', 'images/Dogs/Dog_85.jpg', 'images/Dogs/Dog_86.jpg',
+        'images/Dogs/Dog_87.jpg', 'images/Dogs/Dog_88.jpg', 'images/Dogs/Dog_89.jpg', 'images/Dogs/Dog_9.jpg',
+        'images/Dogs/Dog_90.jpg', 'images/Dogs/Dog_91.jpg', 'images/Dogs/Dog_92.jpg', 'images/Dogs/Dog_93.jpg',
+        'images/Dogs/Dog_94.jpg', 'images/Dogs/Dog_95.jpg', 'images/Dogs/Dog_96.jpg', 'images/Dogs/Dog_97.jpg',
+        'images/Dogs/Dog_98.jpg', 'images/Dogs/Dog_99.jpg',
+      ],
+    };
+
+    const DEMO_CONFIG = {
+      seed: 'train-test-demo-v1',
+      testRatio: 0.2,
+      minTestPerClass: 3,
+      revealDelayMs: 850,
+      initialRevealDelayMs: 450,
+    };
+
+    const SIMULATION_CONFIG = {
+      targetAccuracy: 0.84,
+      seedSalt: '-simulation',
+    };
+
+    const STAGES = [
+      {
+        id: 'categories',
+        label: '1. Categories',
+        title: 'Start With Labeled Categories',
+        copy: 'We begin with a small, balanced sample from each class so the viewer can see the labeled examples before anything is shuffled.',
+      },
+      {
+        id: 'mixed',
+        label: '2. Shuffle',
+        title: 'Shuffle Everything Together',
+        copy: 'The labels still exist, but visually the samples are now mixed into one pool. This is the dataset before splitting.',
+      },
+      {
+        id: 'split',
+        label: '3. Split',
+        title: 'Create Train And Test Piles',
+        copy: '',
+      },
+      {
+        id: 'evaluation',
+        label: '4. Test',
+        title: 'Test On Held-Out Data',
+        copy: '',
+      },
+      {
+        id: 'results',
+        label: '5. Results',
+        title: 'Summarize Accuracy And Errors',
+        copy: 'The final score and confusion matrix explain not just how often the model was right, but which classes it confused.',
+      },
+    ];
+
+    const state = {
+      cards: [],
+      cardMap: new Map(),
+      stageIndex: 0,
+      previousStageIndex: -1,
+      revealTimer: null,
+      revealedCount: 0,
+      metrics: null,
+    };
+
+    const STAGE_PILLS = [
+      { label: '1. Categories', stageIndex: 0 },
+      { label: '2. Shuffle', stageIndex: 1 },
+      { label: '3. Split', stageIndex: 2 },
+      { label: 'Train', stageIndex: null, decorative: true },
+      { label: '4. Test', stageIndex: 3 },
+      { label: '5. Results', stageIndex: 4 },
+    ];
+
+    const refs = {
+      stagePills: document.getElementById('stagePills'),
+      backButton: document.getElementById('backButton'),
+      nextButton: document.getElementById('nextButton'),
+      restartButton: document.getElementById('restartButton'),
+      stageName: document.getElementById('stageName'),
+      stageCopy: document.getElementById('stageCopy'),
+      runningScore: document.getElementById('runningScore'),
+      runningAccuracy: document.getElementById('runningAccuracy'),
+      runningDetails: document.getElementById('runningDetails'),
+      categoriesLayout: document.getElementById('categoriesLayout'),
+      mixedPanel: document.getElementById('mixedPanel'),
+      splitLayout: document.getElementById('splitLayout'),
+      resultsArea: document.getElementById('resultsArea'),
+      catsGrid: document.getElementById('catsGrid'),
+      dogsGrid: document.getElementById('dogsGrid'),
+      mixedGrid: document.getElementById('mixedGrid'),
+      trainGrid: document.getElementById('trainGrid'),
+      testGrid: document.getElementById('testGrid'),
+      catsCountLabel: document.getElementById('catsCountLabel'),
+      dogsCountLabel: document.getElementById('dogsCountLabel'),
+      trainPileLabel: document.getElementById('trainPileLabel'),
+      testPileLabel: document.getElementById('testPileLabel'),
+      accuracyValue: document.getElementById('accuracyValue'),
+      accuracyCopy: document.getElementById('accuracyCopy'),
+      correctCountValue: document.getElementById('correctCountValue'),
+      testTotalValue: document.getElementById('testTotalValue'),
+      matrix: document.getElementById('matrix'),
+      mistakeStrip: document.getElementById('mistakeStrip'),
+      mistakeCountLabel: document.getElementById('mistakeCountLabel'),
+    };
+
+    function hashSeed(input) {
+      let h = 1779033703 ^ input.length;
+      for (let i = 0; i < input.length; i += 1) {
+        h = Math.imul(h ^ input.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function next() {
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        h ^= h >>> 16;
+        return h >>> 0;
+      };
+    }
+
+    function createRandom(seed) {
+      const seedFn = hashSeed(seed);
+      let a = seedFn();
+      return function rand() {
+        a += 0x6d2b79f5;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function shuffle(list, rand) {
+      const copy = list.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(rand() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function otherLabel(label) {
+      return label === 'Cats' ? 'Dogs' : 'Cats';
+    }
+
+    function displayLabel(label) {
+      return label === 'Cats' ? 'cat' : 'dog';
+    }
+
+    function buildCards() {
+      const sampleRand = createRandom(DEMO_CONFIG.seed);
+      const cards = [];
+      Object.entries(DATASET_MANIFEST).forEach(([label, sources], labelIndex) => {
+        const selected = shuffle(sources, sampleRand);
+        selected.forEach((src, subsetIndex) => {
+          cards.push({
+            id: `${label}-${subsetIndex}`,
+            label,
+            src,
+            split: 'Train',
+            subsetIndex,
+            order: 0,
+            predictedLabel: null,
+            isCorrect: null,
+            revealRank: -1,
+            element: createCardElement(label, src),
+            labelIndex,
+          });
+        });
+      });
+
+      const mixedRand = createRandom(`${DEMO_CONFIG.seed}-mixed`);
+      const mixedOrder = shuffle(cards.map((card) => card.id), mixedRand);
+      cards.forEach((card) => {
+        card.order = mixedOrder.indexOf(card.id);
+      });
+
+      assignSplit(cards);
+      assignSimulation(cards);
+      return cards.sort((a, b) => a.order - b.order);
+    }
+
+    function assignSplit(cards) {
+      const splitRand = createRandom(`${DEMO_CONFIG.seed}-split`);
+      const byLabel = new Map();
+      cards.forEach((card) => {
+        if (!byLabel.has(card.label)) {
+          byLabel.set(card.label, []);
+        }
+        byLabel.get(card.label).push(card);
+      });
+
+      const totalTarget = Math.max(
+        DEMO_CONFIG.minTestPerClass * byLabel.size,
+        Math.round(cards.length * DEMO_CONFIG.testRatio)
+      );
+
+      const testSet = new Set();
+      byLabel.forEach((items) => {
+        shuffle(items, splitRand).slice(0, DEMO_CONFIG.minTestPerClass).forEach((card) => {
+          testSet.add(card.id);
+        });
+      });
+
+      if (testSet.size < totalTarget) {
+        const remaining = shuffle(
+          cards.filter((card) => !testSet.has(card.id)),
+          splitRand
+        ).slice(0, totalTarget - testSet.size);
+
+        remaining.forEach((card) => testSet.add(card.id));
+      }
+
+      cards.forEach((card) => {
+        card.split = testSet.has(card.id) ? 'Test' : 'Train';
+      });
+    }
+
+    function assignSimulation(cards) {
+      const simRand = createRandom(`${DEMO_CONFIG.seed}${SIMULATION_CONFIG.seedSalt}`);
+      const orderedTestCards = cards
+        .filter((card) => card.split === 'Test')
+        .sort((a, b) => a.order - b.order);
+      const randomizedTestCards = shuffle(orderedTestCards, simRand);
+      const desiredCorrect = Math.max(1, Math.round(orderedTestCards.length * SIMULATION_CONFIG.targetAccuracy));
+      const mistakesNeeded = Math.max(0, orderedTestCards.length - desiredCorrect);
+      const mistakes = new Set(randomizedTestCards.slice(0, mistakesNeeded).map((card) => card.id));
+
+      orderedTestCards.forEach((card, revealRank) => {
+        const wrong = mistakes.has(card.id);
+        card.predictedLabel = wrong ? otherLabel(card.label) : card.label;
+        card.isCorrect = !wrong;
+        card.revealRank = revealRank;
+      });
+
+      cards.forEach((card) => {
+        if (card.split !== 'Test') {
+          card.predictedLabel = null;
+          card.isCorrect = null;
+          card.revealRank = -1;
+        }
+      });
+
+      state.metrics = computeMetrics(cards);
+    }
+
+    function computeMetrics(cards) {
+      const testCards = cards.filter((card) => card.split === 'Test');
+      const correct = testCards.filter((card) => card.isCorrect).length;
+      const confusionMatrix = {
+        Cats: { Cats: 0, Dogs: 0 },
+        Dogs: { Cats: 0, Dogs: 0 },
+      };
+
+      testCards.forEach((card) => {
+        confusionMatrix[card.label][card.predictedLabel] += 1;
+      });
+
+      return {
+        totalTest: testCards.length,
+        correct,
+        accuracy: testCards.length ? correct / testCards.length : 0,
+        confusionMatrix,
+      };
+    }
+
+    function createCardElement(label, src) {
+      const card = document.createElement('article');
+      card.className = 'sample-card';
+      card.dataset.label = label;
+      card.innerHTML = `
+        <div class="overlay">
+          <span class="chip verdict hidden"></span>
+          <span class="spacer"></span>
+          <span class="chip split hidden"></span>
+        </div>
+        <img alt="${displayLabel(label)} example thumbnail" loading="lazy" src="${src}">
+        <div class="card-meta">
+          <span class="chip label">${displayLabel(label)}</span>
+        </div>
+      `;
+      return card;
+    }
+
+    function getCardNode(card) {
+      if (!state.cardMap.has(card.id)) {
+        state.cardMap.set(card.id, card.element);
+      }
+      return state.cardMap.get(card.id);
+    }
+
+    function moveCards(target, cards, stageId) {
+      const fragment = document.createDocumentFragment();
+      cards.forEach((card, index) => {
+        const node = getCardNode(card);
+        updateCardVisual(node, card, stageId, index);
+        fragment.appendChild(node);
+      });
+      target.replaceChildren(fragment);
+    }
+
+    function updateCardVisual(node, card, stageId, index) {
+      node.className = 'sample-card';
+      node.style.setProperty('--twist', `${((card.order % 7) - 3) * 1.9}deg`);
+      node.style.setProperty('--lift', `${(card.order % 3) * -2}px`);
+      node.style.animationDelay = `${Math.min((index ?? 0) * 28, 320)}ms`;
+
+      const splitChip = node.querySelector('.chip.split');
+      const verdictChip = node.querySelector('.chip.verdict');
+      splitChip.textContent = card.split;
+      splitChip.dataset.split = card.split;
+      verdictChip.textContent = '';
+      verdictChip.className = 'chip verdict hidden';
+      splitChip.classList.toggle('hidden', stageId === 'categories' || stageId === 'mixed' || stageId === 'evaluation');
+
+      if (stageId === 'mixed') {
+        node.classList.add('mixed', 'dim-label');
+      }
+
+      if (stageId === 'split' || stageId === 'evaluation') {
+        node.classList.add(card.split === 'Train' ? 'train-card' : 'test-card');
+      }
+
+      if (stageId === 'evaluation') {
+        node.classList.add('hide-labels');
+        if (card.split === 'Train') {
+          node.classList.add('ghost');
+        } else {
+          const revealed = card.revealRank < state.revealedCount;
+          if (!revealed) {
+            node.classList.add('awaiting');
+          } else {
+            node.classList.add('revealed');
+            node.classList.add(card.isCorrect ? 'correct' : 'incorrect');
+            verdictChip.classList.remove('hidden');
+            verdictChip.classList.add(card.isCorrect ? 'good' : 'bad');
+            verdictChip.textContent = card.isCorrect ? '✅' : '❌';
+          }
+        }
+      }
+
+      if (stageId === 'results') {
+        if (card.split === 'Train') {
+          node.classList.add('ghost');
+        } else {
+          node.classList.add('revealed', 'test-card');
+          node.classList.add(card.isCorrect ? 'correct' : 'incorrect');
+          verdictChip.classList.remove('hidden');
+          verdictChip.classList.add(card.isCorrect ? 'good' : 'bad');
+          verdictChip.textContent = card.isCorrect ? '✅' : '❌';
+        }
+      }
+    }
+
+    function applyEvaluationProgress() {
+      const trainCards = state.cards.filter((card) => card.split === 'Train');
+      const testCards = state.cards
+        .filter((card) => card.split === 'Test')
+        .sort((a, b) => a.revealRank - b.revealRank);
+
+      trainCards.forEach((card) => {
+        const node = getCardNode(card);
+        updateCardVisual(node, card, 'evaluation');
+      });
+
+      testCards.forEach((card) => {
+        const node = getCardNode(card);
+        updateCardVisual(node, card, 'evaluation');
+      });
+
+      updateRunningScore(false);
+    }
+
+    function updateSidebar(stage) {
+      refs.stageName.textContent = stage.title;
+      refs.stageCopy.textContent = stage.copy;
+      refs.stageCopy.classList.toggle('hidden', !stage.copy);
+
+      const showRunning = stage.id === 'evaluation' || stage.id === 'results';
+      refs.runningScore.classList.toggle('hidden', !showRunning);
+      if (showRunning) {
+        updateRunningScore(stage.id === 'results');
+      }
+    }
+
+    function updateRunningScore(forceFinal) {
+      const testCards = state.cards
+        .filter((card) => card.split === 'Test')
+        .sort((a, b) => a.revealRank - b.revealRank);
+      const visible = forceFinal
+        ? testCards
+        : testCards.filter((card) => card.revealRank < state.revealedCount);
+      const correct = visible.filter((card) => card.isCorrect).length;
+      const total = visible.length;
+      const accuracy = total ? Math.round((correct / total) * 100) : 0;
+
+      refs.runningAccuracy.textContent = `${accuracy}%`;
+      refs.runningDetails.textContent = forceFinal
+        ? `${state.metrics.correct} of ${state.metrics.totalTest} test predictions are correct.`
+        : total
+          ? `${correct} of ${total} evaluated test images are correct so far.`
+          : 'Waiting to evaluate test images.';
+    }
+
+    function updateHeaderStats() {
+      refs.catsCountLabel.textContent = `${state.cards.filter((card) => card.label === 'Cats').length} cat examples`;
+      refs.dogsCountLabel.textContent = `${state.cards.filter((card) => card.label === 'Dogs').length} dog examples`;
+      refs.trainPileLabel.textContent = `${state.cards.filter((card) => card.split === 'Train').length} cards`;
+      refs.testPileLabel.textContent = `${state.cards.filter((card) => card.split === 'Test').length} cards`;
+    }
+
+    function renderStagePills() {
+      refs.stagePills.replaceChildren();
+      STAGE_PILLS.forEach((pill) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'stage-pill';
+        button.textContent = pill.label;
+        if (pill.decorative) {
+          button.classList.add('ghost-pill');
+          button.disabled = true;
+        } else {
+          button.dataset.stageIndex = pill.stageIndex;
+          button.addEventListener('click', () => {
+            setStage(pill.stageIndex);
+          });
+        }
+        refs.stagePills.appendChild(button);
+      });
+    }
+
+    function syncPills() {
+      [...refs.stagePills.children].forEach((button) => {
+        const stageIndex = button.dataset.stageIndex;
+        button.classList.toggle('active', stageIndex !== undefined && Number(stageIndex) === state.stageIndex);
+      });
+      refs.backButton.disabled = state.stageIndex === 0;
+      refs.nextButton.disabled = state.stageIndex === STAGES.length - 1;
+    }
+
+    function clearRevealTimer() {
+      if (state.revealTimer) {
+        clearTimeout(state.revealTimer);
+        state.revealTimer = null;
+      }
+    }
+
+    function setStage(index) {
+      state.previousStageIndex = state.stageIndex;
+      state.stageIndex = index;
+      clearRevealTimer();
+      if (STAGES[index].id !== 'evaluation') {
+        state.revealedCount = 0;
+      }
+      render();
+      if (STAGES[index].id === 'evaluation') {
+        state.revealedCount = 0;
+        applyEvaluationProgress();
+        queueReveal(DEMO_CONFIG.initialRevealDelayMs);
+      }
+    }
+
+    function queueReveal(delay) {
+      const totalTest = state.metrics.totalTest;
+      if (state.revealedCount >= totalTest) {
+        return;
+      }
+      state.revealTimer = window.setTimeout(() => {
+        state.revealedCount += 1;
+        applyEvaluationProgress();
+        if (state.revealedCount < totalTest) {
+          queueReveal(DEMO_CONFIG.revealDelayMs);
+        }
+      }, delay);
+    }
+
+    function renderEvaluationFrame() {
+      moveCards(
+        refs.trainGrid,
+        state.cards.filter((card) => card.split === 'Train').sort((a, b) => a.order - b.order),
+        'evaluation'
+      );
+      moveCards(
+        refs.testGrid,
+        state.cards.filter((card) => card.split === 'Test').sort((a, b) => a.revealRank - b.revealRank),
+        'evaluation'
+      );
+      applyEvaluationProgress();
+    }
+
+    function renderResults() {
+      refs.accuracyValue.textContent = `${Math.round(state.metrics.accuracy * 100)}%`;
+      refs.accuracyCopy.textContent =
+        `${state.metrics.correct} out of ${state.metrics.totalTest} test images were predicted correctly in this simulated evaluation run.`;
+      refs.correctCountValue.textContent = state.metrics.correct;
+      refs.testTotalValue.textContent = state.metrics.totalTest;
+      renderMatrix();
+      renderMistakes();
+    }
+
+    function renderMatrix() {
+      const m = state.metrics.confusionMatrix;
+      const cells = [
+        { text: '', className: 'matrix-cell head span-2-col' },
+        { text: 'Predicted', className: 'matrix-cell axis span-2-col end-col' },
+        { text: '', className: 'matrix-cell head' },
+        { text: '', className: 'matrix-cell head' },
+        { text: 'Cat', className: 'matrix-cell head' },
+        { text: 'Dog', className: 'matrix-cell head end-col' },
+        { text: 'Ground Truth', className: 'matrix-cell axis span-2-row end-row' },
+        { text: 'Cat', className: 'matrix-cell head end-row' },
+        { strong: m.Cats.Cats, className: 'matrix-cell good end-row' },
+        { strong: m.Cats.Dogs, className: 'matrix-cell bad end-row end-col' },
+        { text: 'Dog', className: 'matrix-cell head end-row' },
+        { strong: m.Dogs.Cats, className: 'matrix-cell bad end-row' },
+        { strong: m.Dogs.Dogs, className: 'matrix-cell good end-row end-col' },
+      ];
+
+      refs.matrix.replaceChildren();
+      cells.forEach((cell) => {
+        const el = document.createElement('div');
+        el.className = cell.className;
+        if (cell.strong !== undefined) {
+          el.innerHTML = `<strong>${cell.strong}</strong>`;
+        } else {
+          el.textContent = cell.text;
+        }
+        refs.matrix.appendChild(el);
+      });
+    }
+
+    function renderMistakes() {
+      const mistakes = state.cards.filter((card) => card.split === 'Test' && !card.isCorrect);
+      refs.mistakeCountLabel.textContent = `${mistakes.length} ${mistakes.length === 1 ? 'mistake' : 'mistakes'}`;
+      refs.mistakeStrip.replaceChildren();
+
+      if (!mistakes.length) {
+        const note = document.createElement('div');
+        note.textContent = 'No test images were misclassified in this run.';
+        refs.mistakeStrip.appendChild(note);
+        return;
+      }
+
+      mistakes.forEach((card) => {
+        const item = document.createElement('article');
+        item.className = 'mistake-card';
+        item.innerHTML = `
+          <img alt="Misclassified ${displayLabel(card.label)} example" src="${card.src}">
+          <div class="copy">
+            <strong>Actual: ${displayLabel(card.label)}</strong>
+            <span>Predicted: ${displayLabel(card.predictedLabel)}</span>
+          </div>
+        `;
+        refs.mistakeStrip.appendChild(item);
+      });
+    }
+
+    function render() {
+      const stage = STAGES[state.stageIndex];
+      updateSidebar(stage);
+      syncPills();
+
+      refs.categoriesLayout.classList.toggle('hidden', stage.id !== 'categories');
+      refs.mixedPanel.classList.toggle('hidden', stage.id !== 'mixed');
+      refs.splitLayout.classList.toggle('hidden', !(stage.id === 'split' || stage.id === 'evaluation'));
+      refs.resultsArea.classList.toggle('hidden', stage.id !== 'results');
+
+      if (stage.id === 'categories') {
+        moveCards(
+          refs.catsGrid,
+          state.cards.filter((card) => card.label === 'Cats').sort((a, b) => a.subsetIndex - b.subsetIndex),
+          stage.id
+        );
+        moveCards(
+          refs.dogsGrid,
+          state.cards.filter((card) => card.label === 'Dogs').sort((a, b) => a.subsetIndex - b.subsetIndex),
+          stage.id
+        );
+      } else if (stage.id === 'mixed') {
+        moveCards(refs.mixedGrid, state.cards.slice().sort((a, b) => a.order - b.order), stage.id);
+      } else if (stage.id === 'split') {
+        moveCards(
+          refs.trainGrid,
+          state.cards.filter((card) => card.split === 'Train').sort((a, b) => a.order - b.order),
+          stage.id
+        );
+        moveCards(
+          refs.testGrid,
+          state.cards.filter((card) => card.split === 'Test').sort((a, b) => a.order - b.order),
+          stage.id
+        );
+      } else if (stage.id === 'evaluation') {
+        const cameFromSplit =
+          state.previousStageIndex >= 0 &&
+          STAGES[state.previousStageIndex] &&
+          STAGES[state.previousStageIndex].id === 'split';
+        if (!cameFromSplit) {
+          renderEvaluationFrame();
+        }
+      } else if (stage.id === 'results') {
+        renderResults();
+      }
+    }
+
+    function attachEvents() {
+      refs.backButton.addEventListener('click', () => {
+        if (state.stageIndex > 0) {
+          setStage(state.stageIndex - 1);
+        }
+      });
+
+      refs.nextButton.addEventListener('click', () => {
+        if (state.stageIndex < STAGES.length - 1) {
+          setStage(state.stageIndex + 1);
+        }
+      });
+
+      refs.restartButton.addEventListener('click', () => {
+        setStage(0);
+      });
+    }
+
+    function init() {
+      state.cards = buildCards();
+      updateHeaderStats();
+      renderStagePills();
+      attachEvents();
+      setStage(0);
+    }
+
+    init();
+  </script>
+</body>
+</html>
